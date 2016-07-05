@@ -1,0 +1,118 @@
+<html>
+<head>
+<title>filesystem</title>
+<link rel='stylesheet' type='text/css' href='css/codemirror-5.0.css' />
+<link rel='stylesheet' type='text/css' href='css/handsontable-0.14.1.css' />
+<link rel='stylesheet' type='text/css' href='css/griddl.css' />
+<style>.main { margin : 1em ; margin-bottom : 3em } .CodeMirror { cursor : text }</style>
+</head>
+<body>
+<script src='js/lib/jquery-1.10.2.min.js'></script>
+<script src='js/lib/jquery-ui.sortable.min.js'></script>
+<script src='js/lib/codemirror-5.0.js'></script>
+<script src='js/lib/codemirror-5.0-javascript.js'></script>
+<script src='js/lib/codemirror-5.0-css.js'></script>
+<script src='js/lib/codemirror-5.0-xml.js'></script>
+<script src='js/lib/codemirror-5.0-markdown.js'></script>
+<script src='js/lib/dat.gui.min.js'></script>
+<script src='js/lib/handsontable.full.min-0.14.1.js'></script>
+<script src='js/lib/handsontable.formula.js'></script>
+<script src='js/lib/handsontable.rulejs.js'></script>
+<!-- <script src='js/lib/opentype.js'></script> -->
+<script src='js/lib/parser.markdown.min.js'></script>
+<script src='js/lib/parser.yaml.min.js'></script>
+<script src='js/lib/parser.csv.min.js'></script>
+<script src="js/lib/jszip.js"></script> <!-- older version, still supports sync -->
+<script src="js/tablegui.js"></script>
+<!-- <script src="js/lib/jscolor.min.js"></script> -->
+<!-- <script src="js/lib/jszip.min.js"></script> --> <!-- version 3.0, mandates async -->
+
+<script src='js/griddl.components.js'></script>
+<script src='js/griddl.componentHeaders.js'></script>
+
+<script src='js/griddl.ui.js'></script>
+<script src='js/polyfills.js'></script>
+<script src='js/workbookLoading.js'></script>
+<script src='js/handlersGeneric.js'></script>
+<script src='js/b64Converters.js'></script>
+<script src='js/genericUploadDownload.js'></script>
+<script src='js/markDirty.js'></script>
+<script src='js/elementIds.js'></script>
+
+<script src='js/code.js'></script>
+<script src='js/data.js'></script>
+<script src='js/file.js'></script>
+<script src='js/repl.js'></script>
+
+<script src='js/hot.js'></script>
+
+<script src='js/tree.js'></script>
+<script src='js/spreadsheet.js'></script>
+<script src='js/office.js'></script>
+
+<script src='../../data/counties.js'></script>
+
+<script src='http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML'></script>
+
+<script type="text/x-mathjax-config">
+// http://docs.mathjax.org/en/latest/options/hub.html
+MathJax.Hub.Config({tex2jax:{inlineMath:[['$','$'],['\\(','\\)']]},jax:['input/TeX','output/HTML-CSS'],messageStyle:'none',skipStartupTypeset:true,showMathMenu:true,showMathMenuMSIE:true});
+</script>
+
+<!--
+
+
+<script src='js/griddl.canvas.js'></script>
+
+<script src='js/box.js'></script>
+
+<script src='js/document.js'></script>
+<script src='js/section.js'></script>
+
+<script src='js/text.js'></script>
+<script src='js/image.js'></script>
+<script src='js/table.js'></script>
+<script src='js/subcanvas.js'></script>
+
+<script src='js/chart.bar.js'></script>
+<script src='js/chart.line.js'></script>
+
+<script src='js/font.js'></script>
+<script src='js/styles.js'></script>
+<script src='js/libraries.js'></script>
+
+<script src='js/axis.js'></script>
+<script src='js/key.js'></script>
+<script src='js/arrow.js'></script>
+
+<script src='js/defaultFonts.js'></script>
+<script src='js/griddl.typeset.js'></script>
+-->
+
+<button onclick='Griddl.Components.DownloadWorkbook();'>Download Workbook</button>
+<button onclick='Griddl.Components.UploadWorkbook();'>Upload Workbook</button>
+<select value="" onchange="Griddl.Components.NewComponent(this.value)">
+<option></option>
+<option>office</option>
+<option>tree</option>
+<option>data</option>
+<option>js</option>
+<option>html</option>
+<option>md</option>
+<option>css</option>
+<option>txt</option>
+<option>file</option>
+<option>jsfile</option>
+<option>imgfile</option>
+<option>zipfile</option>
+<option>repl</option>
+<option>snips</option>
+</select>
+<button onclick='Griddl.Components.RestoreObj();'>Restore Deleted Obj</button>
+
+<div id='cells'></div>
+<div id='output'></div>
+
+</body>
+</html>
+
