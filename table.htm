@@ -1,0 +1,84 @@
+<html>
+<head>
+<title>table</title>
+<style>
+canvas:focus { outline : none }
+</style>
+</head>
+<body>
+<script src='js/lib/jquery-1.10.2.min.js'></script>
+<script src='js/lib/handsontable.rulejs.js'></script>
+<script src='js/lib/dat.gui.min.js'></script>
+<script src="js/lib/jszip.js"></script> <!-- older version, still supports sync -->
+<!-- <script src="js/lib/jszip.min.js"></script> --> <!-- version 3.0, mandates async -->
+
+<!-- 
+<button onclick='Download()'>Download</button>
+<button onclick='Upload()'>Upload</button>
+ -->
+ 
+<script>var Griddl = {}; Griddl.Components = {};</script>
+<script src='js/polyfills.js'></script>
+<script src='js/box.js'></script>
+<script src='js/table.js'></script>
+
+<div style="position:absolute ; top:2em ; left:2em">
+<canvas width="1200" height="500" tabIndex="0" style="border:0px solid gray"></canvas>
+</div>
+
+<script>
+
+var json = {
+	"type": "table",
+	"name": "table1",
+	"visible": true,
+	"data": [
+		[1,2,3,4],
+		[5,6,7,8],
+		[9,10,11,12]
+	],
+	"params": {
+		"headers": ["A", "B", "C", "D"],
+		"display": "values",
+		"rowSizes": null,
+		"colSizes": null,
+		"xOffset": 0,
+		"yOffset": 0,
+		"box": {
+			"hAlign": "left",
+			"vAlign": "top",
+			"xAnchor": "left",
+			"yAnchor": "top",
+			"x": 1,
+			"y": 1
+		},
+		"margin": {
+			"top": 25,
+			"left": 25,
+			"right": 25,
+			"bottom": 25
+		}
+	}
+};
+
+var table = new Griddl.Components.table(json);
+table.ctx = document.getElementsByTagName('canvas')[0].getContext('2d');
+
+// some things call table.section.draw(), so this clears the canvas and loops that back to table.draw()
+table.section = {
+	draw : function() { table.ctx.clearRect(0, 0, table.ctx.canvas.width, table.ctx.canvas.height); table.draw(); }
+};
+
+table.ctx.canvas.onmousemove = function(e) { table.onmousemove(e); };
+table.ctx.canvas.onmousedown = function(e) { table.clearSelection(); };
+
+$(table.ctx.canvas).parent().append(table.input);
+
+table.draw();
+
+
+
+</script>
+</body>
+</html>
+

@@ -1,0 +1,44 @@
+
+<html>
+<head>
+</head>
+<body>
+
+<canvas width="1200" height="500" style="border:1px solid gray"></canvas>
+
+<script> var Griddl = {}; Griddl.Components = {}; </script>
+<script src='js/box.js'></script>
+<script src='js/controls.js'></script>
+
+<script>
+
+var obj = {};
+obj.text = 'foo';
+obj.color = 'rgb(0,0,0)';
+obj.number = 5;
+
+var canvas = document.getElementsByTagName('canvas')[0];
+var ctx = canvas.getContext('2d');
+
+var text = new Griddl.Controls.Text();
+text.ctx = ctx;
+text.obj = obj;
+text.fld = 'text';
+text.box.x = 100;
+text.box.y = 100;
+text.box.wd = 50;
+text.box.hg = 25;
+text.box.hAlign = 'center';
+text.box.vAlign = 'center';
+text.box.align();
+text.poll();
+text.draw();
+
+var root = Griddl.Components.Box.MakeRoot(ctx);
+root.subs.push(text.box);
+root.initHandlers();
+
+</script>
+</body>
+</html>
+
