@@ -1,0 +1,242 @@
+
+<html>
+<head>
+<script src="everything/griddl/js/lib/jscolor.min.js"></script>
+<script src="everything/griddl/js/tablegui.js"></script>
+</head>
+<body>
+
+<div><button onclick="Upload()">Upload</button><span id="counter"></span></div>
+
+<canvas width="500" height="500" style="position:absolute;top:3em;left:43em;border:1px solid gray"></canvas>
+
+<div id="ui" style="position:absolute;top:3em;left:1em"></div>
+
+<script>
+
+var data = [];
+data.push({color:'000000',alpha:0.5,path:'M 100 100 l 100 0 l 0 100 l -100 0 z'});
+data.push({color:'000000',alpha:0.5,path:'M 150 150 l 100 0 l 0 100 l -100 0 z'});
+
+var reps = 100;
+var nTriangles = 20;
+var populationSize = 1000;
+
+var ctx = document.getElementsByTagName('canvas')[0].getContext('2d');
+var wd = null;
+var hg = null;
+
+Draw(ctx, data);
+
+var tablegui = new TableGui(data);
+tablegui.add('color', 'color', {default:'000000'});
+tablegui.add('alpha', 'number', {default:0.5,min:0,max:1,step:0.01});
+tablegui.add('path', 'text', {default:'M 150 150 l 100 0 l 0 100 l -100 0 z',size:30});
+tablegui.addAfterChangeFn(function() { Draw(ctx, data); });
+document.getElementById('ui').appendChild(tablegui.table);
+
+var referenceImageData = null;
+
+function Upload() {
+	
+	var fileChooser = document.createElement('input');
+	fileChooser.type = 'file';
+	
+	fileChooser.onchange = function() {
+		var fileReader = new FileReader();
+		fileReader.onload = function(event) { Load(new Uint8Array(event.target.result)); };
+		fileReader.readAsArrayBuffer(fileChooser.files[0]);
+	};
+	
+	fileChooser.click();
+}
+function Load(uint8Array) {
+	
+	var b64 = 'data:image/png;base64,' + Uint8ArrayToBase64String(uint8Array);
+	var img = document.createElement('img');
+	img.src = b64;
+	
+	var canvas = document.createElement('canvas');
+	canvas.width = img.width;
+	canvas.height = img.height;
+	ctx.canvas.width = img.width;
+	ctx.canvas.height = img.height;
+	wd = img.width;
+	hg = img.height;
+	
+	var imageContext = canvas.getContext('2d');
+	imageContext.drawImage(img, 0, 0);
+	referenceImageData = imageContext.getImageData(0, 0, canvas.width, canvas.height);
+	
+	Evolve();
+}
+function Uint8ArrayToBase64String(uint8Array) {
+	var nMod3 = '';
+	var sB64Enc = '';
+	
+	function uint6ToB64(n) { return n<26?n+65:n<52?n+71:n<62?n-4:n===62?43:n===63?47:65;}
+	
+	for (var nLen = uint8Array.length, nUint24 = 0, nIdx = 0; nIdx < nLen; nIdx++)
+	{
+		nMod3 = nIdx % 3;
+		//if (nIdx > 0 && (nIdx * 4 / 3) % 76 === 0) { sB64Enc += "\r\n"; }
+		nUint24 |= uint8Array[nIdx] << (16 >>> nMod3 & 24);
+		
+		if (nMod3 === 2 || uint8Array.length - nIdx === 1)
+		{
+			var a = uint6ToB64(nUint24 >>> 18 & 63);
+			var b = uint6ToB64(nUint24 >>> 12 & 63);
+			var c = uint6ToB64(nUint24 >>> 06 & 63);
+			var d = uint6ToB64(nUint24 >>> 00 & 63);
+			sB64Enc += String.fromCharCode(a, b, c, d);
+			nUint24 = 0;
+		}
+	}
+	
+	return sB64Enc.replace(/A(?=A$|$)/g, "=");
+}
+
+function CompareImageData(a, b) {
+	
+	var totaldiff = 0;
+	
+	for (var y = 0; y < a.height; y++)
+	{
+		for (var x = 0; x < a.width; x++)
+		{
+			var index = (y * a.width + x) * 4;
+			
+			var diff = 0;
+			diff += (a.data[index + 0] - b.data[index + 0]) * (a.data[index + 0] - b.data[index + 0]);
+			diff += (a.data[index + 1] - b.data[index + 1]) * (a.data[index + 1] - b.data[index + 1]);
+			diff += (a.data[index + 2] - b.data[index + 2]) * (a.data[index + 2] - b.data[index + 2]);
+			totaldiff += diff;
+		}
+	}
+	
+	return totaldiff;
+}
+
+function InitTriangles(n, wd, hg) {
+	
+	var triangles = [];
+	
+	for (var i = 0; i < n; i++)
+	{
+		var t = {};
+		t.x0 = Math.random() * wd;
+		t.y0 = Math.random() * hg;
+		t.x1 = Math.random() * wd;
+		t.y1 = Math.random() * hg;
+		t.x2 = Math.random() * wd;
+		t.y2 = Math.random() * hg;
+		t.r = Math.floor(Math.random() * 255, 1);
+		t.g = Math.floor(Math.random() * 255, 1);
+		t.b = Math.floor(Math.random() * 255, 1);
+		t.a = Math.random();
+		triangles.push(t);
+	}
+	
+	return triangles;
+}
+function Draw(ctx, data) {
+	
+	ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+	
+	for (var i = 0; i < data.length; i++)
+	{
+		var o = data[i];
+		ctx.fillStyle = '#' + o.color;
+		ctx.globalAlpha = o.alpha;
+		ctx.fill(new Path2D(o.path));
+	}
+}
+
+function HillClimb(t) {
+	var d = 10;
+	var c = 5;
+	var b = 0.05;
+	var n = {};
+	n.x0 = Math.min(wd, Math.max(0, t.x0 - d / 2 + Math.random() * d));
+	n.y0 = Math.min(hg, Math.max(0, t.y0 - d / 2 + Math.random() * d));
+	n.x1 = Math.min(wd, Math.max(0, t.x1 - d / 2 + Math.random() * d));
+	n.y1 = Math.min(hg, Math.max(0, t.y1 - d / 2 + Math.random() * d));
+	n.x2 = Math.min(wd, Math.max(0, t.x2 - d / 2 + Math.random() * d));
+	n.y2 = Math.min(hg, Math.max(0, t.y2 - d / 2 + Math.random() * d));
+	n.r = Math.min(255, Math.max(0, Math.floor(t.r - c / 2 + Math.random() * c, 1)));
+	n.g = Math.min(255, Math.max(0, Math.floor(t.g - c / 2 + Math.random() * c, 1)));
+	n.b = Math.min(255, Math.max(0, Math.floor(t.b - c / 2 + Math.random() * c, 1)));
+	n.a = Math.min(1, Math.max(0, Math.floor(t.a - b / 2 + Math.random() * b, 1)));
+	return n;
+}
+
+function Evolve() {
+	
+	var population = [];
+	
+	for (var i = 0; i < populationSize; i++)
+	{
+		var triangles = InitTriangles(nTriangles, ctx.canvas.width, ctx.canvas.height);
+		population.push(triangles);
+	}
+	
+	var workingCanvas = document.createElement('canvas');
+	workingCanvas.width = ctx.canvas.width;
+	workingCanvas.height = ctx.canvas.height;
+	var workingCtx = workingCanvas.getContext('2d');
+	
+	for (var i = 0; i < reps; i++)
+	{
+		var fitnesses = [];
+		var minFitness = +Infinity;
+		var minIndex = null;
+		
+		for (var k = 0; k < population.length; k++)
+		{
+			DrawTriangles(workingCtx, population[k]);
+			var imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
+			var fitness = CompareImageData(imageData, referenceImageData);
+			fitnesses.push(fitness);
+			
+			if (fitness < minFitness)
+			{
+				minFitness = fitness;
+				minIndex = k;
+			}
+		}
+		
+		var winningSet = population[minIndex];
+		Draw(ctx, winningSet);
+		document.getElementById('counter').innerText = i.toString();
+		
+		var newpop = [];
+		
+		for (var k = 0; k < populationSize; k++)
+		{
+			var newset = [];
+			
+			for (var j = 0; j < nTriangles; j++)
+			{
+				var doMutate = Math.random() < 0.5;
+				
+				if (doMutate)
+				{
+					newset.push(HillClimb(winningSet[j]));
+				}
+				else
+				{
+					newset.push(winningSet[j]);
+				}
+			}
+			
+			newpop.push(newset);
+		}
+		
+		population = newpop;
+	}
+}
+
+</script>
+</body>
+</html>
+
