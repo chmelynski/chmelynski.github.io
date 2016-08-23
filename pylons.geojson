@@ -77,7 +77,7 @@
    "properties" : { "name" : "Bettis Atomic Power Laboratory" , "notes" : "nuclear propulsion for the navy" , "owner" : "Department of Energy" , "operator" : "Bechtel Corporation" },
    "geometry": { "type" : "Point" , "coordinates" : [ -79.897548 , 40.359066 ]}},
  { "type" : "Feature",
-   "properties" : { "name" : "National Energy Technology Laboratory" , "owner" : "Department of Energy" },
+   "properties" : { "name" : "National Energy Technology Laboratory" , "owner" : "Department of Energy" , "notes" : "NIOSH - Occupational Safety Research, mostly relating to mines" },
    "geometry": { "type" : "Point" , "coordinates" : [ -79.975216 , 40.303806 ]}}
 ]}
 
