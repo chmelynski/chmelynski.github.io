@@ -1,5 +1,14 @@
-{ "type" : "FeatureCollection" , "features" : [
- { "type" : "Feature" , "properties" : { "type" : "railroad" } , "geometry" : { "type" : "LineString" , "coordinates" : [
-  [ -80.035805 , 40.303946 ],
-  [ -79.916962 , 40.252848 ]]}}}
-  
+{ "type" : "FeatureCollection" ,
+  "features" : [
+    { "type" : "Feature" ,
+      "properties" : { "type" : "railroad" } ,
+      "geometry" : { 
+        "type" : "LineString" , "coordinates" : [
+          [ -80.035805 , 40.303946 ],
+          [ -79.916962 , 40.252848 ]
+      ]
+     }
+    }
+  ]
+}
+
