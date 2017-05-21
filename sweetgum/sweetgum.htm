@@ -1,0 +1,73 @@
+
+<html>
+<head>
+<script src="sweetgum.js"></script>
+<style>
+canvas:focus { outline: none; }
+</style>
+</head>
+<body>
+
+<button onclick="Upload()">Upload</button>
+<button onclick="Download()">Download</button>
+<div><canvas id="canvas" width="1000" height="500" tabIndex="1"></canvas></div>
+
+<script>
+
+function Upload() {
+	
+	var fileChooser = document.createElement('input');
+	fileChooser.type = 'file';
+	
+	fileChooser.onchange = function() {
+		var fileReader = new FileReader();
+		fileReader.onload = function(event) {
+			var text = event.target.result;
+			data = JSON.parse(text);
+			tree = new Sweetgum.Tree(ctx, data, options);
+		};
+		fileReader.readAsText(fileChooser.files[0]);
+	};
+	
+	fileChooser.click();
+}
+function Download() {
+	
+	var blob = new Blob([JSON.stringify(data)],{type:'text/json'});
+	var fileReader = new FileReader();
+	
+	fileReader.onload = function(event) {
+		var a = document.createElement('a');
+		a.href = event.target.result;
+		a.download = 'filename';
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+	};
+	
+	fileReader.readAsDataURL(blob);
+}
+
+var ctx = document.getElementById('canvas').getContext('2d');
+ctx.canvas.focus();
+
+var data = {a:'foo',b:[{a:'foo'},'baz'],c:['bar','baz']};
+
+var options = {
+	top: 20,
+	left: 50,
+	indent: 20,
+	handleRadius: 5,
+	textMargin: 15,
+	twigHeight: 15,
+	maxVisible: 30,
+	font: '10pt Courier New',
+	drawHandle: null
+};
+
+var tree = new Sweetgum.Tree(ctx, data, options);
+
+</script>
+</body>
+</html>
+
