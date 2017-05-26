@@ -33,7 +33,7 @@ function Upload() {
 }
 function Download() {
 	
-	var blob = new Blob([JSON.stringify(data)],{type:'text/json'});
+	var blob = new Blob([JSON.stringify(tree.data)],{type:'text/json'});
 	var fileReader = new FileReader();
 	
 	fileReader.onload = function(event) {

@@ -30,12 +30,13 @@ Shift+Alt+Left = close grandchildren
 Ctrl+Shift+Alt+Right = open grandchildren and descendants
 Ctrl+Shift+Alt+Left = close grandchildren and descendants
 
-Alt+Up = add prev sibling (TODO)
-Alt+Down = add next sibling (TODO)
-Alt+Left = add parent (TODO)
-Alt+Right = add first child (TODO)
-Ctrl+Alt+Up = move before prev sibling (and switch array indexes) (TODO)
-Ctrl+Alt+Down = move after next sibling (and switch array indexes) (TODO)
+Alt+Up = add prev sibling
+Alt+Down = add next sibling
+Alt+Left = add object parent
+Alt+Shift+Left = add array parent
+Alt+Right = add first child
+Shift+Alt+Up = move before prev sibling
+Shift+Alt+Down = move after next sibling
 
 Shift+Scroll = 1
 Scroll = 10
@@ -61,7 +62,7 @@ var Sweetgum;
             this.twigHeight = options.twigHeight ? options.twigHeight : 15;
             this.maxVisible = options.maxVisible ? options.maxVisible : Math.floor((ctx.canvas.height - this.tp) / this.twigHeight);
             this.font = options.font ? options.font : '10pt Courier New';
-            this.drawHandle = options.drawHandle ? options.drawHandle : DrawHandle;
+            this.drawHandle = options.drawHandle ? options.drawHandle : DrawHandle2;
             this.root = Tree.JsonToTwigRec(data);
             this.cursor = this.root;
             this.closer = null;
@@ -196,10 +197,11 @@ var Sweetgum;
             // we can't do anything on focus or blur because we blur the canvas when we move focus to the edit input
             canvas.onfocus = function (e) { };
             canvas.onblur = function (e) { };
-            canvas.onmousewheel = function (wheelEvent) {
+            canvas.onwheel = function (wheelEvent) {
                 wheelEvent.preventDefault();
                 wheelEvent.stopPropagation();
-                var clicks = -wheelEvent.wheelDelta / 120;
+                //const clicks = -wheelEvent.wheelDelta / 120;
+                var clicks = (wheelEvent.deltaY > 0) ? 1 : -1;
                 // Shift+Scroll = 1, Scroll = 10, Ctrl+Scroll = 100, Ctrl+Shift+Scroll = 1000, Ctrl+Shift+Alt+Scroll = 10000
                 var multiplier = (ctrl && shift && alt) ? 10000 : ((ctrl && shift) ? 1000 : (ctrl ? 100 : (shift ? 1 : 10)));
                 var offset = clicks * multiplier;
@@ -246,6 +248,7 @@ var Sweetgum;
                 var key = e.keyCode;
                 var letter = e.key;
                 var selected = tree.selected;
+                var sel = tree.selected;
                 e.preventDefault();
                 e.stopPropagation();
                 if (key == 16) {
@@ -260,6 +263,39 @@ var Sweetgum;
                 else if (key == 9) {
                 }
                 else if (key == 27) {
+                }
+                else if (key == 46) {
+                    if (tree.root == sel) {
+                        return;
+                    }
+                    var prev = sel.prev();
+                    var parentType = Object.prototype.toString.apply(sel.obj);
+                    var obj = sel.obj;
+                    if (sel.parent.firstChild == sel) {
+                        sel.parent.firstChild = sel.nextSibling;
+                    }
+                    if (sel.parent.lastChild == sel) {
+                        sel.parent.lastChild = sel.prevSibling;
+                    }
+                    if (sel.prevSibling !== null) {
+                        sel.prevSibling.nextSibling = sel.nextSibling;
+                    }
+                    if (sel.nextSibling !== null) {
+                        sel.nextSibling.prevSibling = sel.prevSibling;
+                    }
+                    if (parentType == '[object Object]') {
+                        delete obj[sel.key];
+                    }
+                    else if (parentType == '[object Array]') {
+                        obj.splice(parseInt(sel.key), 1);
+                    }
+                    if (parentType == '[object Array]') {
+                        sel.parent.rekey();
+                    }
+                    tree.selected = prev;
+                    tree.determineCloser();
+                    tree.calcVisible();
+                    tree.draw();
                 }
                 else if (key == 32) {
                     var editVal_1 = !shift;
@@ -304,10 +340,45 @@ var Sweetgum;
                             var text = input_1.value;
                             var twig = tree.selected;
                             if (editVal_1) {
-                                twig.obj[twig.key] = JSON.parse(text);
+                                var val = JSON.parse(text);
+                                var type = Object.prototype.toString.apply(val);
+                                if (type == '[object Object]' || type == '[object Array]') {
+                                    var newtwig_1 = Tree.JsonToTwigRec(val);
+                                    if (tree.root == twig) {
+                                        tree.root = newtwig_1;
+                                        tree.cursor = newtwig_1;
+                                        tree.data = val;
+                                    }
+                                    else {
+                                        newtwig_1.obj = twig.obj;
+                                        newtwig_1.key = twig.key;
+                                        if (twig.parent.firstChild == twig) {
+                                            twig.parent.firstChild = newtwig_1;
+                                        }
+                                        if (twig.parent.lastChild == twig) {
+                                            twig.parent.lastChild = newtwig_1;
+                                        }
+                                        if (twig.prevSibling !== null) {
+                                            twig.prevSibling.nextSibling = newtwig_1;
+                                        }
+                                        if (twig.nextSibling !== null) {
+                                            twig.nextSibling.prevSibling = newtwig_1;
+                                        }
+                                        newtwig_1.parent = twig.parent;
+                                        newtwig_1.prevSibling = twig.prevSibling;
+                                        newtwig_1.nextSibling = twig.nextSibling;
+                                        newtwig_1.obj[newtwig_1.key] = val;
+                                    }
+                                    tree.selected = newtwig_1;
+                                }
+                                else {
+                                    if (tree.root != twig) {
+                                        twig.obj[twig.key] = val;
+                                    } // you can't make the root a primitive value, deal with it
+                                }
                             }
                             else {
-                                if (text != twig.key && !twig.obj[text]) {
+                                if (!twig.obj[text]) {
                                     var val = twig.obj[twig.key];
                                     delete twig.obj[twig.key];
                                     twig.obj[text] = val;
@@ -315,8 +386,12 @@ var Sweetgum;
                                 }
                             }
                             ctx.canvas.focus();
+                            shift = false;
+                            ctrl = false;
+                            alt = false;
                             e.preventDefault();
                             e.stopPropagation();
+                            tree.determineCloser();
                             tree.calcVisible();
                             tree.draw();
                         }
@@ -328,79 +403,311 @@ var Sweetgum;
                     tree.scrollBy(direction * offset);
                 }
                 else if (key == 37 || key == 39) {
-                    var open_1 = (key == 39); // right = open
-                    if (!shift && !alt && !ctrl && !open_1 && (!selected.open || selected.type == 2 /* Primitive */)) {
-                        if (tree.selected.parent !== null) {
-                            tree.selected = tree.selected.parent;
-                            CheckUnderflow();
+                    if (alt) {
+                        if (key == 37) {
+                            if (sel == tree.root) {
+                                return;
+                            } // we could do something with this although i don't know what
+                            var newparent = new Twig();
+                            newparent.parent = sel.parent;
+                            newparent.firstChild = sel;
+                            newparent.lastChild = sel;
+                            newparent.prevSibling = sel.prevSibling;
+                            newparent.nextSibling = sel.nextSibling;
+                            newparent.open = true;
+                            newparent.obj = sel.obj;
+                            newparent.key = sel.key;
+                            if (sel.parent.firstChild == sel) {
+                                sel.parent.firstChild = newparent;
+                            }
+                            if (sel.parent.lastChild == sel) {
+                                sel.parent.lastChild = newparent;
+                            }
+                            if (sel.prevSibling !== null) {
+                                sel.prevSibling.nextSibling = newparent;
+                            }
+                            if (sel.nextSibling !== null) {
+                                sel.nextSibling.prevSibling = newparent;
+                            }
+                            if (shift) {
+                                newparent.type = 1 /* Array */;
+                                var newarr = [];
+                                var temp = sel.obj[sel.key];
+                                sel.obj[sel.key] = newarr;
+                                newarr[0] = temp;
+                                sel.key = '0';
+                                sel.obj = newarr;
+                            }
+                            else {
+                                newparent.type = 0 /* Object */;
+                                var newobj = {};
+                                var temp = sel.obj[sel.key];
+                                sel.obj[sel.key] = newobj;
+                                newobj[''] = temp;
+                                sel.key = '';
+                                sel.obj = newobj;
+                            }
+                            sel.parent = newparent;
+                            sel.prevSibling = null;
+                            sel.nextSibling = null;
                         }
-                    }
-                    else if (!shift && !alt && !ctrl && open_1 && selected.open) {
-                        var next = tree.selected.next();
-                        if (next !== null) {
-                            tree.selected = next;
-                            CheckOverflow();
+                        else if (key == 39) {
+                            var obj = ((tree.root == sel) ? tree.data : sel.obj[sel.key]);
+                            var seltype = Object.prototype.toString.apply(obj);
+                            var newchild = new Twig();
+                            newchild.type = 2 /* Primitive */;
+                            newchild.parent = sel;
+                            newchild.firstChild = null;
+                            newchild.lastChild = null;
+                            newchild.prevSibling = null;
+                            newchild.nextSibling = sel.firstChild;
+                            newchild.open = true;
+                            newchild.obj = obj;
+                            if (seltype == '[object Object]') {
+                                if (obj[''] !== undefined) {
+                                    return;
+                                } // bail if the empty string is already a key
+                                newchild.key = '';
+                                obj[''] = null;
+                            }
+                            else if (seltype == '[object Array]') {
+                                obj.unshift(null);
+                            }
+                            else {
+                                return; // sel must represent an object or array
+                            }
+                            if (sel.firstChild !== null) {
+                                sel.firstChild.prevSibling = newchild;
+                            }
+                            sel.firstChild = newchild;
+                            if (sel.lastChild === null) {
+                                sel.lastChild = newchild;
+                            }
+                            if (seltype == '[object Array]') {
+                                sel.rekey();
+                            }
                         }
+                        tree.determineCloser();
+                        tree.calcVisible();
+                        tree.draw();
                     }
                     else {
-                        Toggle(selected, open_1);
-                    }
-                }
-                else if (key == 38 || key == 40) {
-                    // Up = move cursor up (in display order)
-                    // Down = move cursor down (in display order)
-                    // Shift+Up = move cursor to prev sibling 
-                    // Shift+Down = move cursor to next sibling
-                    // Ctrl+Up = move cursor to parent
-                    // Ctrl+Down = ?? (TODO)
-                    // Ctrl+Shift+Up = move cursor to root
-                    // Ctrl+Shift+Down = move cursor to bookmark? (TODO)
-                    // Alt+Up = add prev sibling (TODO)
-                    // Alt+Down = add next sibling (TODO)
-                    if (key == 38) {
-                        if (ctrl && shift) {
-                            tree.selected = tree.root;
-                        }
-                        else if (ctrl) {
+                        var open_1 = (key == 39); // right = open
+                        if (!shift && !alt && !ctrl && !open_1 && (!selected.open || selected.type == 2 /* Primitive */)) {
                             if (tree.selected.parent !== null) {
                                 tree.selected = tree.selected.parent;
+                                CheckUnderflow();
                             }
                         }
-                        else if (shift) {
-                            if (tree.selected.prevSibling) {
-                                tree.selected = tree.selected.prevSibling;
-                            }
-                        }
-                        else if (alt) {
-                        }
-                        else {
-                            var prev = tree.selected.prev();
-                            if (prev !== null) {
-                                tree.selected = prev;
-                            }
-                        }
-                        CheckUnderflow();
-                    }
-                    else if (key == 40) {
-                        if (ctrl && shift) {
-                        }
-                        else if (ctrl) {
-                        }
-                        else if (shift) {
-                            if (tree.selected.nextSibling) {
-                                tree.selected = tree.selected.nextSibling;
-                            }
-                        }
-                        else if (alt) {
-                        }
-                        else {
+                        else if (!shift && !alt && !ctrl && open_1 && selected.open) {
                             var next = tree.selected.next();
                             if (next !== null) {
                                 tree.selected = next;
+                                CheckOverflow();
                             }
                         }
-                        CheckOverflow();
+                        else {
+                            Toggle(selected, open_1);
+                        }
                     }
+                }
+                else if (key == 38) {
+                    if (ctrl && shift) {
+                        tree.selected = tree.root;
+                    }
+                    else if (shift && alt) {
+                        if (tree.root == sel || sel.prevSibling === null) {
+                            return;
+                        }
+                        var obj = sel.obj;
+                        var parentType = Object.prototype.toString.apply(obj);
+                        var pre = sel.prevSibling;
+                        if (sel.parent.firstChild == pre) {
+                            sel.parent.firstChild = sel;
+                        }
+                        if (sel.parent.lastChild == sel) {
+                            sel.parent.lastChild = pre;
+                        }
+                        if (pre.prevSibling !== null) {
+                            pre.prevSibling.nextSibling = sel;
+                        }
+                        if (sel.nextSibling !== null) {
+                            sel.nextSibling.prevSibling = pre;
+                        }
+                        pre.nextSibling = sel.nextSibling;
+                        sel.nextSibling = pre;
+                        sel.prevSibling = pre.prevSibling;
+                        pre.prevSibling = sel;
+                        if (parentType == '[object Array]') {
+                            var temp = obj[sel.key];
+                            obj[sel.key] = obj[pre.key];
+                            obj[pre.key] = temp;
+                            var tempKey = sel.key;
+                            sel.key = pre.key;
+                            pre.key = tempKey;
+                        }
+                        tree.determineCloser();
+                        tree.calcVisible();
+                        tree.draw();
+                        return; // skip over the CheckUnderflow below
+                    }
+                    else if (ctrl) {
+                        if (tree.selected.parent !== null) {
+                            tree.selected = tree.selected.parent;
+                        }
+                    }
+                    else if (shift) {
+                        if (tree.selected.prevSibling) {
+                            tree.selected = tree.selected.prevSibling;
+                        }
+                    }
+                    else if (alt) {
+                        if (sel == tree.root) {
+                            return;
+                        }
+                        var parentType = Object.prototype.toString.apply(sel.obj);
+                        var obj = sel.obj;
+                        var newtwig = new Twig();
+                        newtwig.type = 2 /* Primitive */;
+                        newtwig.parent = sel.parent;
+                        newtwig.firstChild = null;
+                        newtwig.lastChild = null;
+                        newtwig.prevSibling = sel.prevSibling;
+                        newtwig.nextSibling = sel;
+                        newtwig.open = true;
+                        newtwig.obj = obj;
+                        if (parentType == '[object Object]') {
+                            if (obj[''] !== undefined) {
+                                return;
+                            } // bail if the empty string is already a key
+                            newtwig.key = '';
+                            obj[''] = null;
+                        }
+                        else if (parentType == '[object Array]') {
+                            obj.splice(parseInt(sel.key), 0, null);
+                        }
+                        else {
+                            return; // sel must represent an object or array
+                        }
+                        if (sel.parent.firstChild == sel) {
+                            sel.parent.firstChild = newtwig;
+                        }
+                        if (sel.prevSibling !== null) {
+                            sel.prevSibling.nextSibling = newtwig;
+                        }
+                        sel.prevSibling = newtwig;
+                        if (parentType == '[object Array]') {
+                            sel.parent.rekey();
+                        }
+                        tree.determineCloser();
+                        tree.calcVisible();
+                        tree.draw();
+                        return; // skip over the CheckUnderflow below
+                    }
+                    else {
+                        var prev_1 = tree.selected.prev();
+                        if (prev_1 !== null) {
+                            tree.selected = prev_1;
+                        }
+                    }
+                    CheckUnderflow();
+                }
+                else if (key == 40) {
+                    if (ctrl && shift) {
+                    }
+                    else if (shift && alt) {
+                        if (tree.root == sel || sel.nextSibling === null) {
+                            return;
+                        }
+                        var obj = sel.obj;
+                        var parentType = Object.prototype.toString.apply(obj);
+                        var nxt = sel.nextSibling;
+                        if (sel.parent.firstChild == sel) {
+                            sel.parent.firstChild = nxt;
+                        }
+                        if (sel.parent.lastChild == nxt) {
+                            sel.parent.lastChild = sel;
+                        }
+                        if (sel.prevSibling !== null) {
+                            sel.prevSibling.nextSibling = nxt;
+                        }
+                        if (nxt.nextSibling !== null) {
+                            nxt.nextSibling.prevSibling = sel;
+                        }
+                        sel.nextSibling = nxt.nextSibling;
+                        nxt.nextSibling = sel;
+                        nxt.prevSibling = sel.prevSibling;
+                        sel.prevSibling = nxt;
+                        if (parentType == '[object Array]') {
+                            var temp = obj[sel.key];
+                            obj[sel.key] = obj[nxt.key];
+                            obj[nxt.key] = temp;
+                            var tempKey = sel.key;
+                            sel.key = nxt.key;
+                            nxt.key = tempKey;
+                        }
+                        tree.determineCloser();
+                        tree.calcVisible();
+                        tree.draw();
+                        return; // skip over the CheckOverflow below
+                    }
+                    else if (ctrl) {
+                    }
+                    else if (shift) {
+                        if (tree.selected.nextSibling) {
+                            tree.selected = tree.selected.nextSibling;
+                        }
+                    }
+                    else if (alt) {
+                        if (sel == tree.root) {
+                            return;
+                        }
+                        var parentType = Object.prototype.toString.apply(sel.obj);
+                        var obj = sel.obj;
+                        var newtwig = new Twig();
+                        newtwig.type = 2 /* Primitive */;
+                        newtwig.parent = sel.parent;
+                        newtwig.firstChild = null;
+                        newtwig.lastChild = null;
+                        newtwig.prevSibling = sel;
+                        newtwig.nextSibling = sel.nextSibling;
+                        newtwig.open = true;
+                        newtwig.obj = obj;
+                        if (parentType == '[object Object]') {
+                            if (obj[''] !== undefined) {
+                                return;
+                            } // bail if the empty string is already a key
+                            newtwig.key = '';
+                            obj[''] = null;
+                        }
+                        else if (parentType == '[object Array]') {
+                            obj.splice(parseInt(sel.key) + 1, 0, null);
+                        }
+                        else {
+                            return; // sel must represent an object or array
+                        }
+                        if (sel.parent.lastChild == sel) {
+                            sel.parent.lastChild = newtwig;
+                        }
+                        if (sel.nextSibling !== null) {
+                            sel.nextSibling.prevSibling = newtwig;
+                        }
+                        sel.nextSibling = newtwig;
+                        if (parentType == '[object Array]') {
+                            sel.parent.rekey();
+                        }
+                        tree.determineCloser();
+                        tree.calcVisible();
+                        tree.draw();
+                        return; // skip over the CheckOverflow below
+                    }
+                    else {
+                        var next = tree.selected.next();
+                        if (next !== null) {
+                            tree.selected = next;
+                        }
+                    }
+                    CheckOverflow();
                 }
             };
         };
@@ -604,6 +911,14 @@ var Sweetgum;
             }
             return grandchildren;
         };
+        Twig.prototype.rekey = function () {
+            // done to arrays after we prepend/delete a child
+            var twig = this;
+            var children = twig.children();
+            for (var i = 0; i < children.length; i++) {
+                children[i].key = i.toString();
+            }
+        };
         return Twig;
     }());
     var VisibleTwig = (function () {
@@ -650,5 +965,26 @@ var Sweetgum;
                 ctx.stroke();
             }
         }
+    }
+    function DrawHandle2(ctx, tree, twig, cx, cy) {
+        var selected = (twig == tree.selected);
+        var plus = (twig.firstChild !== null && !twig.open);
+        var minus = (twig.firstChild !== null);
+        var imageData = ctx.createImageData(15, 15);
+        for (var i = 0; i < 15; i++) {
+            for (var j = 0; j < 15; j++) {
+                var index = (i * imageData.width + j) * 4;
+                var black = (selected && (i == 0 || j == 0 || i == 14 || j == 14) && (((i + j + 1) % 2) == 1)) ||
+                    ((j == 2 || j == 12) && i >= 2 && i <= 12) || ((i == 2 || i == 12) && j >= 2 && j <= 12) ||
+                    (plus && j == 7 && i >= 5 && i <= 9) ||
+                    (minus && i == 7 && j >= 5 && j <= 9); // minus
+                var color = (black ? 0 : 255);
+                imageData.data[index + 0] = color;
+                imageData.data[index + 1] = color;
+                imageData.data[index + 2] = color;
+                imageData.data[index + 3] = 255;
+            }
+        }
+        ctx.putImageData(imageData, cx - 7, cy - 7);
     }
 })(Sweetgum || (Sweetgum = {}));
