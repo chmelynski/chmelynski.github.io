@@ -1,6 +1,6 @@
 <html>
 <head>
-<link rel="stylesheet" href="../code/codemirror-5.0.css" />
+<!-- <link rel="stylesheet" href="../code/codemirror-5.0.css" /> -->
 <style>
 
 .CodeMirror { border: 1px solid gray; cursor: text; height: 550px; }
@@ -22,15 +22,16 @@
 </head>
 <body>
 
+	<!--
 <script src="../jquery-1.10.2.min.js"></script>
 <script src="../code/codemirror-5.0.js"></script>
 <script src="../code/codemirror-5.0-javascript.js"></script>
 
-<script src="../assets.js"></script>
+<script src="../assets.js"></script> -->
 <script src='grid.js'></script>
 
 <div style="margin: 1em">
-<button onclick="RunCode()">Run Code</button>
+<!-- <button onclick="RunCode()">Run Code</button> -->
 <input type="file" multiple onchange="LoadAssets(this.files, OnLoad)">
 <button onclick='Download("tsv")'>Download TSV</button>
 <button onclick='Upload("tsv")'>Upload TSV</button>
@@ -456,10 +457,10 @@ var params = {
 
 RandomData();
 
-var codemirror = InitCodemirror(document.getElementById('codemirror'), '');
+//var codemirror = InitCodemirror(document.getElementById('codemirror'), '');
 
-document.getElementById('container').addEventListener('keydown', function(e) { if (e.keyCode == 27) { SwitchTabs(); } });
-document.getElementById('codemirror').addEventListener('keydown', function(e) { if (e.keyCode == 27) { SwitchTabs(); } });
+//document.getElementById('container').addEventListener('keydown', function(e) { if (e.keyCode == 27) { SwitchTabs(); } });
+//document.getElementById('codemirror').addEventListener('keydown', function(e) { if (e.keyCode == 27) { SwitchTabs(); } });
 
 var div = document.getElementById('container');
 var grid = new Eyeshade.Grid(params, div);
