@@ -1,0 +1,471 @@
+<html>
+<head>
+<link rel="stylesheet" href="../code/codemirror-5.0.css" />
+<style>
+
+.CodeMirror { border: 1px solid gray; cursor: text; height: 550px; }
+
+.grid-column-row { margin: 1em 0 0 0.5em; }
+.grid-column-row input { margin-left: 0.5em; }
+.grid-column-row button { margin-left: 0.5em; }
+
+.grid-column-header { margin: 1em 0 0 0; }
+.grid-column-header span { font-weight: bold; text-align: center; }
+.grid-column-header span:nth-child(1) { margin-left: 5em; }
+.grid-column-header span:nth-child(2) { margin-left: 5em; }
+.grid-column-header span:nth-child(3) { margin-left: 5em; }
+.grid-column-header span:nth-child(4) { margin-left: 5em; }
+.grid-column-header span:nth-child(5) { margin-left: 5em; }
+.grid-column-header span:nth-child(6) { margin-left: 5em; }
+
+</style>
+</head>
+<body>
+
+<script src="../jquery-1.10.2.min.js"></script>
+<script src="../code/codemirror-5.0.js"></script>
+<script src="../code/codemirror-5.0-javascript.js"></script>
+
+<script src="../assets.js"></script>
+<script src='grid.js'></script>
+
+<div style="margin: 1em">
+<button onclick="RunCode()">Run Code</button>
+<input type="file" multiple onchange="LoadAssets(this.files, OnLoad)">
+<button onclick='Download("tsv")'>Download TSV</button>
+<button onclick='Upload("tsv")'>Upload TSV</button>
+<button onclick='Download("json")'>Download JSON</button>
+<button onclick='Upload("json")'>Upload JSON</button>
+<span id="debug"></span>
+</div>
+
+<div id="codemirror" tabIndex="1" style="margin: 1em; display: none;"></div>
+<div id="container" style="position: absolute; top: 3em; left: 2em; width: 80em; height: 35em;"></div>
+
+<div id="cells-container"></div> <!-- this is for the scrollTop fiddling -->
+<div id="ui-container"></div>
+
+<script>
+
+var assets = null;
+function OnLoad(assetmap) { assets = assetmap; }
+
+function Upload(format) {
+	
+	var fileChooser = document.createElement('input');
+	fileChooser.type = 'file';
+	
+	fileChooser.onchange = function() {
+		
+		var fileReader = new FileReader();
+		
+		fileReader.onload = function(event) {
+			
+			var text = event.target.result;
+			
+			var objs = null;
+			var headers = null;
+			
+			if (format == 'json')
+			{
+				objs = JSON.parse(text);
+				headers = [];
+				for (var key in objs[0]) { headers.push(key); }
+			}
+			else if (format == 'tsv')
+			{
+				var matrix = text.trim().split('\n').map(function(line) { return line.split('\t'); });
+				
+				headers = matrix[0];
+				
+				var objs = [];
+				
+				for (var i = 1; i < matrix.length; i++)
+				{
+					var obj = {};
+					
+					for (var k = 0; k < matrix[i].length; k++)
+					{
+						obj[headers[k]] = matrix[i][k];
+					}
+					
+					objs.push(obj);
+				}
+			}
+			
+			data.headers = headers;
+			data.data = objs;
+			grid.columnParams = data.headers.map(function(header) { return { header: header, visible: true, width: 64, formula: '', format: null, style: null }; });
+			grid.resetData();
+		};
+		
+		fileReader.readAsText(fileChooser.files[0]);
+	};
+	
+	fileChooser.click();
+}
+function Download(format) {
+	
+	var text = grid.writeData(format);
+	var blob = new Blob([text],{type:'text/plain'});
+	var fileReader = new FileReader();
+	
+	fileReader.onload = function(event) {
+		var a = document.createElement('a');
+		a.href = event.target.result;
+		a.download = 'filename.' + format;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+	};
+	
+	fileReader.readAsDataURL(blob);
+}
+
+function RunCode() { (new Function('', codemirror.getValue()))(); }
+function InitCodemirror(div, code) {
+	
+	var textarea = document.createElement('textarea');
+	div.appendChild(textarea);
+	
+	var options = {
+		//smartIndent: true,
+		lineNumbers: true,
+		lineWrapping: true,
+		//foldGutter: true,
+		//tabSize: 2,
+		//indentUnit: 2,
+		//indentWithTabs: true,
+		//gutters: ['CodeMirror-linenumbers','CodeMirror-foldgutter'],
+		//extraKeys: {'Ctrl-Q': function(cm) { cm.foldCode(cm.getCursor()); }},
+		mode: 'javascript'
+	};
+	
+	var cm = CodeMirror.fromTextArea(textarea, options);
+	
+	//cm.on('change', function() {
+	//	
+	//});
+	//
+	//cm.on('focus', function() {
+	//	
+	//});
+	//
+	//cm.on('blur', function() {
+	//	//doc.setGutterMarker(line: integer|LineHandle, gutterID: string, value: Element)
+	//	diagram.receiveText(cm.getValue(), cm.getCursor().line);
+	//});
+	
+	cm.getDoc().setValue(code);
+	
+	return cm;
+}
+
+var canvasActive = true;
+function SwitchTabs() {
+	
+	if (canvasActive)
+	{
+		document.getElementById('codemirror').style.display = 'block';
+		document.getElementById('container').style.display = 'none';
+		codemirror.refresh();
+		codemirror.focus();
+		canvasActive = false;
+	}
+	else
+	{
+		document.getElementById('codemirror').style.display = 'none';
+		document.getElementById('container').style.display = 'block';
+		document.getElementById('tree').focus();
+		canvasActive = true;
+	}
+}
+
+function DisplayColumnsUi(grid) {
+	
+	var div = document.createElement('div');
+	
+	var rows = document.createElement('div');
+	div.appendChild(rows);
+	
+	var headers = ['name','visible?','width','formula','format','style'];
+	var headerDiv = document.createElement('div');
+	headerDiv.className = 'grid-column-header';
+	for (var i = 0; i < headers.length; i++)
+	{
+		var span = document.createElement('span');
+		span.innerText = headers[i];
+		headerDiv.appendChild(span);
+	}
+	
+	var elt = grid.cols.next;
+	while (elt != grid.cols)
+	{
+		AddRow(elt);
+		elt = elt.next;
+	}
+	
+	var button = document.createElement('button');
+	button.innerText = 'Add Column';
+	button.onclick = AddNewColumn;
+	div.appendChild(button);
+	
+	function AddNewColumn() {
+		
+		var json = {
+			header: 'field0', // need to check for nonduplicates
+			visible: true,
+			width: 64,
+			formula: '',
+			format: '',
+			style: ''
+		};
+		
+		var col = new Col(grid, json, grid.cols.prev.data.index + 1);
+		var elt = grid.cols.add(col, true);
+		AddRow(elt);
+	}
+	
+	function AddRow(elt) {
+		
+		var col = elt.data;
+		
+		var row = document.createElement('div');
+		row.className = 'grid-column-row';
+		rows.appendChild(row);
+		
+		//$('<a type="button" class="reorder-handle btn btn-default btn-sm"><i class="fa fa-arrows-v"></i></a>').css('cursor', 'move').appendTo(row);
+		
+		// placeholder="??"
+		
+		var headerInput = document.createElement('input');
+		headerInput.type = 'text';
+		headerInput.style.width = '10em';
+		headerInput.value = col.header;
+		headerInput.onchange = function(e) {
+			col.header = this.value;
+			// change data fields on underlying objs
+		};
+		row.appendChild(headerInput);
+		
+		var visibleInput = document.createElement('input');
+		visibleInput.type = 'checkbox';
+		visibleInput.checked = col.visible;
+		visibleInput.onchange = function(e) {
+			
+			col.visible = !col.visible;
+			
+			if (col.visible)
+			{
+				var prevCursor = elt.prev;
+				
+				while (prevCursor != grid.cols && !prevCursor.data.visible)
+				{
+					prevCursor = prevCursor.prev;
+				}
+				
+				prevCursor.visibleNext = elt;
+				elt.visiblePrev = prevCursor;
+				
+				var nextCursor = elt.next;
+				
+				while (nextCursor != grid.cols && !nextCursor.data.visible)
+				{
+					nextCursor = nextCursor.next;
+				}
+				
+				nextCursor.visiblePrev = elt;
+				elt.visibleNext = nextCursor;
+			}
+			else
+			{
+				elt.visiblePrev.visibleNext = elt.visibleNext;
+				elt.visibleNext.visiblePrev = elt.visiblePrev;
+				elt.visiblePrev = null;
+				elt.visibleNext = null;
+			}
+		};
+		row.appendChild(visibleInput);
+		
+		var widthInput = document.createElement('input');
+		widthInput.type = 'text';
+		widthInput.style.width = '4em';
+		widthInput.value = col.width;
+		widthInput.onchange = function(e) {
+			col.width = parseInt(this.value);
+		};
+		row.appendChild(widthInput);
+		
+		var formulaInput = document.createElement('input');
+		formulaInput.type = 'text';
+		formulaInput.style.width = '10em';
+		formulaInput.value = col.formula;
+		formulaInput.onchange = function(e) {
+			col.setFormula(this.value);
+			grid.calculate();
+		};
+		row.appendChild(formulaInput);
+		
+		var formatInput = document.createElement('input');
+		formatInput.type = 'text';
+		formatInput.style.width = '10em';
+		formatInput.value = col.format;
+		formatInput.onchange = function(e) {
+			col.setFormat(this.value);
+		};
+		row.appendChild(formatInput);
+		
+		var styleInput = document.createElement('input');
+		styleInput.type = 'text';
+		styleInput.style.width = '10em';
+		styleInput.value = col.style;
+		styleInput.onchange = function(e) {
+			col.setStyle(this.value);
+		};
+		row.appendChild(styleInput);
+		
+		var button = document.createElement('button');
+		button.innerText = 'Delete';
+		button.onclick = function(e) {
+			elt.remove(); // should this go through deleteCols?  in any case, must do the same operations
+			row.remove();
+		};
+		row.appendChild(button);
+	}
+	
+	document.getElementById('ui-container').appendChild(div);
+}
+function DisplayFilterUi() {
+	
+	var div = document.createElement('div');
+	
+	var textarea = document.createElement('textarea');
+	textarea.onblur = function(e) {
+		params.filter = textarea.value;
+		//grid.setFilter(grid.filter);
+	};
+	textarea.value = params.filter;
+	div.appendChild(textarea);
+	
+	container.appendChild(div);
+}
+function DisplayMultisortUi() {
+	
+	var grid = this;
+	
+	var div = $(grid.displayDiv).html('');
+	
+	var rows = $('<div></div>').appendTo(div);
+	
+	$('<div class="grid-column-header"><div></div><div>column</div><div>order</div><div></div></div>').appendTo(rows);
+	
+	var elt = grid.multisort.next;
+	while (elt != grid.multisort)
+	{
+		AddRow(elt);
+		elt = elt.next;
+	}
+	
+	$('<button style="margin:1em" class="btn btn-default btn-sm"><i class="fa fa-plus"></i> Add</button>').on('click', function() {
+		
+		var sortParams = {
+			header: 'field0', // need to check for nonduplicates
+			ascending: true
+		};
+		
+		var elt = grid.multisort.add(sortParams);
+		AddRow(elt);
+		
+	}).appendTo(div);
+	
+	function AddRow(elt) { // : GridLinkedList<SortParams>
+		
+		var row = $('<div class="grid-column-row"></div>').appendTo(rows);
+		
+		$('<a type="button" class="reorder-handle btn btn-default btn-sm"><i class="fa fa-arrows-v"></i></a>').css('cursor', 'move').appendTo(row);
+		
+		var options = grid.cols.enumerate().map(function(col) { return '<option>' + col.header + '</option>'; });
+		
+		$('<select>' + options + '</select>').on('change', function() {
+			elt.data.header = this.value;
+		}).appendTo(row);
+		
+		$('<button class="btn btn-default btn-sm">Toggle</button>').on('click', function() {
+			elt.data.ascending = !elt.data.ascending;
+		}).appendTo(row);
+		
+		$('<button class="btn btn-default btn-sm"><i class="fa fa-trash-o"></i> Delete</button>').on('click', function() {
+			elt.remove();
+			row.remove();
+		}).appendTo(row);
+		
+		rows.sortable({handle: '.reorder-handle', stop: function(event, ui) {
+			
+		}});
+	}
+}
+
+function RandomData() {
+	
+	var rows = 100;
+	var cols = 24;
+	
+	params.data = [];
+	params.headers = [];
+	params.gridParams.columns = [];
+	
+	for (var i = 0; i < cols; i++)
+	{
+		params.headers.push(String.fromCharCode(65 + i));
+		
+		params.gridParams.columns.push({
+			header: String.fromCharCode(65 + i),
+			visible: true,
+			width: 64,
+			formula: '',
+			format: null,
+			style: null
+		});
+	}
+	
+	for (var i = 0; i < rows; i++)
+	{
+		var obj = {};
+		
+		for (var k = 0; k < params.gridParams.columns.length; k++)
+		{
+			obj[params.gridParams.columns[k].header] = Math.floor(Math.random() * 100);
+		}
+		
+		params.data.push(obj);
+	}
+}
+
+var params = {
+	data: [{A:1,B:2,C:3,D:4},{A:5,B:6,C:7,D:8},{A:9,B:10,C:11,D:12}],
+	headers: ['A','B','C','D'],
+	markDirty: function() { },
+	runAfterChange: function() { },
+	gridParams: {
+		filter: '',
+		sort: '',
+		multisort: [],
+		columns: []
+	},
+};
+
+RandomData();
+
+var codemirror = InitCodemirror(document.getElementById('codemirror'), '');
+
+document.getElementById('container').addEventListener('keydown', function(e) { if (e.keyCode == 27) { SwitchTabs(); } });
+document.getElementById('codemirror').addEventListener('keydown', function(e) { if (e.keyCode == 27) { SwitchTabs(); } });
+
+var div = document.getElementById('container');
+var grid = new Eyeshade.Grid(params, div);
+//DisplayColumnsUi(grid);
+
+</script>
+</body>
+</html>
+
