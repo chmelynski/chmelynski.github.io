@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+  <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+  
+  <script src="js/lib/codemirror-5.0.js"></script>
+  <script src="js/lib/codemirror-5.0-langs.js"></script>
+  <script src="js/lib/codemirror-5.0-fold.js"></script>
+  <link rel="stylesheet" href="css/codemirror-5.0.css" />
+  
+  <script src="js/lib/jquery-ui.sortable.min.js"></script>
+  <script src="js/lib/dat.gui.js"></script>
+  <script src="js/lib/markdown.min.js"></script>
+  <script src="js/lib/js-yaml.min.js"></script>
+  <script src="js/lib/jquery.csv.min.js"></script>
+  <script src="js/lib/sprintf.js"></script>
+  
+  <script>var exports = {};</script>
+  
+  <script src="js/components.js"></script>
+  <script src="js/code.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/repl.js"></script>
+  <script src="js/file.js"></script>
+  <script src="js/libs.js"></script>
+  <link rel="stylesheet" href="css/hyperdeck.css" />
+  
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS_HTML'></script>
+  
+  <!-- http://docs.mathjax.org/en/latest/options/hub.html -->
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({tex2jax:{inlineMath:[['$','$'],['\\(','\\)']]},jax:['input/TeX','output/HTML-CSS'],messageStyle:'none',skipStartupTypeset:true,showMathMenu:true,showMathMenuMSIE:true});
+  </script>
+
+</head>
+
+<body class="framed">
+
+  <div class="container-fluid"> 
+  
+    <div class="row" id="documentMenu">
+      <div class="col-sm-4">
+        <div class="btn-group">
+          <button class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <i class="fa fa-cube fa-lg"></i> Add<span class="hidden-xs"> Component</span> <span class="caret"></span>
+          </button>
+            <ul class="dropdown-menu">
+              <li>
+                <a onclick="Hyperdeck.AddComponent('data');">
+                  Data
+                </a>
+              </li>
+              <li>
+                <a onclick="Hyperdeck.AddComponent('js');">
+                  Javascript
+                </a>
+              </li>
+              <li>
+                <a onclick="Hyperdeck.AddComponent('md');">
+                  Markdown
+                </a>
+              </li>
+              <li>
+                <a onclick="Hyperdeck.AddComponent('html');">
+                  HTML
+                </a>
+              </li>
+              <li>
+                <a onclick="Hyperdeck.AddComponent('css');">
+                  CSS
+                </a>
+              </li>
+              <li>
+                <a onclick="Hyperdeck.AddComponent('txt');">
+                  Plain text
+                </a>
+              </li>
+              <li>
+                <a onclick="Hyperdeck.AddComponent('image');">
+                  Image
+                </a>
+              </li>
+              <li>
+                <a onclick="Hyperdeck.AddComponent('binary');">
+                  Binary file
+                </a>
+              </li>
+              <li>
+                <a onclick="Hyperdeck.AddComponent('libraries');">
+                  External libraries
+                </a>
+              </li>
+              <li>
+                <a onclick="Hyperdeck.AddComponent('repl');">
+                  Javascript REPL
+                </a>
+              </li>
+              <li>
+                <a onclick="Hyperdeck.AddComponent('snips');">
+                  Javascript snippets
+                </a>
+              </li>
+            </ul>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <i class="fa fa-wrench fa-lg"></i> Tools <span class="caret"></span>
+          </button>
+            <ul class="dropdown-menu">
+              <li>
+                <a onclick="Hyperdeck.ExportHtml()">
+                  Export document as HTML
+                </a>
+              </li>
+              <li>
+                <a onclick="Hyperdeck.ShowAll()">
+                  Show all components
+                </a>
+              </li>
+              <li>
+                <a onclick="Hyperdeck.HideAll()">
+                  Hide all components
+                </a>
+              </li>
+              
+            </ul>
+        </div>
+      </div>
+      <div class="col-sm-4">
+        <div class="btn-group btn-group" role="tablist" id="ui-toggle">
+          <button class="btn btn-default" id="show-components" title="View Components">
+            <i class="fa fa-cubes fa-lg"></i>
+            <span class="hidden-xs hidden-sm">Components</span>
+          </button>
+          <button class="btn btn-default" id="show-all" title="View Split Screen">
+            <i class="fa fa-columns fa-lg"></i>
+            <span class="hidden-xs hidden-sm">Split</span>
+          </button>
+          <button class="btn btn-default" id="show-widgets" title="View Document">
+            <i class="fa fa-file-text-o fa-lg"></i>
+            <span class="hidden-xs hidden-sm">Document</span>
+          </button>
+        </div>
+      </div>
+      <div class="col-sm-4">
+        <div class="btn-group btn-group" role="tablist">
+          <button class="btn btn-default" title="Export workbook" onclick="Hyperdeck.Export()">
+            <i class="fa fa-download fa-lg"></i>
+            <span class="hidden-xs">Export</span><span class="hidden-xs hidden-sm"> workbook</span>
+          </button>
+          <button class="btn btn-default" title="Import workbook" onclick="Hyperdeck.Import()">
+            <i class="fa fa-upload fa-lg"></i>
+            <span class="hidden-xs">Import</span><span class="hidden-xs hidden-sm"> workbook</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row tab-content">
+      <div class="col-sm-6" id="cells-container">
+        <div id="frce"></div>
+        <div role="tabpanel" class="active" id="cells"></div>
+      </div>
+      <div class="col-sm-6" id="output-container">
+        <div role="tabpanel" class="active" id="output"></div>
+      </div>
+    </div>
+    
+  </div>
+  
+  <script>
+  
+    var workbook = {"metadata":{"version":1,"view":"all"},"components":[{"type":"md","name":"components","visible":true,"text":"### How to use Hyperdeck\n\nHyperdeck is just HTML/CSS/Javascript - it's basically a way to make a front-end wepage, but with built-in facilities for hosting, sharing, organizing, and working with data.\n\n#### Components\nThe things on the left side of the screen are components, the basic building block of a Hyperdeck workbook.  Each component contains a piece of code or data.  You add components by choosing a component type from the `Add Component` button.  Components can be reordered, renamed, maximized/minimized, and deleted using the controls at the top of a component.  Most textual components come with dropdown box to toggle the display - `codemirror` displays the text in an editable [Codemirror](https://codemirror.net/) widget, `pre` displays the text in a `<pre>` element, and `stats` just displays the length of the text.  These controls allow you to manage the resources consumed by large components - `stats` is lighter than `pre` is lighter than `codemirror`.  Most components also come with `Upload` and `Download` buttons so you can upload your own files or download the data.\n\n#### Saving\nA workbook is saved to the server as a JSON file that holds the data contained in each component.  All data within the components will be saved.  But any parts of the output document that are, for instance, generated dynamically by code, are not saved.  You can click the `Tools->Export Workbook` button to export the document JSON.\n","display":"codemirror","mode":"default","runOnBlur":true,"runOnLoad":true},{"type":"html","name":"document","visible":true,"text":"\n<h4>Output</h4>\n<p>Code in HTML, CSS, and markdown components get added to the output document on the right hand side of the screen.  The output of each component is displayed on the right-hand side in the same order the component appears in the left-hand side.  Using the handle on the far left of the component header, you can drag components around to reorder them.  Try it!</p>\n\n<p>You can toggle your view between components-only, split screen, and document-only using the Components/Split/Document button toggle</p>\n","display":"codemirror","mode":"default","runOnBlur":true,"runOnLoad":true},{"type":"md","name":"markdown","visible":true,"text":"\n#### Markdown\nContent can also be written as markdown.  Markdown is a lightweight plaintext markup language that gets converted to HTML.  Open one of the `md` components over at left to see some examples of markdown syntax.\n","display":"codemirror","mode":"default","runOnBlur":true,"runOnLoad":true},{"type":"md","name":"css-usage","visible":true,"text":"\n#### CSS\n\nThe output of `html` and `md` components is put into a `<div>` that gets id-tagged with the component's name.  This text is in a `<div id=\"css-usage\">` tag, and is styled  by the css code in the `css1` component (currently empty, but you can add style rules and see them take effect).\n","display":"codemirror","mode":"default","runOnBlur":true,"runOnLoad":true},{"type":"css","name":"css1","visible":true,"text":"#css-usage { /* color : red */ }","display":"codemirror","mode":"default","runOnBlur":true,"runOnLoad":true},{"type":"md","name":"js-usage","visible":true,"text":"\n#### Javascript\n\nThe `js` component holds runnable javascript code.  For security reasons, workbooks are hosted in iframed sandbox served from a separate subdomain with zero server privileges - the javascript is essentially self-contained.  All the same, if you view a public workbook that belongs to someone else, you are still running untrusted code, and should treat it with the same care that you would any other random webpage.\n\nBy default, javascript code is not executed unless you click the `Run` button.  Click the `Run` button in the `js` component named `turn-green`, to turn this text green.\n\nYou can run `js` components programmatically by calling `Hyperdeck.Run(name)`.  So, calling `Hyperdeck.Run('turn-green')` will run the code in the `turn-green` component.\n\n\n","display":"codemirror","mode":"default","runOnBlur":true,"runOnLoad":true},{"type":"js","name":"turn-green","visible":true,"text":"$('#js-usage').css('color', 'green');","display":"codemirror","mode":"default","runOnBlur":false,"runOnLoad":false},{"type":"data","name":"data1","visible":true,"data":[[1,2,3],[4,5,6],[7,8,9]],"params":{"format":"headerList","display":"tsv","form":"listOfObjects","headers":["A","B","C"],"afterChange":""}},{"type":"md","name":"data","visible":true,"text":"\n#### Data\n\nThe `data` component holds plain javascript object data - anything that can be represented as JSON.  Check out the `data1` component at left.  Data can be displayed as JSON, YAML, CSV, TSV, or in a read-only `<pre>` tag.  The tabular formats, CSV and TSV, can only display data that can be sensibly interpreted as a table - generally a flat list of objects, such as `[{A:0,B:0},{A:0,B:0}]`.  Data can be accessed by calling `Hyperdeck.Get(name)`, which returns the javascript object stored within.  If you want to return a text representation of the data, you can add an options argument to specify the format, like `Hyperdeck.Get('data1', {format:'yaml'})`.  Similarly, you can set data by calling `Hyperdeck.Set(name, data, options)`.  Again, the `data` argument is assumed to be a javascript object by default, or text if the format is specified in the options.","display":"codemirror","mode":"default","runOnBlur":true,"runOnLoad":true},{"type":"md","name":"api","visible":true,"text":"\n#### API Summary\n\n    Hyperdeck.Get(name, options) => data or text\n    Hyperdeck.Set(name, dataOrText, options)\n    Hyperdeck.Run(name)\n    \n    options = {format:'json'|'yaml'|'csv'|'tsv'}","display":"codemirror","mode":"default","runOnBlur":true,"runOnLoad":true}]};
+    
+    Hyperdeck.Main(JSON.stringify(workbook));
+    
+  </script>
+
+</body>
+</html>
+
