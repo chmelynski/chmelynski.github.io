@@ -1,0 +1,145 @@
+
+#frce { display: none; }
+#cells-container { height: 100%; overflow-y: auto; }
+#cells {  height: auto; }
+#output-container { height: 100%; overflow-y: auto; }
+#output { display: block; margin-top: 1em; height: auto; }
+
+#fileChooser { display: none; }
+#button-grandparent { display: inline; margin-bottom: 1em; }
+#button-parent { display: inline-block; border: 0px solid black; float: left; }
+
+#topMenu h2 { display: inline; vertical-align: bottom; text-overflow: ellipsis; }
+#workbookName { display: inline; }
+
+#floatbar { width: 100%; background-color: white; position: relative; display: inline-block; }
+#floatbar > div.inner { display: inline-block; border: 0px solid black; float: left; margin: 1em; }
+
+iframe#results { width: 100%; border: none; height: 100%; margin-top: 1em; position: relative; overflow: hidden; max-width: 100%; }
+
+body: not(.framed) { padding: 4em 0px 0px 0px; margin: 0px; }
+body.outer { overflow: hidden; }
+html, body { height: 100%; width: 100%; }
+body.framed { overflow: hidden; margin: 1em 0px 0px; padding: 0px; height: 100%; width: 100%; }
+body.framed > .container-fluid { height: 100%; }
+.row.tab-content { height: 90%; }
+.navbar-right { margin-top: 1em; }
+
+div.table-wrapper { position: relative; }
+div.table-scroll { overflow: auto; margin-top: 3em; height: 83vh; }
+thead.directory { position: absolute; width: 100%; top: -3em; background-color: #f9f9f9; z-index: 2; }
+tr.selected { background-color: rgb(220,220,255) !important; }
+tr.selected td { background-color: rgba(0,0,0,0) !important; }
+button + button,a.button + a.button { margin-left: .5em; }
+button.bg-danger, .btn.bg-danger { background-color: #f2dede; }
+
+.btn .fa { vertical-align: middle; }
+span.fa.text-label { font-family: monospace; }
+.btn span.fa, button span.fa { vertical-align: middle; }
+
+.scrollable { overflow-y: auto; }
+.full-height { height: 100%; }
+.form-align { margin-top: 1.8em !important; }
+
+table.data-component-display { border-collapse: collapse; margin: 1em }
+table.data-component-display th { background-color: white; border: 1px solid rgb(170,170,170); padding: 0.3em }
+table.data-component-display td { background-color: white; border: 1px solid rgb(170,170,170); padding: 0.3em }
+table.data-component-display td: nth-child(1) { background-color: rgb(230,230,230) }
+
+div.code-control { margin: 2px; font-size: small; }
+div.code-control span { margin: 0 2px 0 4px; }
+div.code-control input { margin: 0 2px; }
+div.code-control input[type=checkbox] { vertical-align: sub; }
+div.code-control button { margin: 0 2px; }
+div.code-editor { }
+pre.code-display { }
+pre.code-summary { }
+
+div.data-control { margin: 2px; font-size: small; }
+div.data-control span { margin: 0 2px 0 4px; }
+div.data-control input { margin: 0 2px; }
+div.data-control button { margin: 0 2px; }
+div.data-editor { }
+pre.data-display { }
+pre.data-summary { }
+
+div.grid-container { background-color: white; }
+div.grid-container canvas: focus { outline: none; }
+
+div.file-control { margin: 2px; font-size: small; }
+div.file-control button { margin: 0 2px; }
+
+
+.griddl-component { margin: 1em; }
+.griddl-component-head { }
+.griddl-component-body { display: block; margin-top: 1px; width: 100%; overflow: hidden; }
+.griddl-component-body-hidden { display: none; }
+
+.griddl-component-head-type { display: inline-block; font-family: monospace; margin-right: .5em; margin-left: .5em; width: 5em; }
+.griddl-component-head-name { display: inline-block; width: 50%; position: relative; }
+.griddl-component-head-minmax { position: relative; font-family: monospace; margin-left: .5em; }
+.griddl-component-head-remove { margin-left: .5em; }
+
+.griddl-component-head-btngrp-container { margin-top: -2px; }
+
+.griddl-component-head-radio-container { display: inline; }
+.griddl-component-head-radio-button { }
+.griddl-component-head-radio-label { }
+.griddl-component-body-radio-textarea { width: 30em; height: 30em; }
+
+.griddl-component.image img { width: 100%; height: 100%; }
+
+.griddl-header-button { }
+
+.gapRight { margin-right: 1em; }
+.gapLeft { margin-left: 1em; }
+
+.reorder-handle { display: inline-block; cursor: move; }
+
+
+
+
+.CodeMirror-gutters { height: 100% !important; }
+
+/* CodeMirror Bootstrap CSS from: http: //stackoverflow.com/questions/12742058/apply-twitter-bootstrap-stylings-to-codemirror  -- may need updates: P */
+.CodeMirror {
+  line-height: 1.3em;
+  font-family: monospace;
+
+  /* Necessary so the scrollbar can be absolutely positioned within the wrapper on Lion. */
+  position: relative;
+  /* This prevents unwanted scrollbars from showing up on the body and wrapper in IE. */
+  overflow: hidden;
+  background-color: white;
+  width: 100% !important; /* this enforces col sizing -nh */
+
+  /* Copied from Bootstrap's textarea */
+  display: inline-block;
+  margin-bottom: 9px;
+  color: #555555;
+  border: 1px solid #ccc;
+  -webkit-border-radius: 3px;
+  -moz-border-radius: 3px;
+  border-radius: 3px;
+  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+  -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+  -webkit-transition: border linear 0.2s, box-shadow linear 0.2s;
+  -moz-transition: border linear 0.2s, box-shadow linear 0.2s;
+  -ms-transition: border linear 0.2s, box-shadow linear 0.2s;
+  -o-transition: border linear 0.2s, box-shadow linear 0.2s;
+  transition: border linear 0.2s, box-shadow linear 0.2s;  
+}
+
+.CodeMirror-focused {
+  /* Copied from Bootstrap's textarea */
+  border-color: rgba(82, 168, 236, 0.8);
+  outline: 0;
+  outline: thin dotted \9;
+  /* IE6-9 */
+
+  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(82, 168, 236, 0.6);
+     -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(82, 168, 236, 0.6);
+          box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(82, 168, 236, 0.6);  
+}
+
