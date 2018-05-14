@@ -1,0 +1,80 @@
+<html>
+<head>
+<title>Hyperdeck Local</title>
+<link rel='stylesheet' type='text/css' href='css/codemirror-5.0.css' />
+<link rel='stylesheet' type='text/css' href='js/lib/fold/foldgutter.css' />
+<link rel='stylesheet' type='text/css' href='https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css'>
+<style>
+
+.main { margin: 1em; margin-bottom: 3em; }
+.CodeMirror { cursor: text; }
+
+#cells { width: 40em; }
+#output { position: absolute; top: 3em; left: 45em; }
+canvas { border: 1px solid gray; }
+
+.griddl-component-body-hidden { display: none; }
+
+/* font awesome icons to replace: download, upload, clear, play */
+
+</style>
+</head>
+<body>
+<script>var exports = {};</script>
+<script src='js/lib/jquery-1.10.2.min.js'></script>
+<script src='js/lib/jquery-ui.min.js'></script>
+<!-- <script src='js/lib/jquery-ui.sortable.min.js'></script> -->
+<script src='js/lib/codemirror-5.0.js'></script>
+<script src='js/lib/codemirror-5.0-javascript.js'></script>
+<script src='js/lib/codemirror-5.0-css.js'></script>
+<script src='js/lib/codemirror-5.0-xml.js'></script>
+<script src='js/lib/codemirror-5.0-markdown.js'></script>
+<script src='js/lib/codemirror-5.0-yaml.js'></script>
+<script src='js/lib/fold/foldcode.js'></script>
+<script src='js/lib/fold/foldgutter.js'></script>
+<script src='js/lib/fold/brace-fold.js'></script>
+<script src='js/lib/fold/indent-fold.js'></script>
+<script src='js/lib/fold/xml-fold.js'></script>
+<script src='js/lib/fold/markdown-fold.js'></script>
+<script src='js/lib/fold/comment-fold.js'></script>
+  
+<script src='js/lib/dat.gui.min.js'></script>
+
+<script src='js/lib/markdown.min.js'></script>
+<script src='js/lib/js-yaml.min.js'></script>
+<script src='js/lib/jquery.csv.min.js'></script>
+
+<script src='js/components.js'></script>
+<script src='js/components/code.js'></script>
+<script src='js/components/data.js'></script>
+<script src='js/components/file.js'></script>
+<script src='js/components/repl.js'></script>
+<script src='js/components/libraries.js'></script>
+
+<script src='js/polyfills.js'></script>
+<script src='js/import.js'></script>
+
+<button onclick='Hyperdeck.Export();'>Download Workbook</button>
+<button onclick='Hyperdeck.Import();'>Upload Workbook</button>
+<select value="" onchange="Hyperdeck.AddComponent(this.value, true)">
+<option></option>
+<option>data</option>
+<option>js</option>
+<option>html</option>
+<option>md</option>
+<option>css</option>
+<option>txt</option>
+<option>image</option>
+<option>binary</option>
+<option>zip</option>
+<option>repl</option>
+<option>snips</option>
+<option>libraries</option>
+</select>
+
+<div id='cells'></div>
+<div id='output'></div>
+
+</body>
+</html>
+

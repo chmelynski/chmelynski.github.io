@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+  <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+  
+  <script src="js/lib/codemirror-5.0.js"></script>
+  <script src="js/lib/codemirror-5.0-langs.js"></script>
+  <script src="js/lib/codemirror-5.0-fold.js"></script>
+  <link rel="stylesheet" href="css/codemirror-5.0.css" />
+  
+  <script src="js/lib/jquery-ui.sortable.min.js"></script>
+  <script src="js/lib/dat.gui.js"></script>
+  <script src="js/lib/markdown.min.js"></script>
+  <script src="js/lib/js-yaml.min.js"></script>
+  <script src="js/lib/jquery.csv.min.js"></script>
+  <script src="js/lib/sprintf.js"></script>
+  
+  <script>var exports = {};</script>
+  
+  <script src="js/components.js"></script>
+  <script src="js/code.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/repl.js"></script>
+  <script src="js/file.js"></script>
+  <script src="js/libs.js"></script>
+  <link rel="stylesheet" href="css/hyperdeck.css" />
+  
+  <!-- <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS_HTML'></script>
+  <script type="text/x-mathjax-config">http://docs.mathjax.org/en/latest/options/hub.html
+MathJax.Hub.Config({tex2jax:{inlineMath:[['$','$'],['\\(','\\)']]},jax:['input/TeX','output/HTML-CSS'],messageStyle:'none',skipStartupTypeset:true,showMathMenu:true,showMathMenuMSIE:true});</script> -->
+
+</head>
+
+<body class="framed">
+
+  <div class="container-fluid"> 
+  
+    <div class="row" id="documentMenu">
+      <div class="col-sm-4">
+        <div class="btn-group">
+          <button class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <i class="fa fa-cube fa-lg"></i> Add<span class="hidden-xs"> Component</span> <span class="caret"></span>
+          </button>
+            <ul class="dropdown-menu">
+              <li>
+                <a onclick="Hyperdeck.AddComponent('data');">
+                  Data
+                </a>
+              </li>
+              <li>
+                <a onclick="Hyperdeck.AddComponent('js');">
+                  Javascript
+                </a>
+              </li>
+              <li>
+                <a onclick="Hyperdeck.AddComponent('md');">
+                  Markdown
+                </a>
+              </li>
+              <li>
+                <a onclick="Hyperdeck.AddComponent('html');">
+                  HTML
+                </a>
+              </li>
+              <li>
+                <a onclick="Hyperdeck.AddComponent('css');">
+                  CSS
+                </a>
+              </li>
+              <li>
+                <a onclick="Hyperdeck.AddComponent('txt');">
+                  Plain text
+                </a>
+              </li>
+              <li>
+                <a onclick="Hyperdeck.AddComponent('image');">
+                  Image
+                </a>
+              </li>
+              <li>
+                <a onclick="Hyperdeck.AddComponent('binary');">
+                  Binary file
+                </a>
+              </li>
+              <li>
+                <a onclick="Hyperdeck.AddComponent('libraries');">
+                  External libraries
+                </a>
+              </li>
+              <li>
+                <a onclick="Hyperdeck.AddComponent('repl');">
+                  Javascript REPL
+                </a>
+              </li>
+              <li>
+                <a onclick="Hyperdeck.AddComponent('snips');">
+                  Javascript snippets
+                </a>
+              </li>
+            </ul>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <i class="fa fa-wrench fa-lg"></i> Tools <span class="caret"></span>
+          </button>
+            <ul class="dropdown-menu">
+              <li>
+                <a onclick="Hyperdeck.ExportHtml()">
+                  Export document as HTML
+                </a>
+              </li>
+              <li>
+                <a onclick="Hyperdeck.ShowAll()">
+                  Show all components
+                </a>
+              </li>
+              <li>
+                <a onclick="Hyperdeck.HideAll()">
+                  Hide all components
+                </a>
+              </li>
+              
+            </ul>
+        </div>
+      </div>
+      <div class="col-sm-4">
+        <div class="btn-group btn-group" role="tablist" id="ui-toggle">
+          <button class="btn btn-default" id="show-components" title="View Components">
+            <i class="fa fa-cubes fa-lg"></i>
+            <span class="hidden-xs hidden-sm">Components</span>
+          </button>
+          <button class="btn btn-default" id="show-all" title="View Split Screen">
+            <i class="fa fa-columns fa-lg"></i>
+            <span class="hidden-xs hidden-sm">Split</span>
+          </button>
+          <button class="btn btn-default" id="show-widgets" title="View Document">
+            <i class="fa fa-file-text-o fa-lg"></i>
+            <span class="hidden-xs hidden-sm">Document</span>
+          </button>
+        </div>
+      </div>
+      <div class="col-sm-4">
+        <div class="btn-group btn-group" role="tablist">
+          <button class="btn btn-default" title="Export workbook" onclick="Hyperdeck.Export()">
+            <i class="fa fa-download fa-lg"></i>
+            <span class="hidden-xs">Export</span><span class="hidden-xs hidden-sm"> workbook</span>
+          </button>
+          <button class="btn btn-default" title="Import workbook" onclick="Hyperdeck.Import()">
+            <i class="fa fa-upload fa-lg"></i>
+            <span class="hidden-xs">Import</span><span class="hidden-xs hidden-sm"> workbook</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row tab-content">
+      <div class="col-sm-6" id="cells-container">
+        <div id="frce"></div>
+        <div role="tabpanel" class="active" id="cells"></div>
+      </div>
+      <div class="col-sm-6" id="output-container">
+        <div role="tabpanel" class="active" id="output"></div>
+      </div>
+    </div>
+    
+  </div>
+
+</body>
+</html>
+
