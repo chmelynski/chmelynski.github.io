@@ -1,0 +1,149 @@
+
+tree formats:
+
+{animal:{mammal:null,marsupial:null}} - compact, but no room for params
+
+{name:animal,param1:null,param2:null,children:[{name:mammal},{name:marsupial}]} - getting rid of attrs isn't that big of a benefit
+
+{name:animal,attrs:{param1:null,param2:null},children:[{name:mammal},{name:marsupial}]} - no way to enfore attr order
+
+{name:animal,attrs:[{key:param1,val:null},{key:param2,val:null}],children:[{name:mammal},{name:marsupial}]} - preferred format
+
+Tree = {name,attrs:[Attr],children:[Tree]}
+Attr = {key,val}
+
+<animal param1="" param2="">
+ <mammal>
+ <marsupial>
+</animal>
+
+animal param1=null param2=null
+ mammal
+ marsupial
+
+json/yaml
+xml
+tree
+
+<ul>
+	<li>1
+		<ul>
+			<li>a</li>
+			<li>b</li>
+			<li>c
+				<ul>
+					<li>i</li>
+					<li>ii</li>
+					<li>iii</li>
+				</ul>
+			</li>
+		</ul>
+	</li>
+	<li>2</li>
+</ul>
+
+
+var Element = function() {
+	
+	this.name = null;
+	this.text = null;
+	this.attrs = [];
+	this.children = [];
+	this.parent = null;
+};
+
+// tree format:
+// tag key="val" key="val"
+//  tag
+//  tag
+
+var nameRegexStr = '[A-Za-z][A-Za-z0-9]*';
+var stringRegexStr = '"(?:[^"]|\\\\")+"';
+var tokenizer = new RegExp(nameRegexStr + '|' + '=' + '|' + stringRegexStr, 'g');
+var indentCounter = new RegExp('^\\s+');
+
+function ReadTree(text) {
+	
+	var lines = text.trim().split('\n');
+	
+	var root = new Element();
+	
+	var stack = [root];
+	
+	for (var i = 0; i < lines.length; i++)
+	{
+		var line = lines[i];
+		
+		var indentResult = indentCounter.exec(line)
+		var indent = ((indentResult == null) ? 0 : indentResult[0].length);
+		line = line.substr(indent);
+		
+		var tokens = [];
+		
+		tokenizer.lastIndex = 0;
+		var match = tokenizer.exec(line);
+		
+		while (match != null)
+		{
+			tokens.push(match[0]);
+			match = tokenizer.exec(line);
+		}
+		
+		var elt = new Element();
+		
+		if (tokens[0][0] == '"')
+		{
+			elt.text = tokens[0].substr(1, tokens[0].length - 2);
+		}
+		else
+		{
+			elt.name = tokens[0];
+			
+			for (var k = 1; k < tokens.length; k += 3)
+			{
+				elt.attrs.push({ key : tokens[k] , val : tokens[k+2].substr(1, tokens[k+2].length - 2) });
+			}
+		}
+		
+		stack[indent].children.push(elt);
+		elt.parent = stack[indent];
+		stack[indent + 1] = elt;
+	}
+	
+	return root;
+}
+function WriteTree(root) {
+	
+	var lines = [];
+	
+	for (var i = 0; i < root.children.length; i++)
+	{
+		WriteTreeRec(lines, root.children[i], 0);
+	}
+	
+	return lines.join('\n');
+}
+function WriteTreeRec(lines, elt, indent) {
+	
+	if (elt.name)
+	{
+		var open = ' '.repeat(indent) + elt.name;
+		
+		for (var i = 0; i < elt.attrs.length; i++)
+		{
+			open += ' ' + elt.attrs[i].key + '="' + elt.attrs[i].val + '"';
+		}
+		
+		lines.push(open);
+		
+		for (var i = 0; i < elt.children.length; i++)
+		{
+			WriteTreeRec(lines, elt.children[i], indent+1);
+		}
+	}
+	else
+	{
+		lines.push('"' + elt.text + '"');
+	}
+}
+
