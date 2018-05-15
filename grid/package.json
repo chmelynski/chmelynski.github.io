@@ -1,0 +1,16 @@
+{
+  "name": "eyeshade",
+  "version": "0.0.2",
+  "description": "A fast, canvas-rendered data grid",
+  "main": "grid.js",
+  "files": [ "grid.js" ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "homepage": "https://github.com/chmelynski/eyeshade",
+  "keywords": [
+    "grid"
+  ],
+  "author": "Adam Chmelynski",
+  "license": "MIT"
+}
