@@ -5,28 +5,26 @@ Hyperdeck.Tree is a fast, canvas-rendered json tree viewer.
 
 ### Usage
 
-`
-// <canvas id="canvas" width="1000" height="500" tabIndex="1">
-
-const ctx = document.getElementById('canvas').getContext('2d');
-ctx.canvas.focus();
-
-const data = {a:'foo',b:[{a:'foo'},'baz'],c:['bar','baz']};
-
-const options = {
-	top: 20,
-	left: 50,
-	indent: 20,
-	handleRadius: 5,
-	textMargin: 15,
-	twigHeight: 15,
-	maxVisible: 30,
-	font: '10pt Courier New',
-	drawHandle: null
-};
-
-const tree = new Hyperdeck.Tree(ctx, data, options);
-`
+    // <canvas id="canvas" width="1000" height="500" tabIndex="1">
+    
+    const ctx = document.getElementById('canvas').getContext('2d');
+    ctx.canvas.focus();
+    
+    const data = {a:'foo',b:[{a:'foo'},'baz'],c:['bar','baz']};
+    
+    const options = {
+        top: 20,
+        left: 50,
+        indent: 20,
+        handleRadius: 5,
+        textMargin: 15,
+        twigHeight: 15,
+        maxVisible: 30,
+        font: '10pt Courier New',
+        drawHandle: null
+    };
+    
+    const tree = new Hyperdeck.Tree(ctx, data, options);
 
 ### Controls
 
