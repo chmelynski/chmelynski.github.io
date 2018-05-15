@@ -1,0 +1,16 @@
+{
+  "name": "sweetgum",
+  "version": "0.0.2",
+  "description": "A fast, canvas-rendered json tree viewer",
+  "main": "sweetgum.js",
+  "files": [ "sweetgum.js" ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "homepage": "https://github.com/chmelynski/sweetgum",
+  "keywords": [
+    "tree", "json"
+  ],
+  "author": "Adam Chmelynski",
+  "license": "MIT"
+}

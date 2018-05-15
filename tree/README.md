@@ -1,0 +1,75 @@
+
+# Tree
+
+Hyperdeck.Tree is a fast, canvas-rendered json tree viewer.
+
+### Usage
+
+    // <canvas id="canvas" width="1000" height="500" tabIndex="1">
+    
+    const ctx = document.getElementById('canvas').getContext('2d');
+    ctx.canvas.focus();
+    
+    const data = {a:'foo',b:[{a:'foo'},'baz'],c:['bar','baz']};
+    
+    const options = {
+        top: 20,
+        left: 50,
+        indent: 20,
+        handleRadius: 5,
+        textMargin: 15,
+        twigHeight: 15,
+        maxVisible: 30,
+        font: '10pt Courier New',
+        drawHandle: null
+    };
+    
+    const tree = new Hyperdeck.Tree(ctx, data, options);
+
+### Controls
+
+Controls:
+
+    Space                   edit value
+    Shift+Space             edit key
+    Ctrl+Space              edit {} or [] subtree (display a large textarea with underlying text representation) (TODO)
+
+    Ctrl+C                  copy value to input bar (TODO)
+    Ctrl+Shift+C            copy path to input bar (TODO)
+
+    Up                      Move cursor up (in display order)
+    Down                    Move cursor down (in display order)
+    Shift+Up                Move cursor to prev sibling
+    Shift+Down              Move cursor to next sibling
+    Ctrl+Up                 Move cursor to parent
+    Ctrl+Shift+Up           Move cursor to root
+
+    Right                   Open, or move cursor to next
+    Left                    Close, or move cursor to parent
+    Ctrl+Right              Open descendants
+    Ctrl+Left               Close descendants
+    Shift+Right             Open children
+    Shift+Left              Close children
+    Ctrl+Shift+Right        Open children and descendants
+    Ctrl+Shift+Left         Close children and descendants
+    Shift+Alt+Right         Open grandchildren - this conflicts with add first child
+    Shift+Alt+Left          Close grandchildren - this conflicts with add array parent
+    Ctrl+Shift+Alt+Right    Open grandchildren and descendants
+    Ctrl+Shift+Alt+Left     Close grandchildren and descendants
+
+    Alt+Up                  Add prev sibling
+    Alt+Down                Add next sibling
+    Alt+Left                Add object parent
+    Alt+Shift+Left          Add array parent - this conflicts with close grandchildren (change to Ctrl+Alt+Left)
+    Alt+Right               Add first child - this conflicts with open grandchildren (change to Ctrl+Down)
+    Shift+Alt+Up            Switch with prev sibling
+    Shift+Alt+Down          Switch with next sibling
+    Delete                  Delete selected
+
+    Shift+Scroll            Scroll by 1
+    Scroll                  Scroll by 10
+    Ctrl+Scroll             Scroll by 100
+    Ctrl+Shift+Scroll       Scroll by 1000
+    Ctrl+Shift+Alt+Scroll   Scroll by 10000
+    PageUp/PageDown is equivalent to Scroll
+
