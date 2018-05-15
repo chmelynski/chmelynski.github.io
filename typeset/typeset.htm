@@ -1,0 +1,46 @@
+
+<html>
+<head>
+</head>
+<body>
+
+<canvas width="800" height="500" style="border: 1px solid gray"></canvas>
+
+<script src="typeset.js"></script>
+
+<script>
+
+var ctx = document.getElementsByTagName('canvas')[0].getContext('2d');
+
+function DrawTypeset() {
+	
+	var text = 'Four score and seven years ago our fathers brought forth on this continent, a new nation, conceived in Liberty, and dedicated to the proposition that all men are created equal. Now we are engaged in a great civil war, testing whether that nation, or any nation so conceived and so dedicated, can long endure. We are met on a great battle-field of that war. We have come to dedicate a portion of that field, as a final resting place for those who here gave their lives that that nation might live. It is altogether fitting and proper that we should do this. But, in a larger sense, we can not dedicate—we can not consecrate—we can not hallow—this ground. The brave men, living and dead, who struggled here, have consecrated it, far above our poor power to add or detract. The world will little note, nor long remember what we say here, but it can never forget what they did here. It is for us the living, rather, to be dedicated here to the unfinished work which they who fought here have thus far so nobly advanced. It is rather for us to be here dedicated to the great task remaining before us—that from these honored dead we take increased devotion to that cause for which they gave the last full measure of devotion—that we here highly resolve that these dead shall not have died in vain—that this nation, under God, shall have a new birth of freedom—and that government of the people, by the people, for the people, shall not perish from the earth.';
+	var linePitch = 20;
+	var lineWidth = 600;
+	var lf = 100;
+	var tp = 50;
+	var lineWidths = [lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth, lineWidth];
+	
+	var fontSize = 12;
+	
+	function measureText(str) {
+		if (str == ' ') { return 10; }
+		var path = font.getPath(str, 0, 0, fontSize, { kerning: true });
+		var bbox = path.getBoundingBox();
+		var width = bbox.x2 - bbox.x1;
+		return width;
+	}
+	function measureText2(str) {
+		return ctx.measureText(str).width;
+	}
+	
+	ctx.font = '12pt sans-serif';
+	var placements = Typeset(text, lineWidths, measureText2, {});
+	for (var i = 0; i < placements.length; i++) { var p = placements[i]; ctx.fillText(p.text, lf + p.x, tp + p.line * linePitch); }
+}
+DrawTypeset();
+
+</script>
+</body>
+</html>
+

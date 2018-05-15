@@ -1,0 +1,172 @@
+
+<html>
+<body>
+
+<script src="charts.js"></script>
+
+<select id="chartType" style="margin-right: 2em;"><option>bar</option><option>line</option><option>scatter</option></select>
+<label>Upload data: </label><input id="dataInput" type="file" multiple></input>
+<label>Upload params: </label><input id="paramsInput" type="file" multiple></input>
+<br>
+
+<script>
+
+var lineChartData = [
+	{ "x": 2014, "y": 100, "z": 100 },
+	{ "x": 2015, "y": 100, "z": 200 },
+	{ "x": 2016, "y": 200, "z": 100 },
+	{ "x": 2017, "y": 200, "z": 200 }
+];
+
+var barChartData = [
+	{ "year": 2014, "cars": 100, "trucks": 100 },
+	{ "year": 2015, "cars": 100, "trucks": 200 },
+	{ "year": 2016, "cars": 200, "trucks": 100 },
+	{ "year": 2017, "cars": 200, "trucks": 200 }
+];
+
+var scatterChartData = [
+	{ "x": 100, "y": 100, "r": 10 },
+	{ "x": 150, "y": 150, "r": 20 },
+	{ "x": 200, "y": 200, "r": 30 },
+	{ "x": 250, "y": 250, "r": 40 }
+];
+
+var barChartParams = {
+	"columnKey": "year",
+	"valueKeys": "cars,trucks",
+	"colors": "red,purple",
+	"scale": 1,
+	"barWidth": 50,
+	"barGap": 10,
+	"textStyle": {
+		"margin": 10,
+		"segmentLabelFont": "10pt Arial",
+		"segmentLabelColor": "rgb(255,255,255)",
+		"segmentLabelAnchor": "middle",
+		"topLabelFont": "10pt Arial",
+		"topLabelColor": "rgb(0,0,0)",
+		"bottomLabelFont": "10pt Arial",
+		"bottomLabelColor": "rgb(0,0,0)"
+	}
+};
+
+var canvas = document.createElement('canvas');
+canvas.width = 500;
+canvas.height = 500;
+canvas.style.border = '1px solid gray';
+canvas.style.marginTop = '1em';
+var ctx = canvas.getContext('2d');
+document.body.appendChild(canvas);
+
+var gui = null;
+var data = null;
+var params = null;
+
+document.getElementById('dataInput').onchange = function() {
+	var filename = this.files[0].name;
+	var ext = filename.substr(filename.lastIndexOf('.'));
+	var fileReader = new FileReader();
+	fileReader.onload = function(event) { LoadData(event.target.result, ext); };
+	fileReader.readAsText(this.files[0]);
+};
+document.getElementById('paramsInput').onchange = function() {
+	var fileReader = new FileReader();
+	fileReader.onload = function(event) { LoadParams(event.target.result); };
+	fileReader.readAsText(this.files[0]);
+};
+
+function Draw() {
+	
+	if (data != null && params != null)
+	{
+		var chartType = document.getElementById('chartType').value;
+		
+		ctx.fillStyle = 'white';
+		ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+		
+		ctx.save();
+		ctx.translate(ctx.canvas.width / 2, ctx.canvas.height / 2);
+		
+		if (chartType == 'bar')
+		{
+			var columns = MakeColumns(data, params);
+			BarChartDraw(ctx, columns, params);
+		}
+		else if (chartType == 'line')
+		{
+			LineChartDraw(ctx, data, params);
+		}
+		else if (chartType == 'scatter')
+		{
+			ScatterChartDraw(ctx, data, params);
+		}
+		
+		ctx.restore();
+	}
+}
+
+function LoadData(text, ext) {
+	
+	if (ext == '.json')
+	{
+		data = JSON.parse(text);
+	}
+	else if (ext == '.tsv')
+	{
+	
+	}
+	else if (ext == '.csv')
+	{
+	
+	}
+	else
+	{
+		throw new Error();
+	}
+	
+	Draw();
+}
+function LoadParams(text) {
+	
+	params = JSON.parse(text);
+	
+	var chartType = document.getElementById('chartType').value;
+	
+	if (chartType == 'bar')
+	{
+		gui = BarChartDatgui(params, Draw);
+	}
+	else if (chartType == 'line')
+	{
+		gui = LineChartDatgui(params, Draw);
+	}
+	else if (chartType == 'scatter')
+	{
+		gui = ScatterChartDatgui(params, Draw);
+	}
+	
+	Draw();
+}
+function DownloadParams() {
+	
+	var blob = new Blob([JSON.stringify(params)],{type:'text/json'});
+	
+	var fileReader = new FileReader();
+	
+	fileReader.onload = function(event) {
+		var a = document.createElement('a');
+		a.href = event.target.result;
+		a.download = 'params.json';
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+	};
+	
+	fileReader.readAsDataURL(blob);
+}
+
+</script>
+</body>
+</html>
+

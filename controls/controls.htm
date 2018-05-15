@@ -1,0 +1,58 @@
+
+<html>
+<head>
+<style>
+
+div { border: 1px solid gray; margin: 1em; display: inline-block; }
+
+</style>
+</head>
+<body>
+
+<script src="controls.js"></script>
+
+<script>
+
+var obj = {
+	text: 'text',
+	number0: 12.34,
+	number1: 12.34,
+	number2: 12.34,
+	number3: 12.34,
+	number4: 12.34,
+	origin: 'C3',
+	anchor: 'B2',
+	color: 'rgb(0,0,0)',
+	pill: 'A1'
+};
+
+var pre = document.createElement('pre');
+document.body.appendChild(pre);
+function AfterChange() { pre.innerText = JSON.stringify(obj); }
+
+var text = new Controls.Text(obj, 'text', AfterChange, 100, 30);
+var number0 = new Controls.Number(obj, 'number0', AfterChange, 100, 30, 2, 2);
+var number1 = new Controls.Number(obj, 'number1', AfterChange, 100, 30, 1, 2);
+var number2 = new Controls.Number(obj, 'number2', AfterChange, 100, 30, 2, 1);
+var number3 = new Controls.Number(obj, 'number3', AfterChange, 100, 30, 3, 2);
+var number4 = new Controls.Number(obj, 'number4', AfterChange, 100, 30, 2, 3);
+var origin = new Controls.Origin(obj, 'origin', AfterChange);
+var anchor = new Controls.Anchor(obj, 'anchor', AfterChange);
+var pill = new Controls.TextPill(obj, 'pill', AfterChange, 1, 3, 50, 25, ['foo', 'bar', 'baz']);
+//var color = new Color(obj, 'color', AfterChange);
+
+document.body.appendChild(text.div);
+document.body.appendChild(number0.div);
+document.body.appendChild(number1.div);
+document.body.appendChild(number2.div);
+document.body.appendChild(number3.div);
+document.body.appendChild(number4.div);
+document.body.appendChild(origin.div);
+document.body.appendChild(anchor.div);
+document.body.appendChild(pill.div);
+//document.body.appendChild(color.div);
+
+</script>
+</body>
+</html>
+
