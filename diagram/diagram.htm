@@ -1,0 +1,165 @@
+
+<html>
+<head>
+<link rel="stylesheet" href="../hyperdeck/css/codemirror-5.0.css" />
+<style>
+.CodeMirror { border: 1px solid gray; cursor: text; height: 550px; }
+#container { display: grid; grid-template-columns: 1fr 1fr; }
+</style>
+
+<script>var exports = {};</script>
+
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script src="../hyperdeck/js/lib/codemirror-5.0.js"></script>
+<script src="../hyperdeck/js/lib/codemirror-5.0-langs.js"></script>
+
+<script src="../assets.js"></script>
+
+<script src="diagram.js"></script>
+
+</head>
+<body>
+
+<label>Show points: </label><input id="showpoints" type="checkbox" checked></input>
+<input type="file" multiple onchange="LoadAssets(this.files, OnLoad)">
+<!-- <button onclick="SwitchTabs()">Switch Tabs</button> -->
+
+<input id="width" type="text" value="1000" size="5">
+<input id="height" type="text" value="500" size="5">
+
+<button onclick="diagram.insert('B(ctx);')">[B]egin Path</button>
+<button onclick="diagram.insert('M(ctx, p.get());')">[M]ove</button>
+<button onclick="diagram.insert('L(ctx, p.get());')">[L]ine</button>
+<button onclick="diagram.insert('Q(ctx, p.get(), p.get());')">[Q]uadratic</button>
+<button onclick="diagram.insert('C(ctx, p.get(), p.get(), p.get());')">[C]ubic</button>
+<button onclick="diagram.insert('ctx.closePath();')">[Z]Close Path</button>
+<button onclick="diagram.insert('S(ctx);')">[S]troke</button>
+<button onclick="diagram.insert('F(ctx);')">[F]ill</button>
+<button onclick="Download(diagram.exportPath())">Export Path</button>
+
+<div id="codemirror" tabIndex="1" style="margin: 1em; display: none;"></div>
+<div id="diagramContainer" style="margin: 1em;"><canvas id="diagram" tabIndex="2" style="border: 1px solid gray;"></canvas></div>
+
+<script>
+
+var code = ``;
+
+/*
+ctx.canvas.width = document.getElementById('width').value;
+ctx.canvas.height = document.getElementById('height').value;
+
+ctx.fillStyle = 'white';
+ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+*/
+
+var assets = null;
+function OnLoad(assetmap) { assets = assetmap; }
+
+function Download(path) {
+	
+	var blob = new Blob([path], {type:'text/plain'});
+	var fileReader = new FileReader();
+	
+	fileReader.onload = function(event) {
+		var a = document.createElement('a');
+		a.href = event.target.result;
+		a.download = 'filename.path';
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+	};
+	
+	fileReader.readAsDataURL(blob);
+}
+
+function InitCodemirror(div) {
+	
+	var textarea = document.createElement('textarea');
+	div.appendChild(textarea);
+	
+	var options = {
+		//smartIndent: true,
+		lineNumbers: true,
+		lineWrapping: true,
+		//foldGutter: true,
+		//tabSize: 2,
+		//indentUnit: 2,
+		//indentWithTabs: true,
+		//gutters: ['CodeMirror-linenumbers','CodeMirror-foldgutter'],
+		//extraKeys: {'Ctrl-Q': function(cm) { cm.foldCode(cm.getCursor()); }},
+		mode: 'javascript'
+	};
+	
+	var cm = CodeMirror.fromTextArea(textarea, options);
+	
+	cm.on('change', function() {
+		
+	});
+	
+	cm.on('focus', function() {
+		
+	});
+	
+	cm.on('blur', function() {
+		//doc.setGutterMarker(line: integer|LineHandle, gutterID: string, value: Element)
+		diagram.receiveText(cm.getValue(), cm.getCursor().line);
+	});
+	
+	cm.getDoc().setValue(code);
+	
+	return cm;
+}
+
+document.getElementById('showpoints').onchange = function() {
+	diagram.showPoints = this.checked;
+	diagram.points.freeze();
+	diagram.draw();
+	diagram.points.unfreeze();
+};
+
+function MakeVanilla() {
+	
+	var text = codemirror.getValue();
+	
+	// p.add(123, 456)
+	// L(ctx, p.get())
+	// =>
+	// ctx.lineTo(123, 456)
+	
+	codemirror.setValue(text);
+}
+
+function SetCodemirrorText(code) { codemirror.getDoc().setValue(code); }
+
+var canvasActive = true;
+function SwitchTabs() {
+	
+	if (canvasActive)
+	{
+		document.getElementById('codemirror').style.display = 'block';
+		document.getElementById('diagramContainer').style.display = 'none';
+		codemirror.refresh();
+		codemirror.focus();
+		canvasActive = false;
+	}
+	else
+	{
+		document.getElementById('codemirror').style.display = 'none';
+		document.getElementById('diagramContainer').style.display = 'block';
+		document.getElementById('diagram').focus();
+		canvasActive = true;
+	}
+}
+
+var codemirror = InitCodemirror(document.getElementById('codemirror'));
+var diagram = new Diagram(document.getElementById('diagram').getContext('2d'), SetCodemirrorText);
+diagram.receiveText(code, codemirror.lastLine());
+document.getElementById('diagram').focus();
+
+document.getElementById('diagram').addEventListener('keydown', function(e) { if (e.keyCode == 27) { SwitchTabs(); } });
+document.getElementById('codemirror').addEventListener('keydown', function(e) { if (e.keyCode == 27) { SwitchTabs(); } });
+
+</script>
+</body>
+</html>
+
