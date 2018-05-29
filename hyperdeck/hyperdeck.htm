@@ -18,7 +18,8 @@
   <script src="js/lib/markdown.min.js"></script>
   <script src="js/lib/js-yaml.min.js"></script>
   <script src="js/lib/jquery.csv.min.js"></script>
-  <script src="js/lib/sprintf.js"></script>
+  <script src="../sprintf.js"></script>
+  <script src="../assets.js"></script>
   
   <script>var exports = {};</script>
   
@@ -28,14 +29,23 @@
   <script src="js/repl.js"></script>
   <script src="js/file.js"></script>
   <script src="js/libs.js"></script>
+  <script src="js/diagram.js"></script>
+  <script src="js/assets.js"></script>
+  <script src="js/map.js"></script>
   <link rel="stylesheet" href="css/hyperdeck.css" />
   
-  <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS_HTML'></script>
+  <script src="../grid/grid.js"></script>
+  <script src="../tree/tree.js"></script>
+  <script src="../diagram/diagram.js"></script>
+  <script src="../mapping/mapping.js"></script>
+  <script src="../mapping/panzoom.js"></script>
+  
+  <!-- <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS_HTML'></script> -->
   
   <!-- http://docs.mathjax.org/en/latest/options/hub.html -->
-  <script type="text/x-mathjax-config">
+  <!-- <script type="text/x-mathjax-config">
     MathJax.Hub.Config({tex2jax:{inlineMath:[['$','$'],['\\(','\\)']]},jax:['input/TeX','output/HTML-CSS'],messageStyle:'none',skipStartupTypeset:true,showMathMenu:true,showMathMenuMSIE:true});
-  </script>
+  </script> -->
 
 </head>
 
@@ -47,7 +57,7 @@
       <div class="col-sm-4">
         <div class="btn-group">
           <button class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            <i class="fa fa-cube fa-lg"></i> Add<span class="hidden-xs"> Component</span> <span class="caret"></span>
+            <i class="fa fa-cube fa-lg"></i> Add<span class="hidden-xs"> Cell</span> <span class="caret"></span>
           </button>
             <ul class="dropdown-menu">
               <li>
@@ -86,6 +96,21 @@
                 </a>
               </li>
               <li>
+                <a onclick="Hyperdeck.AddComponent('assets');">
+                  Assets
+                </a>
+              </li>
+              <li>
+                <a onclick="Hyperdeck.AddComponent('diagram');">
+                  Diagram
+                </a>
+              </li>
+              <li>
+                <a onclick="Hyperdeck.AddComponent('map');">
+                  Map
+                </a>
+              </li>
+              <li>
                 <a onclick="Hyperdeck.AddComponent('binary');">
                   Binary file
                 </a>
@@ -119,12 +144,12 @@
               </li>
               <li>
                 <a onclick="Hyperdeck.ShowAll()">
-                  Show all components
+                  Show all cells
                 </a>
               </li>
               <li>
                 <a onclick="Hyperdeck.HideAll()">
-                  Hide all components
+                  Hide all cells
                 </a>
               </li>
               
@@ -133,9 +158,9 @@
       </div>
       <div class="col-sm-4">
         <div class="btn-group btn-group" role="tablist" id="ui-toggle">
-          <button class="btn btn-default" id="show-components" title="View Components">
+          <button class="btn btn-default" id="show-components" title="View Cells">
             <i class="fa fa-cubes fa-lg"></i>
-            <span class="hidden-xs hidden-sm">Components</span>
+            <span class="hidden-xs hidden-sm">Cells</span>
           </button>
           <button class="btn btn-default" id="show-all" title="View Split Screen">
             <i class="fa fa-columns fa-lg"></i>
@@ -163,7 +188,6 @@
 
     <div class="row tab-content">
       <div class="col-sm-6" id="cells-container">
-        <div id="frce"></div>
         <div role="tabpanel" class="active" id="cells"></div>
       </div>
       <div class="col-sm-6" id="output-container">
@@ -172,6 +196,32 @@
     </div>
     
   </div>
+
+<script>
+
+// ?workbook=tutorial - load workbook
+if (window.location.search.length > 0)
+{
+	var obj = {};
+	
+	var keyvals = window.location.search.substr(1).split('&');
+	for (var i = 0; i < keyvals.length; i++)
+	{
+		var [key, val] = keyvals[i].split('=');
+		obj[key] = val;
+	}
+	
+	if (obj['workbook'])
+	{
+		fetch('workbooks/' + obj['workbook'] + '.json').then(function(response) {
+			response.json().then(function(json) {
+				Hyperdeck.Main(json);
+			});
+		});
+	}
+}
+
+</script>
 
 </body>
 </html>

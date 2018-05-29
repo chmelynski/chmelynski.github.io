@@ -1,0 +1,36 @@
+<html>
+<head>
+</head>
+<body>
+
+<script src="image.js"></script>
+
+<span>wd</span>   <input id="wd" type="text" size="10" value="512"></input>
+<span>hg</span>   <input id="hg" type="text" size="10" value="512"></input>
+<span>size</span> <input id="sz" type="text" size="10" value="16"></input>
+<span>base</span> <input id="bs" type="text" size="10" value="128"></input>
+<span>mult</span> <input id="ml" type="text" size="10" value="16"></input>
+<button onclick="Generate()">Generate</button>
+<br />
+
+<canvas width="500" height="500" style="border:1px solid gray;margin:1em"></canvas>
+
+<script>
+
+var ctx = document.getElementsByTagName('canvas')[0].getContext('2d');
+
+function Generate() {
+	ctx.canvas.width = parseInt(document.getElementById('wd').value);
+	ctx.canvas.height = parseInt(document.getElementById('hg').value);
+	var initialSize = parseInt(document.getElementById('sz').value);
+	var baseValue = parseInt(document.getElementById('bs').value);
+	var multiplier = parseInt(document.getElementById('ml').value);
+	PerlinNoise(ctx, initialSize, baseValue, multiplier);
+}
+
+Generate();
+
+</script>
+</body>
+</html>
+

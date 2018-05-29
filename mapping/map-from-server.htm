@@ -1,0 +1,1018 @@
+
+<html>
+<body>
+
+<script src="mapping.js"></script>
+<script src="rbush.js"></script>
+
+<script>
+
+// Click+Drag = pan
+// Shift+Click+Drag = rotate about center
+// Ctrl+Click = select county
+// Alt+Click = select state
+// Wheel = zoom
+// Shift+Wheel = zoom fine
+
+// http://localhost:713/mapping.htm#lat=40.308611&lng=-080.029225&zoom=10 - 1261 Bethel Green Dr
+// http://localhost:713/mapping.htm#lat=40.400000&lng=-080.000000&zoom=11 - Allegheny County, PA
+// http://localhost:713/mapping.htm#lat=39.740569&lng=-104.957903&zoom=12 - Denver, CO
+// http://localhost:713/mapping.htm#lat=33.718846&lng=-084.411940&zoom=09 - DeKalb County, GA
+// http://localhost:713/mapping.htm#lat=33.983618&lng=-118.311989&zoom=11 - Los Angeles, CA
+// http://localhost:713/mapping.htm#lat=40.000000&lng=-100.000000&zoom=05 - United States
+
+var size = 500;
+var hasp = 2;
+var vasp = 1;
+
+const canvas = document.createElement('canvas');
+const ctx = canvas.getContext('2d');
+canvas.tabIndex = 1;
+ctx.canvas.width = hasp * size;
+ctx.canvas.height = vasp * size;
+document.body.appendChild(canvas);
+canvas.focus();
+
+//const projection = d3.geoAlbersUsa().translate([width/2,height/2]);
+//const projection = d3.geoAlbers().translate([width/2,height/2]);
+var projection = d3.geoMercator().translate([ctx.canvas.width/2,ctx.canvas.height/2]);
+var path = d3.geoPath(projection, ctx);
+const populationRadius = d3.scaleSqrt().domain([0, 1e6]).range([0, 40]);
+const powerplantRadius = d3.scaleSqrt().domain([0, 1e3]).range([0, 10]);
+const pie = d3.pie();
+
+let params = { states: [], counties: [], zoom: 1, size: 500, lat: 40, lng: -100, hasp: 2, vasp: 1, rotation: 0 };
+let layers = { lowres: true, states: false, counties: false, cousub: false, place: false, roads: false, linearwater: false, areawater: false, population: false, powerplants: false };
+
+if (window.location.hash.length == 0) { SetQueryString(); } else { OnHashChange(); }
+
+var colorDict = {NUC:'orange',NG:'purple',BIT:'black',SUB:'black',LIG:'black',WAT:'blue',WND:'green',SUN:'gold',DFO:'brown',RFO:'brown',GEO:'red'};
+var strokeDict = {NUC:'black',NG:'black',BIT:'gray',SUB:'gray',LIG:'gray',WAT:'black',WND:'black',SUN:'black',DFO:'black',RFO:'black',GEO:'black'};
+
+var rtrees = {};
+var topos = {};
+
+var shift = false;
+var ctrl = false;
+var alt = false;
+
+canvas.style.cursor = 'move';
+canvas.onmousedown = function(mouseDownEvent) {
+	
+	var ax = mouseDownEvent.clientX;
+	var ay = mouseDownEvent.clientY;
+	
+	const anchor = projection.invert([ax, ay]);
+	
+	// fast draw of saved canvas image, code part 1 of 2
+	//showBorders = false;
+	//var img = document.createElement('img');
+	//img.src = canvas.toDataURL();
+	
+	canvas.onmousemove = function(mouseMoveEvent) {
+		
+		var mx = mouseMoveEvent.clientX;
+		var my = mouseMoveEvent.clientY;
+		
+		// full draw
+		const mover = projection.invert([mx, my]);
+		// console.log(anchor[0] + ' - ' + mover[0]); // the below code works because the coordinates of the mover stays almost constant, because the map center is changing along with x,y - so the lng,lat coords returned by invert stays almost constant - which is what we want!  we want the mouse pointer to be fixed to a given coordinate as it moves
+		params.lng += anchor[0] - mover[0];
+		params.lat += anchor[1] - mover[1];
+		SetQueryString();
+		KeysToDraw();
+		
+		ctx.fillStyle = 'black';
+		ctx.lineWidth = 1;
+		ctx.beginPath();
+		ctx.moveTo(ctx.canvas.width / 2, ctx.canvas.height / 2 - 10);
+		ctx.lineTo(ctx.canvas.width / 2, ctx.canvas.height / 2 + 10);
+		ctx.moveTo(ctx.canvas.width / 2 - 10, ctx.canvas.height / 2);
+		ctx.lineTo(ctx.canvas.width / 2 + 10, ctx.canvas.height / 2);
+		ctx.stroke();
+		
+		// fast draw of saved canvas image, code part 2 of 2
+		//ctx.fillStyle = 'white';
+		//ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+		//ctx.drawImage(img, dx, dy);
+	};
+	canvas.onmouseup = function(mouseUpEvent) {
+		
+		var ux = mouseUpEvent.clientX;
+		var uy = mouseUpEvent.clientY;
+		
+		const cursor = projection.invert([ux, uy]);
+		params.lng += anchor[0] - cursor[0];
+		params.lat += anchor[1] - cursor[1];
+		SetQueryString();
+		
+		canvas.onmousemove = null;
+		canvas.onmouseup = null;
+		KeysToDraw();
+	};
+};
+canvas.onmousewheel = function(mouseWheelEvent) {
+	
+	var clicks = mouseWheelEvent.wheelDelta / 120;
+	params.zoom += (shift ? (clicks / 10) : clicks);
+	SetQueryString();
+	KeysToDraw();
+};
+canvas.onkeyup = function(keyUpEvent) {
+	
+	var key = keyUpEvent.keyCode;
+	
+	if (key == 16)
+	{
+		shift = false;
+	}
+	else if (key == 17)
+	{
+		ctrl = false;
+	}
+	else if (key == 18)
+	{
+		alt = false;
+	}
+};
+canvas.onkeydown = function(keyDownEvent) {
+	
+	var key = keyDownEvent.keyCode;
+	
+	keyDownEvent.preventDefault();
+	keyDownEvent.stopPropagation();
+	
+	if (key == 16)
+	{
+		shift = true;
+	}
+	else if (key == 17)
+	{
+		ctrl = true;
+	}
+	else if (key == 18)
+	{
+		alt = true;
+	}
+};
+
+function Start() {
+	
+	MakeDatgui();
+	
+	countyCentersTree = rbush(9, ['.lng', '.lat', '.lng', '.lat']).load(countyCenters);
+	
+	d3.json('topojson/lowres.topojson', function(error, topo1) {
+		
+		console.log('lowres');
+		topos['lowres'] = topo1;
+		rtrees['lowres'] = PointsToRtree(topo1);
+		
+		KeysToDraw();
+		//d3.json('topojson/tl_2016_us_state.topojson', function(error, topo2) {
+		//	
+		//	console.log('tl_2016_us_state');
+		//	topos['tl_2016_us_state'] = topo2;
+		//	rtrees['tl_2016_us_state'] = PointsToRtree(topo2);
+		//	
+		//	d3.json('topojson/tl_2016_us_county.topojson', function(error, topo3) {
+		//		
+		//		console.log('tl_2016_us_county');
+		//		topos['tl_2016_us_county'] = topo3;
+		//		rtrees['tl_2016_us_county'] = PointsToRtree(topo3);
+		//		
+		//		KeysToDraw();
+		//	});
+		//});
+	});
+}
+function KeysToDraw() {
+	
+	// combine bounds, layers, and zoom to get a list of keys to draw
+	// load those keys if not already loaded, with draw as the callback
+	
+	var bounds = Bounds();
+	var pointArray = PointArray(3);
+	
+	var visibleCountyFips = VisibleRegions(countyCentersTree, pointArray);
+	//var visibleStateFips = VisibleRegions(stateCentersTree, pointArray);
+	var visibleStateFips = VisibleStates(visibleCountyFips);
+	
+	var keys = [];
+	
+	if (layers.lowres) { keys.push('lowres'); }
+	if (layers.states) { keys.push('tl_2016_us_state'); }
+	if (layers.counties) { keys.push('tl_2016_us_county'); }
+	
+	if (layers.roads)
+	{
+		keys.push('tl_2016_us_primaryroads');
+		
+		for (var k = 0; k < visibleStateFips.length; k++)
+		{
+			keys.push('tl_2016_' + visibleStateFips[k] + '_prisecroads');
+		}
+		
+		for (var k = 0; k < visibleCountyFips.length; k++)
+		{
+			keys.push('tl_2016_' + visibleCountyFips[k] + '_roads');
+		}
+	}
+	
+	if (layers.cousub)
+	{
+		for (var k = 0; k < visibleStateFips.length; k++)
+		{
+			keys.push('tl_2016_' + visibleStateFips[k] + '_cousub');
+		}
+	}
+	
+	if (layers.place)
+	{
+		for (var k = 0; k < visibleStateFips.length; k++)
+		{
+			keys.push('tl_2016_' + visibleStateFips[k] + '_place');
+		}
+	}
+	
+	if (layers.areawater)
+	{
+		for (var k = 0; k < visibleCountyFips.length; k++)
+		{
+			keys.push('tl_2016_' + visibleCountyFips[k] + '_areawater');
+		}
+	}
+	
+	if (layers.linearwater)
+	{
+		for (var k = 0; k < visibleCountyFips.length; k++)
+		{
+			keys.push('tl_2016_' + visibleCountyFips[k] + '_linearwater');
+		}
+	}
+	
+	//if (layers.rails) { keys.push('tl_2016_us_rails'); }
+	//if (layer.cd115) { keys.push('tl_2016_us_cd115'); }
+	
+	if (layers.population)
+	{
+		const key = ((params.zoom <= 4) ? 'country' : ((params.zoom <= 6) ? 'states' : ((params.zoom <= 9) ? 'counties' : 'cities')));
+		keys.push(key);
+	}
+	
+	if (layers.powerplants) { keys.push('powerplants'); }
+	
+	Load(keys, Draw);
+}
+function Load(keys, callback) {
+	
+	var toload = keys.length;
+	var loaded = 0;
+	
+	if (toload == 0) { callback(keys); }
+	
+	for (var i = 0; i < keys.length; i++)
+	{
+		(function(key) {
+			
+			if (rtrees[key]) { if (toload == ++loaded) { callback(keys); } return; }
+			
+			if (key == 'counties' || key == 'cities')
+			{
+				var filename = 'tsv/population-' + key + '.tsv';
+				
+				d3.tsv(filename, function(error, datum) {
+					
+					rtrees[key] = rbush(9, ['.lng', '.lat', '.lng', '.lat']).load(ParsePolities(datum));
+					
+					console.log(key);
+					if (toload == ++loaded) { callback(keys); }
+				});
+			}
+			else if (key == 'powerplants')
+			{
+				d3.tsv('tsv/powerplants-plants.tsv', function(error, plants) {
+					d3.tsv('tsv/powerplants-generators.tsv', function(error, generators) {
+						
+						rtrees[key] = JoinGeneratorsToPlants(plants, generators);
+						
+						console.log(key);
+						if (toload == ++loaded) { callback(keys); }
+					});
+				});
+			}
+			else
+			{
+				var filename = null;
+				
+				if (key == 'tl_2016_us_cd115' || key == 'tl_2016_us_coastline' || key == 'tl_2016_us_county' || key == 'tl_2016_us_primaryroads' || key == 'tl_2016_us_rails' || key == 'tl_2016_us_state' || key == 'lowres')
+				{
+					filename = 'topojson/' + key + '.topojson';
+				}
+				else
+				{
+					var dir = key.substring(key.lastIndexOf('_') + 1);
+					filename = 'topojson/' + dir + '/' + key + '.topojson';
+				}
+				
+				d3.json(filename, function(error, datum) {
+					
+					topos[key] = datum;
+					rtrees[key] = PointsToRtree(datum);
+					
+					console.log(key);
+					if (toload == ++loaded) { callback(keys); }
+				});
+			}
+		})(keys[i]);
+	}
+}
+function Draw(keys) {
+	
+	const bounds = Bounds();
+	
+	if (params.hasp != hasp || params.vasp != vasp || params.size != size)
+	{
+		hasp = params.hasp;
+		vasp = params.vasp;
+		size = params.size;
+		
+		ctx.canvas.width = hasp * size;
+		ctx.canvas.height = vasp * size;
+		
+		//d3.geoMercator().center([data.lng, data.lat]).scale(scale).rotate([0, data.rotation, 0]).translate([width/2,height/2]);
+		//projection.center([params.lng, params.lat]);
+		projection = d3.geoMercator().scale(Math.pow(2, params.zoom) * size / 10).translate([ctx.canvas.width/2, ctx.canvas.height/2]);
+		path = d3.geoPath(projection, ctx);
+	}
+	
+	//ctx.fillStyle = 'white';
+	ctx.fillStyle = 'rgb(100,175,0)';
+	ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+	
+	var order = ['areawater', 'linearwater', 'rails', 'roads', 'prisecroads', 'primaryroads', 'cousub', 'county', 'state', 'lowres', 'coastline', 'cd115', 'population', 'powerplants'];
+	
+	var groups = {
+		areawater: [],
+		linearwater: [],
+		primaryroads: [],
+		prisecroads: [],
+		roads: [],
+		rails: [],
+		lowres: [],
+		state: [],
+		county: [],
+		cousub: [],
+		coastline: [],
+		cd115: [],
+		population: [],
+		powerplants: []
+	};
+	
+	for (var i = 0; i < keys.length; i++)
+	{
+		const key = keys[i];
+		
+		// filled areas
+		if (key.indexOf('areawater') >= 0) { groups.areawater.push(key); }
+		
+		// lines
+		if (key.indexOf('linearwater') >= 0) { groups.linearwater.push(key); }
+		if (key.indexOf('primaryroads') >= 0) { groups.primaryroads.push(key); }
+		if (key.indexOf('prisecroads') >= 0) { groups.prisecroads.push(key); }
+		if (key.indexOf('roads') >= 0 && key.indexOf('prisecroads') < 0 && key.indexOf('primaryroads') < 0) { groups.roads.push(key); }
+		if (key.indexOf('rails') >= 0) { groups.rails.push(key); }
+		
+		// boundaries
+		if (key.indexOf('lowres') >= 0) { groups.lowres.push(key); }
+		if (key.indexOf('state') >= 0) { groups.state.push(key); }
+		if (key.indexOf('county') >= 0) { groups.county.push(key); }
+		if (key.indexOf('cousub') >= 0) { groups.cousub.push(key); }
+		if (key.indexOf('coastline') >= 0) { groups.coastline.push(key); }
+		if (key.indexOf('cd115') >= 0) { groups.cd115.push(key); }
+		
+		// dots
+		if (key.indexOf('counties') >= 0 || key.indexOf('cities') >= 0) { groups.population.push(key); }
+		if (key.indexOf('plants') >= 0) { groups.powerplants.push(key); }
+	}
+	
+	for (var i = 0; i < order.length; i++)
+	{
+		const group = order[i];
+		
+		for (var k = 0; k < groups[group].length; k++)
+		{
+			const key = groups[group][k];
+			
+			const rtree = rtrees[key];
+			const topo = topos[key];
+			let coords = null;
+			
+			if (group != 'powerplants' && group != 'population')
+			{
+				coords = ToTripleArray(rtree, topo, bounds);
+			}
+			
+			if (group == 'lowres') { DrawLowres(coords); }
+			else if (group == 'areawater') { DrawAreawater(coords); }
+			else if (group == 'linearwater') { DrawLinearwater(coords); }
+			else if (group == 'primaryroads') { DrawPrimaryRoads(coords); }
+			else if (group == 'prisecroads') { DrawSecondaryRoads(coords); }
+			else if (group == 'roads') { DrawRoads(coords); }
+			else if (group == 'rails') { DrawRails(coords); }
+			else if (group == 'state') { DrawState(coords); }
+			else if (group == 'county') { DrawCounty(coords); }
+			else if (group == 'cousub') { DrawCousub(coords); }
+			else if (group == 'coastline') { DrawCoastline(coords); }
+			else if (group == 'cd115') { DrawCongressionalDistricts(coords); }
+			else if (group == 'population') { DrawPopulation(rtree); }
+			else if (group == 'powerplants') { DrawPowerplants(rtree); }
+		}
+	}
+}
+
+function MakeDatgui() {
+	
+	var DrawOnChange = function(value) { KeysToDraw(); };
+	
+	var gui = new dat.GUI();
+	gui.add(layers, 'lowres').onChange(DrawOnChange);
+	gui.add(layers, 'states').onChange(DrawOnChange);
+	gui.add(layers, 'counties').onChange(DrawOnChange);
+	gui.add(layers, 'roads').onChange(DrawOnChange);
+	gui.add(layers, 'linearwater').onChange(DrawOnChange);
+	gui.add(layers, 'areawater').onChange(DrawOnChange);
+	gui.add(layers, 'population').onChange(DrawOnChange);
+	gui.add(layers, 'powerplants').onChange(DrawOnChange);
+}
+
+function ParsePolities(polities) {
+	
+	for (var i = 0; i < polities.length; i++)
+	{
+		const polity = polities[i];
+		
+		polity.lat = +polity.lat;
+		polity.lng = +polity.lng;
+		
+		polity.total = +polity.total;
+		polity.white = +polity.white;
+		polity.black = +polity.black;
+		polity.latin = +polity.latin;
+		polity.asian = +polity.asian;
+		polity.other = +polity.other;
+	}
+	
+	return polities;
+}
+function JoinGeneratorsToPlants(plants, generators) {
+	
+	const d = {};
+	
+	for (var i = 0; i < plants.length; i++)
+	{
+		const plant = plants[i];
+		d[plant.plantCode] = plant;
+		plant.generators = [];
+		plant.totalCapacity = 0; // cache totalCapacity so as to avoid drawing small plants at low zooms
+	}
+	
+	for (var i = 0; i < generators.length; i++)
+	{
+		const generator = generators[i];
+		d[generator.plantCode].generators.push(generator);
+		d[generator.plantCode].totalCapacity += +generator.capacity;
+	}
+	
+	const l = [];
+	for (var key in d) { l.push(d[key]); }
+	
+	return rbush(9, ['.lng', '.lat', '.lng', '.lat']).load(l);
+}
+function PointsToRtree(topo) {
+	
+	// topojson.transform(topology) => transform(point, isDelta) - remove delta-encoding and apply the transform
+	// topojson.untransform(topology) => transform(point, isDelta) - apply delta-encoding and remove the transform
+	// transform(point, isDelta) => point - modifies coordinates in-place, if isDelta is true, treats point as the delta to the previously-passed point
+	
+	var packs = [];
+	
+	var transform = topojson.transform(topo);
+	
+	for (var i = 0; i < topo.arcs.length; i++)
+	{
+		var isDelta = false;
+		
+		for (var j = 0; j < topo.arcs[i].length; j++)
+		{
+			var point = topo.arcs[i][j];
+			var coords = transform(point, isDelta);
+			
+			var pack = { lat: coords[1], lng: coords[0], arcIndex: i, pointIndex: j };
+			packs.push(pack);
+			
+			isDelta = true;
+		}
+	}
+	
+	return rbush(9, ['.lng', '.lat', '.lng', '.lat']).load(packs);
+}
+
+function SetQueryString() {
+	
+	var parts = [];
+	
+	parts.push('lat=' + params.lat.toFixed(6));
+	parts.push('lng=' + params.lng.toFixed(6));
+	parts.push('zoom=' + params.zoom.toFixed(0));
+	parts.push('size=' + params.size.toFixed(0));
+	parts.push('hasp=' + params.hasp.toFixed(0));
+	parts.push('vasp=' + params.vasp.toFixed(0));
+	//parts.push('layers=' + layers.join(','));
+	
+	window.location.hash = parts.join('&');
+}
+function OnHashChange() {
+	
+	params = {};
+	var parts = window.location.hash.substr(1).split('&');
+	for (var i = 0; i < parts.length; i++)
+	{
+		var keyval = parts[i].split('=');
+		var key = keyval[0];
+		var val = keyval[1];
+		
+		if (key == 'lat' || key == 'lng' || key == 'zoom' || key == 'size' || key == 'hasp' || key == 'vasp')
+		{
+			params[key] = parseFloat(val);
+		}
+		else
+		{
+			params[key] = val;
+		}
+	}
+}
+
+function Bounds(padding) {
+	
+	// because the projections are curved, we can't just do left-top and bottom-right corners to get min/max lat/lng
+	// for the United States in a geoAlbers projection, the maxLat will be near the top-center
+	
+	if (!padding) { padding = 0; }
+	
+	const [minLng0, maxLat0] = projection.invert([-padding, -padding]); // left top
+	const [minLng1, minLat0] = projection.invert([-padding, canvas.height+padding]); // left bottom
+	const [maxLng0, maxLat1] = projection.invert([canvas.width+padding, -padding]); // right top
+	const [maxLng1, minLat1] = projection.invert([canvas.width+padding, canvas.height+padding]); // right bottom
+	const minLng = Math.min(minLng0, minLng1);
+	const maxLng = Math.max(maxLng0, maxLng1);
+	const minLat = Math.min(minLat0, minLat1);
+	const maxLat = Math.max(Math.max(maxLat0, maxLat1), projection.invert([canvas.width / 2, -padding])[1]);
+	
+	return { minX: minLng, minY: minLat, maxX: maxLng, maxY: maxLat };
+}
+function PointArray(n, padding) {
+	
+	if (!padding) { padding = 0; }
+	
+	var lf = -padding;
+	var tp = -padding;
+	var wd = padding + canvas.width + padding;
+	var hg = padding + canvas.height + padding;
+	
+	const points = [];
+	
+	const divisor = n - 1;
+	
+	for (var i = 0; i < n; i++)
+	{
+		for (var j = 0; j < n; j++)
+		{
+			points.push(projection.invert([lf + wd * i / divisor, tp + hg * j / divisor]));
+		}
+	}
+	
+	return points;
+}
+function ToTripleArray(rtree, topo, bounds) {
+	
+	const points = rtree.search(bounds);
+	
+	const arcIncluded = new Array(topo.arcs.length);
+	
+	for (var i = 0; i < points.length; i++)
+	{
+		arcIncluded[points[i].arcIndex] = true;
+	}
+	
+	const arcs = []
+	
+	for (var i = 0; i < arcIncluded.length; i++)
+	{
+		if (arcIncluded[i])
+		{
+			var arc = topo.arcs[i];
+			arcs.push(arc);
+		}
+	}
+	
+	return arcs;
+}
+
+function DrawPowerplants(rtree) {
+	
+	const bounds = Bounds(100); // padding pixels
+	const plants = rtree.search(bounds);
+	
+	const scaleMultiplier = params.zoom / 4; // Math.pow(2, Math.max(0, params.zoom - 6)); - this is good for seeing very small plants
+	
+	for (var i = 0; i < plants.length; i++)
+	{
+		const plant = plants[i];
+		
+		if (plant.totalCapacity < (10 - params.zoom) * 50) { continue; }
+		
+		const coords = projection([+plant.lng,+plant.lat]);
+		
+		if (coords === null) { continue; }
+		
+		const origX = coords[0];
+		let x = coords[0];
+		let y = coords[1];
+		
+		let totalCapacity = 0;
+		let textMargin = 5; // will add a radius to this
+		
+		for (var k = 0; k < plant.generators.length; k++) { totalCapacity += +plant.generators[k].capacity; }
+		
+		const r = powerplantRadius(totalCapacity) * scaleMultiplier;
+		textMargin += r;
+		const slices = pie(plant.generators.map(function(gen) { return +gen.capacity; }));
+		for (var k = 0; k < slices.length; k++)
+		{
+			const generator = plant.generators[k];
+			const slice = slices[k];
+			
+			ctx.fillStyle = (colorDict[generator.type] ? colorDict[generator.type] : 'gray');
+			ctx.strokeStyle = (strokeDict[generator.type] ? strokeDict[generator.type] : 'black');
+			ctx.beginPath();
+			
+			if (slices.length == 1)
+			{
+				ctx.arc(x, y, r, 0, Math.PI * 2, false);
+			}
+			else
+			{
+				ctx.moveTo(x, y);
+				ctx.lineTo(x + r * Math.cos(slice.startAngle), y + r * Math.sin(slice.startAngle));
+				ctx.arc(x, y, r, slice.startAngle, slice.endAngle, false);
+				ctx.lineTo(x, y);
+			}
+			
+			ctx.fill();
+			ctx.stroke();
+		}
+		
+		//for (var k = 0; k < plant.generators.length; k++)
+		//{
+		//	const generator = plant.generators[k];
+		//	
+		//	const r = powerplantRadius(generator.capacity) * scaleMultiplier;
+		//	
+		//	if (k == 0) { textMargin += r; }
+		//	
+		//	if (k > 0) { x += r; }
+		//	
+		//	ctx.fillStyle = (colorDict[generator.type] ? colorDict[generator.type] : 'gray');
+		//	ctx.beginPath();
+		//	ctx.arc(x, y, r, 0, Math.PI*2, false);
+		//	ctx.fill();
+		//	
+		//	x += r + 3;
+		//}
+		
+		if (params.zoom >= 8 && params.zoom + (totalCapacity / 200) >= 11)
+		{
+			ctx.fillStyle = 'black';
+			ctx.textAlign = 'left';
+			ctx.textBaseline = 'top';
+			ctx.fillText(Math.floor(totalCapacity) + ' MW - ' + plant.utilityName + ' - ' + plant.plantName, origX, y + textMargin);
+		}
+	}
+}
+function DrawPopulation(rtree) {
+	
+	const bounds = Bounds(100); // padding pixels
+	const polities = rtree.search(bounds);
+	
+	for (var i = 0; i < polities.length; i++)
+	{
+		const polity = polities[i];
+		
+		//if (polity.lng < minLng || polity.lng > maxLng || polity.lat < minLat || polity.lat > maxLat) { continue; }
+		
+		const [x,y] = projection([polity.lng, polity.lat]);
+		const r = populationRadius(polity.total);
+		
+		//if (x + r < 0 || x - r > canvas.width || y + r + 30 < 0 || y - r > canvas.height) { return; }
+		
+		const slices = pie([polity.white, polity.black, polity.latin, polity.asian, polity.other]);
+		
+		for (var k = 0; k < slices.length; k++)
+		{
+			const slice = slices[k];
+			
+			ctx.fillStyle = ['red','blue','orange','green','gray'][k];
+			ctx.beginPath();
+			ctx.moveTo(x, y);
+			ctx.lineTo(x + r * Math.cos(slice.startAngle), y + r * Math.sin(slice.startAngle));
+			ctx.arc(x, y, r, slice.startAngle, slice.endAngle, false);
+			ctx.lineTo(x, y);
+			ctx.fill();
+		}
+		
+		let label = null;
+		
+		if (params.zoom <= 6)
+		{
+			label = (polity.total / 1000000).toFixed(1) + 'm';
+		}
+		else if (params.zoom <= 9)
+		{
+			label = Math.floor(polity.total / 1000) + 'k';
+		}
+		else
+		{
+			label = polity.total.toString();
+		}
+		
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'top';
+		ctx.fillStyle = 'black';
+		ctx.font = '8pt Arial';
+		
+		ctx.fillText(polity.name, x, y + r + 4);
+		ctx.fillText(label, x, y + r + 16);
+	}
+}
+
+function DrawAreawater(coords) {
+	
+	ctx.fillStyle = 'blue';
+	ctx.beginPath();
+	path({ type: 'Polygon', coordinates: coords });
+	ctx.fill();
+}
+function DrawLinearwater(coords) {
+	
+	ctx.strokeStyle = 'blue';
+	ctx.lineWidth = 1;
+	ctx.beginPath();
+	path({ type: 'MultiLineString', coordinates: coords });
+	ctx.stroke();
+}
+function DrawCoastline(coords) {
+	
+	ctx.strokeStyle = 'purple';
+	ctx.lineWidth = 1;
+	ctx.beginPath();
+	path({ type: 'MultiLineString', coordinates: coords });
+	ctx.stroke();
+}
+function DrawRails(coords) {
+	
+	ctx.strokeStyle = 'red';
+	ctx.lineWidth = 1;
+	ctx.beginPath();
+	path({ type: 'MultiLineString', coordinates: coords });
+	ctx.stroke();
+}
+function DrawPrimaryRoads(coords) {
+	
+	ctx.strokeStyle = 'orange';
+	ctx.lineWidth = 1;
+	ctx.beginPath();
+	path({ type: 'MultiLineString', coordinates: coords });
+	ctx.stroke();
+}
+function DrawSecondaryRoads(coords) {
+	
+	ctx.strokeStyle = 'yellow';
+	ctx.lineWidth = 1;
+	ctx.beginPath();
+	path({ type: 'MultiLineString', coordinates: coords });
+	ctx.stroke();
+}
+function DrawRoads(coords) {
+	
+	ctx.strokeStyle = 'white';
+	ctx.lineWidth = 1;
+	ctx.beginPath();
+	path({ type: 'MultiLineString', coordinates: coords });
+	ctx.stroke();
+}
+function DrawLowres(coords) {
+	
+	ctx.strokeStyle = 'black';
+	ctx.lineWidth = 1;
+	ctx.beginPath();
+	path({ type: 'MultiLineString', coordinates: coords });
+	ctx.stroke();
+}
+function DrawState(coords) {
+
+	ctx.strokeStyle = 'black';
+	ctx.lineWidth = 1;
+	ctx.beginPath();
+	path({ type: 'MultiLineString', coordinates: coords });
+	ctx.stroke();
+	
+	//for (var i = 0; i < topo.objects.tl_2016_us_state.geometries.length; i++)
+	//{
+	//	var props = topo.objects.tl_2016_us_state.geometries[i].properties;
+	//	var lat = props.INTPTLAT;
+	//	var lng = props.INTPTLON;
+	//	var fips = props.STATEFP;
+	//	
+	//	if (fips != '60' && fips != '66' && fips != '69' && fips != '72' && fips != '74' && fips != '78')
+	//	{
+	//		const [x,y] = projection([lng, lat]);
+	//		
+	//		ctx.fillStyle = 'black';
+	//		ctx.font = '12pt Arial';
+	//		ctx.textAlign = 'center';
+	//		ctx.textBaseline = 'middle';
+	//		ctx.fillText(fips, x, y);
+	//	}
+	//}
+}
+function DrawCounty(coords) {
+	
+	ctx.strokeStyle = 'black';
+	ctx.lineWidth = 1;
+	ctx.beginPath();
+	path({ type: 'MultiLineString', coordinates: coords });
+	ctx.stroke();
+	
+	//for (var i = 0; i < topo.objects.tl_2016_us_county.geometries.length; i++)
+	//{
+	//	var props = topo.objects.tl_2016_us_county.geometries[i].properties;
+	//	var lat = props.INTPTLAT;
+	//	var lng = props.INTPTLON;
+	//	var fips = props.GEOID;
+	//	
+	//	const [x,y] = projection([lng, lat]);
+	//	
+	//	ctx.fillStyle = 'black';
+	//	ctx.font = '8pt Arial';
+	//	ctx.textAlign = 'center';
+	//	ctx.textBaseline = 'middle';
+	//	ctx.fillText(fips, x, y);
+	//}
+}
+function DrawCousub(coords) {
+	
+	ctx.strokeStyle = 'black';
+	ctx.lineWidth = 1;
+	ctx.beginPath();
+	path({ type: 'MultiLineString', coordinates: coords });
+	ctx.stroke();
+	
+	//ctx.font = '14pt Arial';
+	//ctx.fillStyle = 'black';
+	//ctx.textAlign = 'center';
+	//ctx.textBaseline = 'middle';
+	//
+	//for (var i = 0; i < layer.features.length; i++)
+	//{
+	//	var props = layer.features[i].properties;
+	//	var lat = +props.INTPTLAT;
+	//	var lng = +props.INTPTLON;
+	//	var name = props.NAME;
+	//	
+	//	var [x,y] = projection([lng,lat]);
+	//	
+	//	if (x < 0 || x > ctx.canvas.width || y < 0 || y > ctx.canvas.width) { continue; }
+	//	
+	//	ctx.fillText(name, x, y);
+	//}
+}
+
+let countyArcs = null;
+let stateCentersTree = null;
+let countyCentersTree = null;
+function DetermineArcBounds(topo, key) {
+	
+	const arcs = new Array(topo.arcs.length);
+	
+	for (var i = 0; i < arcs.length; i++) { arcs[i] = { visible: false, neighbors: [] }; }
+	
+	var ls = [];
+	
+	for (var i = 0; i < topo.objects[key].geometries.length; i++)
+	{
+		var obj = topo.objects[key].geometries[i];
+		
+		ls.push(obj.properties.GEOID + '  ' + obj.properties.NAMELSAD + ' '.repeat(Math.max(2, 40 - obj.properties.NAMELSAD.length)) + obj.type + ' '.repeat(20 - obj.type.length) + JSON.stringify(obj.arcs));
+		
+		if (obj.type == 'MultiPolygon')
+		{
+			for (var j = 0; j < obj.arcs[0].length; j++)
+			{
+				for (var k = 0; k < obj.arcs[0][j].length; k++)
+				{
+					const arcIndex = Math.abs(obj.arcs[0][j][k]);
+					arcs[arcIndex].neighbors.push(obj.id);
+				}
+			}
+		}
+		else if (obj.type == 'Polygon')
+		{
+			for (var j = 0; j < obj.arcs[0].length; j++)
+			{
+				const arcIndex = Math.abs(obj.arcs[0][j]);
+				arcs[arcIndex].neighbors.push(obj.id);
+			}
+		}
+		else
+		{
+			throw new Error();
+		}
+	}
+	
+	var pre = document.createElement('pre');
+	pre.innerHTML = ls.join('\n');
+	div.appendChild(pre);
+}
+function VisibleStates(visibleCountyFips) {
+	
+	var d = {};
+	
+	for (var i = 0; i < visibleCountyFips.length; i++)
+	{
+		d[visibleCountyFips[i].substr(0, 2)] = true;
+	}
+	
+	var fips = [];
+	
+	for (var key in d)
+	{
+		fips.push(key);
+	}
+	
+	return fips;
+}
+function VisibleCounties(bounds) {
+	
+	const topo = topos['tl_2016_us_county'];
+	const points = rtrees['tl_2016_us_county'].search(bounds);
+	
+	for (var i = 0; i < countyArcs.length; i++) { countyArcs[i].visible = false; }
+	for (var i = 0; i < points.length; i++) { countyArcs[points[i].arcIndex].visible = true; }
+	
+	const d = {};
+	
+	for (var i = 0; i < countyArcs.length; i++)
+	{
+		if (countyArcs[i].visible)
+		{
+			for (var k = 0; k < countyArcs[i].neighbors.length; k++)
+			{
+				d[countyArcs[i].neighbors[k]] = true;
+			}
+		}
+	}
+	
+	const fips = [];
+	
+	for (var key in d) { fips.push(key); }
+	
+	return fips;
+}
+function VisibleRegions(rtree, points) {
+	
+	var d = {};
+	
+	for (var i = 0; i < points.length; i++)
+	{
+		var lng = points[i][0];
+		var lat = points[i][1];
+		
+		var nearest = knn(rtree, lng, lat, 1);
+		
+		d[nearest[0].fips] = true;
+	}
+	
+	const fips = [];
+	
+	for (var key in d) { fips.push(key); }
+	
+	return fips;
+}
+
+Start();
+
+</script>
+</body>
+</html>
+

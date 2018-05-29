@@ -1,53 +1,5 @@
-/*
-
-Controls:
-
-Space = edit value
-Shift+Space = edit key
-
-Ctrl+Space = edit {} or [] subtree (display a large textarea with underlying text representation)
-(we could theoretically map Space to edit subtree, since it's unambiguous.  but big subtrees will basically crash a textarea, so we want people to be careful when choosing to edit a subtree) (TODO)
-
-Up = move cursor up (in display order)
-Down = move cursor down (in display order)
-Shift+Up = move cursor to prev sibling
-Shift+Down = move cursor to next sibling
-Ctrl+Up = move cursor to parent
-Ctrl+Down = ??
-Ctrl+Shift+Up = move cursor to root
-Ctrl+Shift+Down = ??
-
-Right = open, or move cursor to next
-Left = close, or move cursor to parent
-Ctrl+Right = open descendants
-Ctrl+Left = close descendants
-Shift+Right = open children
-Shift+Left = close children
-Ctrl+Shift+Right = open children and descendants
-Ctrl+Shift+Left = close children and descendants
-Shift+Alt+Right = open grandchildren
-Shift+Alt+Left = close grandchildren
-Ctrl+Shift+Alt+Right = open grandchildren and descendants
-Ctrl+Shift+Alt+Left = close grandchildren and descendants
-
-Alt+Up = add prev sibling
-Alt+Down = add next sibling
-Alt+Left = add object parent
-Alt+Shift+Left = add array parent
-Alt+Right = add first child
-Shift+Alt+Up = move before prev sibling
-Shift+Alt+Down = move after next sibling
-
-Shift+Scroll = 1
-Scroll = 10
-Ctrl+Scroll = 100
-Ctrl+Shift+Scroll = 1000
-Ctrl+Shift+Alt+Scroll = 10000
-PageUp/PageDown equivalent to Scroll
-
-*/
-var Sweetgum;
-(function (Sweetgum) {
+var Hyperdeck;
+(function (Hyperdeck) {
     var Tree = (function () {
         function Tree(ctx, data, options) {
             var tree = this;
@@ -80,7 +32,9 @@ var Sweetgum;
         Tree.prototype.draw = function () {
             var tree = this;
             var ctx = tree.ctx;
-            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            ctx.fillStyle = 'black';
             ctx.textAlign = 'left';
             ctx.textBaseline = 'middle';
             ctx.font = tree.font;
@@ -403,55 +357,8 @@ var Sweetgum;
                     tree.scrollBy(direction * offset);
                 }
                 else if (key == 37 || key == 39) {
-                    if (alt) {
-                        if (key == 37) {
-                            if (sel == tree.root) {
-                                return;
-                            } // we could do something with this although i don't know what
-                            var newparent = new Twig();
-                            newparent.parent = sel.parent;
-                            newparent.firstChild = sel;
-                            newparent.lastChild = sel;
-                            newparent.prevSibling = sel.prevSibling;
-                            newparent.nextSibling = sel.nextSibling;
-                            newparent.open = true;
-                            newparent.obj = sel.obj;
-                            newparent.key = sel.key;
-                            if (sel.parent.firstChild == sel) {
-                                sel.parent.firstChild = newparent;
-                            }
-                            if (sel.parent.lastChild == sel) {
-                                sel.parent.lastChild = newparent;
-                            }
-                            if (sel.prevSibling !== null) {
-                                sel.prevSibling.nextSibling = newparent;
-                            }
-                            if (sel.nextSibling !== null) {
-                                sel.nextSibling.prevSibling = newparent;
-                            }
-                            if (shift) {
-                                newparent.type = 1 /* Array */;
-                                var newarr = [];
-                                var temp = sel.obj[sel.key];
-                                sel.obj[sel.key] = newarr;
-                                newarr[0] = temp;
-                                sel.key = '0';
-                                sel.obj = newarr;
-                            }
-                            else {
-                                newparent.type = 0 /* Object */;
-                                var newobj = {};
-                                var temp = sel.obj[sel.key];
-                                sel.obj[sel.key] = newobj;
-                                newobj[''] = temp;
-                                sel.key = '';
-                                sel.obj = newobj;
-                            }
-                            sel.parent = newparent;
-                            sel.prevSibling = null;
-                            sel.nextSibling = null;
-                        }
-                        else if (key == 39) {
+                    if (alt && !shift) {
+                        if (key == 39) {
                             var obj = ((tree.root == sel) ? tree.data : sel.obj[sel.key]);
                             var seltype = Object.prototype.toString.apply(obj);
                             var newchild = new Twig();
@@ -709,6 +616,8 @@ var Sweetgum;
                     }
                     CheckOverflow();
                 }
+                else if (ctrl && key == 80) {
+                }
             };
         };
         Tree.prototype.scrollBy = function (offset) {
@@ -799,7 +708,7 @@ var Sweetgum;
         };
         return Tree;
     }());
-    Sweetgum.Tree = Tree;
+    Hyperdeck.Tree = Tree;
     var Twig = (function () {
         function Twig() {
             this.type = 2 /* Primitive */;
@@ -987,4 +896,4 @@ var Sweetgum;
         }
         ctx.putImageData(imageData, cx - 7, cy - 7);
     }
-})(Sweetgum || (Sweetgum = {}));
+})(Hyperdeck || (Hyperdeck = {}));

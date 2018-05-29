@@ -31,51 +31,51 @@ var File = function(json, type, name) {
 		}
 	}
 	
-	this._type = json.type; // image, binary, zip
-	this._name = json.name;
-	this._visible = json.visible;
+	this.type = json.type; // image, binary, zip
+	this.name = json.name;
+	this.visible = json.visible;
 	
-	this._div = null;
-	this._span = null;
+	this.div = null;
+	this.span = null;
 	
-	this._uint8array = null;
+	this.uint8array = null;
 	
-	this._img = null; // for image only - the HTMLImageElement
-	this._imagetype = null; // for image only - 'png', 'jpg', etc.
-	this._files = null; // for zipfile only - { filename  : String , uint8array : Uint8Array , size : String }
+	this.img = null; // for image only - the HTMLImageElement
+	this.imagetype = null; // for image only - 'png', 'jpg', etc.
+	this.files = null; // for zipfile only - { filename  : String , uint8array : Uint8Array , size : String }
 	
 	DataUrlToUint8Array(this, json.data);
 	
 	// don't need these after getting rid of dat.gui
-	Object.defineProperty(this, 'upload', { get : function() { return this._upload; } });
-	Object.defineProperty(this, 'download', { get : function() { return this._download; } });
+	//Object.defineProperty(this, 'upload', { get : function() { return this.upload; } });
+	//Object.defineProperty(this, 'download', { get : function() { return this.download; } });
 };
-File.prototype._add = function() {
+File.prototype.add = function() {
 	
 	var comp = this;
 	
-	comp._div.html('');
+	comp.div.html('');
 	
 	//var gui = new dat.GUI({autoPlace:false, width:"100%"});
 	//gui.add(comp, 'upload');
 	//gui.add(comp, 'download');
-	//comp._div[0].appendChild(gui.domElement);
+	//comp.div[0].appendChild(gui.domElement);
 	
-	var controlsDiv = $('<div class="file-control"></div>').appendTo(comp._div);
+	var controlsDiv = $('<div class="file-control"></div>').appendTo(comp.div);
 	$('<button type="button" data-toggle="tooltip" data-placement="bottom" title="Download" data-original-title="Download" class="btn btn-default btn-sm"><i class="fa fa-download"></i></button>')
-		.appendTo(controlsDiv).on('click', function() { comp._download(); }).tooltip();
+		.appendTo(controlsDiv).on('click', function() { comp.download(); }).tooltip();
 	$('<button type="button" data-toggle="tooltip" data-placement="bottom" title="Upload" data-original-title="Upload" class="btn btn-default btn-sm"><i class="fa fa-upload"></i></button>')
-		.appendTo(controlsDiv).on('click', function() { comp._upload(); }).tooltip();
+		.appendTo(controlsDiv).on('click', function() { comp.upload(); }).tooltip();
 	
-	if (comp._type == 'binary')
+	if (comp.type == 'binary')
 	{
-		comp._span = $('<span style="margin:1em"></span>');
-		comp._span.text(comp._uint8array.length.toString() + ' bytes'); // or we could do a hexdump or something
-		comp._div.append(comp._span);
+		comp.span = $('<span style="margin:1em"></span>');
+		comp.span.text(comp.uint8array.length.toString() + ' bytes'); // or we could do a hexdump or something
+		comp.div.append(comp.span);
 	}
-	else if (comp._type == 'image')
+	else if (comp.type == 'image')
 	{
-		var blob = new Blob([comp._uint8array], {type: 'image/' + comp._imagetype});
+		var blob = new Blob([comp.uint8array], {type: 'image/' + comp.imagetype});
 		
 		var reader = new FileReader();
 		
@@ -85,7 +85,7 @@ File.prototype._add = function() {
 			
 			var imgdiv = $('<div style="margin:1em;overflow:auto"></div>');
 			var imageElement = $('<img src="' + b64 + '"></img>').appendTo(imgdiv);
-			comp._img = imageElement;
+			comp.img = imageElement;
 			
 			var urlDiv = $('<div style="margin:1em"></div>')
 			urlDiv.text(URL.createObjectURL(blob));
@@ -93,18 +93,18 @@ File.prototype._add = function() {
 			var dimensionDiv = $('<div style="margin:1em"></div>')
 			dimensionDiv.text(imageElement[0].width + ' x ' + imageElement[0].height);
 			
-			comp._div.append(urlDiv);
-			comp._div.append(dimensionDiv);
-			comp._div.append(imgdiv);
+			comp.div.append(urlDiv);
+			comp.div.append(dimensionDiv);
+			comp.div.append(imgdiv);
 		};
 		
 		reader.readAsDataURL(blob);
 	}
-	else if (comp._type == 'zip')
+	else if (comp.type == 'zip')
 	{
-		var zip = new JSZip(comp._uint8array.buffer);
+		var zip = new JSZip(comp.uint8array.buffer);
 		
-		comp._files = []; // Proxy this
+		comp.files = []; // Proxy this
 		
 		for (var filename in zip.files)
 		{
@@ -118,7 +118,7 @@ File.prototype._add = function() {
 				
 				var fileobj = {}; // Proxy this
 				fileobj.filename = filename;
-				fileobj.size = file._data.uncompressedSize.toString();
+				fileobj.size = file.data.uncompressedSize.toString();
 				fileobj.file = file;
 				fileobj.text = null;
 				fileobj.uint8array = null;
@@ -173,11 +173,11 @@ File.prototype._add = function() {
 					};
 				};
 				
-				comp._files.push(fileobj);
+				comp.files.push(fileobj);
 			}
 		}
 		
-		comp._div.append($('<button>Upload File</button>').on('click', function() {
+		comp.div.append($('<button>Upload File</button>').on('click', function() {
 			
 			var fileInput = document.createElement('input');
 			fileInput.type = 'file';
@@ -197,7 +197,7 @@ File.prototype._add = function() {
 					{
 						fileobj.uint8array = new Uint8Array(event.target.result);
 						fileobj.size = fileobj.uint8array.length.toString();
-						comp._files.push(fileobj); // refresh tablegui, somehow
+						comp.files.push(fileobj); // refresh tablegui, somehow
 					};
 					
 					fileReader.readAsArrayBuffer(f);
@@ -207,30 +207,30 @@ File.prototype._add = function() {
 			fileInput.click();
 		}));
 		
-		var tablegui = new TableGui(comp._files);
+		var tablegui = new TableGui(comp.files);
 		//tablegui.add('upload', 'button', {header:''});
 		tablegui.add('download', 'button', {header:''});
 		tablegui.add('filename', 'text', {size:30});
 		tablegui.add('size', 'label');
-		comp._div[0].appendChild(tablegui.table);
+		comp.div[0].appendChild(tablegui.table);
 	}
 	else
 	{
 		throw new Error();
 	}
 };
-File.prototype._write = function() {
+File.prototype.write = function() {
 	
 	var comp = this;
 	
 	var json = {};
-	json.type = comp._type;
-	json.name = comp._name;
-	json.visible = comp._visible;
+	json.type = comp.type;
+	json.name = comp.name;
+	json.visible = comp.visible;
 	json.data = Uint8ArrayToDataUrl(comp);
 	return json;
 };
-File.prototype._upload = function() {
+File.prototype.upload = function() {
 	
 	var comp = this;
 	
@@ -243,20 +243,20 @@ File.prototype._upload = function() {
 		
 		fileReader.onload = function(event)
 		{
-			comp._uint8array = new Uint8Array(event.target.result);
-			comp._add();
+			comp.uint8array = new Uint8Array(event.target.result);
+			comp.add();
 		};
 		
 		if (fileInput.files.length > 0)
 		{
 			var f = fileInput.files[0];
 			
-			if (comp._type == 'image')
+			if (comp.type == 'image')
 			{
-				comp._imagetype = f.name.substr(f.name.lastIndexOf('.')+1);
+				comp.imagetype = f.name.substr(f.name.lastIndexOf('.')+1);
 			}
 			
-			comp._markDirty();
+			comp.markDirty();
 			
 			fileReader.readAsArrayBuffer(f);
 		}
@@ -264,7 +264,7 @@ File.prototype._upload = function() {
 	
 	fileInput.click();
 };
-File.prototype._download = function() {
+File.prototype.download = function() {
 	
 	var comp = this;
 	
@@ -273,20 +273,20 @@ File.prototype._download = function() {
 	
 	var ext = '';
 	
-	if (comp._type == 'image')
+	if (comp.type == 'image')
 	{
-		ext = '.' + comp._imagetype;
+		ext = '.' + comp.imagetype;
 	}
-	else if (comp._type == 'zip')
+	else if (comp.type == 'zip')
 	{
 		ext = '.zip';
 	}
 	
-	a.download = comp._name + ext;
+	a.download = comp.name + ext;
 	a.click();
 };
 
-File.prototype._get = function(options) {
+File.prototype.get = function(options) {
 	
 	var comp = this;
 	
@@ -300,7 +300,7 @@ File.prototype._get = function(options) {
 		}
 		else if (options.format == 'uint8array')
 		{
-			result = comp._uint8array;
+			result = comp.uint8array;
 		}
 		else
 		{
@@ -309,19 +309,19 @@ File.prototype._get = function(options) {
 	}
 	else
 	{
-		if (comp._type == 'image')
+		if (comp.type == 'image')
 		{
-			result = comp._img;
+			result = comp.img;
 		}
 		else
 		{
-			result = comp._uint8array;
+			result = comp.uint8array;
 		}
 	}
 	
 	return result;
 };
-File.prototype._set = function(data, options) {
+File.prototype.set = function(data, options) {
 	
 	var comp = this;
 	
@@ -333,7 +333,7 @@ File.prototype._set = function(data, options) {
 		}
 		else if (options.format == 'uint8array')
 		{
-			comp._uint8array = data; // but then how do we infer imagetype?
+			comp.uint8array = data; // but then how do we infer imagetype?
 		}
 		else
 		{
@@ -342,24 +342,24 @@ File.prototype._set = function(data, options) {
 	}
 	else
 	{
-		comp._uint8array = data; // but then how do we infer imagetype?
+		comp.uint8array = data; // but then how do we infer imagetype?
 	}
 	
-	comp._add();
-	comp._markDirty();
+	comp.add();
+	comp.markDirty();
 };
 
 function Uint8ArrayToDataUrl(comp) {
 	
 	var prefix = null;
 	
-	if (comp._type == 'image')
+	if (comp.type == 'image')
 	{
-		prefix = 'data:image/' + comp._imagetype + ';base64,';
+		prefix = 'data:image/' + comp.imagetype + ';base64,';
 	}
-	else if (comp._type == 'binary' || comp._type == 'zip')
+	else if (comp.type == 'binary' || comp.type == 'zip')
 	{
-		prefix = 'data:application/' + comp._type + ';base64,';
+		prefix = 'data:application/' + comp.type + ';base64,';
 	}
 	else
 	{
@@ -368,13 +368,13 @@ function Uint8ArrayToDataUrl(comp) {
 	
 	var base64 = null;
 	
-	if (comp._type == 'zip')
+	if (comp.type == 'zip')
 	{
 		var zip = new JSZip();
 		
-		for (var i = 0; i < comp._files.length; i++)
+		for (var i = 0; i < comp.files.length; i++)
 		{
-			var fileobj = comp._files[i];
+			var fileobj = comp.files[i];
 			var uint8array = fileobj.uint8array ? fileobj.uint8array : fileobj.file.asUint8Array();
 			zip.file(fileobj.filename, uint8array);
 		}
@@ -383,7 +383,7 @@ function Uint8ArrayToDataUrl(comp) {
 	}
 	else
 	{
-		base64 = Uint8ArrayToBase64String(comp._uint8array); // we can't use a FileReader here because the return must be synchronous
+		base64 = Uint8ArrayToBase64String(comp.uint8array); // we can't use a FileReader here because the return must be synchronous
 	}
 	
 	return prefix + base64;
@@ -393,13 +393,13 @@ function DataUrlToUint8Array(comp, dataUrl) {
 	var comma = dataUrl.indexOf(','); // data:text/plain;base64,
 	var prefix = dataUrl.substr(0, comma+1);
 	var base64 = dataUrl.substr(comma+1);
-	comp._uint8array = Base64StringToUint8Array(base64);
+	comp.uint8array = Base64StringToUint8Array(base64);
 	
-	if (comp._type == 'image')
+	if (comp.type == 'image')
 	{
 		var slash = prefix.indexOf('/');
 		var semicolon = prefix.indexOf(';');
-		comp._imagetype = prefix.substring(slash+1, semicolon);
+		comp.imagetype = prefix.substring(slash+1, semicolon);
 	}
 }
 

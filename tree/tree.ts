@@ -1,5 +1,5 @@
 
-namespace Sweetgum {
+namespace Hyperdeck {
 
 export class Tree {
 	
@@ -64,8 +64,10 @@ export class Tree {
 		const tree = this;
 		const ctx = tree.ctx;
 		
-		ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+		ctx.fillStyle = 'white';
+		ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 		
+		ctx.fillStyle = 'black';
 		ctx.textAlign = 'left';
 		ctx.textBaseline = 'middle';
 		ctx.font = tree.font;
@@ -480,53 +482,9 @@ export class Tree {
 			}
 			else if (key == 37 || key == 39) // left or right
 			{
-				if (alt)
+				if (alt && !shift)
 				{
-					if (key == 37) // left = add parent
-					{
-						if (sel == tree.root) { return; } // we could do something with this although i don't know what
-						
-						var newparent = new Twig();
-						newparent.parent = sel.parent;
-						newparent.firstChild = sel;
-						newparent.lastChild = sel;
-						newparent.prevSibling = sel.prevSibling;
-						newparent.nextSibling = sel.nextSibling;
-						newparent.open = true;
-						newparent.obj = sel.obj;
-						newparent.key = sel.key;
-						
-						if (sel.parent.firstChild == sel) { sel.parent.firstChild = newparent; }
-						if (sel.parent.lastChild == sel) { sel.parent.lastChild = newparent; }
-						if (sel.prevSibling !== null) { sel.prevSibling.nextSibling = newparent; }
-						if (sel.nextSibling !== null) { sel.nextSibling.prevSibling = newparent; }
-						
-						if (shift)
-						{
-							newparent.type = TwigType.Array;
-							var newarr = [];
-							var temp = sel.obj[sel.key];
-							sel.obj[sel.key] = newarr;
-							newarr[0] = temp;
-							sel.key = '0';
-							sel.obj = newarr;
-						}
-						else
-						{
-							newparent.type = TwigType.Object;
-							var newobj = {};
-							var temp = sel.obj[sel.key];
-							sel.obj[sel.key] = newobj;
-							newobj[''] = temp;
-							sel.key = '';
-							sel.obj = newobj;
-						}
-						
-						sel.parent = newparent;
-						sel.prevSibling = null;
-						sel.nextSibling = null;
-					}
-					else if (key == 39) // right = add first child
+					if (key == 39) // Alt+Right = add first child
 					{
 						var obj = ((tree.root == sel) ? tree.data : sel.obj[sel.key]);
 						var seltype = Object.prototype.toString.apply(obj);
@@ -793,6 +751,52 @@ export class Tree {
 				}
 				
 				CheckOverflow();
+			}
+			else if (ctrl && key == 80) // Ctrl+P = add object parent, Ctrl+Shift+P = add array parent
+			{
+				// there are bugs here, not sure what, weird stuff happens
+				
+				//if (sel == tree.root) { return; } // we could do something with this although i don't know what
+				//
+				//var newparent = new Twig();
+				//newparent.parent = sel.parent;
+				//newparent.firstChild = sel;
+				//newparent.lastChild = sel;
+				//newparent.prevSibling = sel.prevSibling;
+				//newparent.nextSibling = sel.nextSibling;
+				//newparent.open = true;
+				//newparent.obj = sel.obj;
+				//newparent.key = sel.key;
+				//
+				//if (sel.parent.firstChild == sel) { sel.parent.firstChild = newparent; }
+				//if (sel.parent.lastChild == sel) { sel.parent.lastChild = newparent; }
+				//if (sel.prevSibling !== null) { sel.prevSibling.nextSibling = newparent; }
+				//if (sel.nextSibling !== null) { sel.nextSibling.prevSibling = newparent; }
+				//
+				//if (shift)
+				//{
+				//	newparent.type = TwigType.Array;
+				//	var newarr = [];
+				//	var temp = sel.obj[sel.key];
+				//	sel.obj[sel.key] = newarr;
+				//	newarr[0] = temp;
+				//	sel.key = '0';
+				//	sel.obj = newarr;
+				//}
+				//else
+				//{
+				//	newparent.type = TwigType.Object;
+				//	var newobj = {};
+				//	var temp = sel.obj[sel.key];
+				//	sel.obj[sel.key] = newobj;
+				//	newobj[''] = temp;
+				//	sel.key = '';
+				//	sel.obj = newobj;
+				//}
+				//
+				//sel.parent = newparent;
+				//sel.prevSibling = null;
+				//sel.nextSibling = null;
 			}
 		};
 	}

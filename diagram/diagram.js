@@ -132,15 +132,11 @@ var PointList = (function (_super) {
 }(PointListElt));
 var Diagram = (function () {
     function Diagram(ctx, afterChange) {
-        //version: number = 0;
         this.pointRadius = 3;
-        //gui: any = null;
-        //showGrid: boolean = true;
-        this.showPoints = true;
         this.shift = false;
         this.ctrl = false;
         this.alt = false;
-        //copied: boolean = false;
+        this.showPoints = true;
         this.selectionBox = null;
         var diagram = this;
         this.ctx = ctx;
@@ -393,8 +389,8 @@ var Diagram = (function () {
     };
     Diagram.prototype.compile = function () {
         var header = [
-            "ctx.canvas.width = document.getElementById('width').value;",
-            "ctx.canvas.height = document.getElementById('height').value;",
+            //"ctx.canvas.width = document.getElementById('width').value;",
+            //"ctx.canvas.height = document.getElementById('height').value;",
             "ctx.fillStyle = 'white';",
             "ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);"
         ];

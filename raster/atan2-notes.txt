@@ -1,0 +1,13 @@
+Math.atan2(-1, 0) => W: -pi/2
+Math.atan2(0, +1) => N: 0
+Math.atan2(+1, 0) => E: +pi/2
+Math.atan2(0, -1) => S: pi
+
+Math.atan2(-1, -0.1) => W->S: -pi/2 - delta
+Math.atan2(-0.1, -1) => S->W: -pi - delta
+
+Math.atan2(0, 0) => 0
+
+So atan2 returns an angle in the range (pi,pi], with the N pole as 0 and the angle increasing clockwise
+so the left side is negative and right side is positive
+

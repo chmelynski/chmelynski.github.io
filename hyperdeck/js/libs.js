@@ -14,50 +14,50 @@ var Libraries = function(json, type, name) {
 		//json.data.files = []; // { filename : string , text : string }
 	}
 	
-	this._type = json.type;
-	this._name = json.name;
-	this._visible = json.visible;
+	this.type = json.type;
+	this.name = json.name;
+	this.visible = json.visible;
 	
-	this._div = null;
-	this._outputDiv = null;
+	this.div = null;
+	this.outputDiv = null;
 	
-	this._data = json.data;
+	this.data = json.data;
 	
-	this._sentinel = null;
+	this.sentinel = null;
 	
 	// https://cdnjs.cloudflare.com/ajax/libs/three.js/r77/three.min.js
 	// https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js
 	// https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.1.4/Chart.min.js
 	// https://cdnjs.cloudflare.com/ajax/libs/numeric/1.2.6/numeric.min.js
 };
-Libraries.prototype._add = function() { };
-Libraries.prototype._afterLoad = function(callback) {
+Libraries.prototype.add = function() { };
+Libraries.prototype.afterLoad = function(callback) {
 	
 	var comp = this;
 	
-	comp._outputDiv = $('<div id="' + comp._name + '"></div>').appendTo($('#output'));
+	comp.outputDiv = $('<div id="' + comp.name + '"></div>').appendTo($('#output'));
 	
-	comp._sentinel = new LinkedList(); // holds row objects: { div, url, icon }
+	comp.sentinel = new LinkedList(); // holds row objects: { div, url, icon }
 	
-	var rows = $('<div></div>').appendTo(comp._div);
+	var rows = $('<div></div>').appendTo(comp.div);
 
 	function AppendRow(url) {
 		
-		comp._markDirty();
+		comp.markDirty();
 		
 		var row = { div: null, url: url, icon: null };
-		var rowElt = comp._sentinel._add(row);
+		var rowElt = comp.sentinel.add(row);
 		
 		var rowDiv = $('<div style="margin:0.2em"></div>').appendTo(rows);
 		
 		$('<button class="btn btn-default btn-sm"><i class="fa fa-lg fa-trash-o"></i></button>').appendTo(rowDiv).on('click', function() {
-			comp._markDirty();
-			rowElt._remove();
+			comp.markDirty();
+			rowElt.remove();
 			rowDiv.remove();
 		});
 		
 		$('<input class="input-sm" style="width:80%;margin:0.2em" value="'+url+'"></input>').appendTo(rowDiv).on('change', function() {
-			comp._markDirty();
+			comp.markDirty();
 			icon.removeClass('fa-check').removeClass('fa-times').addClass('fa-hourglass').css('color', 'orange');
 			//script.attr('src', url); // this triggers on load
 			row.url = this.value;
@@ -78,15 +78,15 @@ Libraries.prototype._afterLoad = function(callback) {
 	
 	function LoadScript(rowElt) {
 		
-		if (rowElt == comp._sentinel) { callback(comp); return; }
+		if (rowElt == comp.sentinel) { callback(comp); return; }
 		
-		var row = rowElt._data;
+		var row = rowElt.data;
 		var url = row.url;
 		var icon = row.icon;
 		
 		if (url.length == 0)
 		{
-			LoadScript(rowElt._next);
+			LoadScript(rowElt.next);
 		}
 		else
 		{
@@ -96,40 +96,40 @@ Libraries.prototype._afterLoad = function(callback) {
 				icon.removeClass('fa-hourglass').addClass('fa-times').css('color', 'red');
 				console.log('Error: "' + url + '" failed to load');
 			}).always(function() {
-				LoadScript(rowElt._next);
+				LoadScript(rowElt.next);
 			});
 		}
 	}
 	
-	for (var i = 0; i < comp._data.urls.length; i++)
+	for (var i = 0; i < comp.data.urls.length; i++)
 	{
-		AppendRow(comp._data.urls[i]);
+		AppendRow(comp.data.urls[i]);
 	}
 	
-	var plusButtonDiv = $('<div style="margin:0.2em"></div>').appendTo(comp._div);
+	var plusButtonDiv = $('<div style="margin:0.2em"></div>').appendTo(comp.div);
 	$('<button class="btn btn-default btn-sm"><i class="fa fa-plus"></i></button>').appendTo(plusButtonDiv)
 		.on('click', function() { AppendRow(''); });
 	
-	LoadScript(comp._sentinel._next);
+	LoadScript(comp.sentinel.next);
 	
-	//for (var key in comp._data.files) { comp._doAddFile(comp._data.files[key], key); }
-	//for (var key in comp._data.files) { comp._outputDiv.append($('<script></script>').text(comp._data.files[key])); }
+	//for (var key in comp.data.files) { comp.doAddFile(comp.data.files[key], key); }
+	//for (var key in comp.data.files) { comp.outputDiv.append($('<script></script>').text(comp.data.files[key])); }
 };
-Libraries.prototype._write = function() {
+Libraries.prototype.write = function() {
 	
 	var comp = this;
 	
 	var json = {};
-	json.type = comp._type;
-	json.name = comp._name;
-	json.visible = comp._visible;
+	json.type = comp.type;
+	json.name = comp.name;
+	json.visible = comp.visible;
 	json.data = {};
-	json.data.urls = comp._sentinel._enumerate().map(function(row) { return row.url; });
+	json.data.urls = comp.sentinel.enumerate().map(function(row) { return row.url; });
 	return json;
 };
 
 // this stuff to be put on ice until urls work
-Libraries.prototype._addFile = function() {
+Libraries.prototype.addFile = function() {
 	
 	var comp = this;
 	
@@ -143,8 +143,8 @@ Libraries.prototype._addFile = function() {
 		{
 			var text = event.target.result;
 			//var id = Hyperdeck.Components.UniqueElementId();
-			//comp._doAddFile(text, filename, id);
-			comp._outputDiv.append($('<script></script>').text(text));
+			//comp.doAddFile(text, filename, id);
+			comp.outputDiv.append($('<script></script>').text(text));
 		};
 		
 		if (this.files.length > 0)
@@ -155,13 +155,13 @@ Libraries.prototype._addFile = function() {
 		}
 	}).click();
 };
-Libraries.prototype._doAddFile = function(text, filename, id) {
+Libraries.prototype.doAddFile = function(text, filename, id) {
 	
 	var comp = this;
 	
-	comp._data.files[filename] = text;
+	comp.data.files[filename] = text;
 	
-	var folder = comp._fileFolder.addFolder(filename);
+	var folder = comp.fileFolder.addFolder(filename);
 	
 	var fnobj = {};
 	fnobj.download = function() { 
@@ -171,10 +171,10 @@ Libraries.prototype._doAddFile = function(text, filename, id) {
 		a.click();
 	};
 	fnobj.delete = function() {
-		delete comp._data.files[filename];
+		delete comp.data.files[filename];
 		$('#' + id).remove();
 		
-		comp._add(); // this destroys id info which was generated when the script tag was created and is stored here as a closure
+		comp.add(); // this destroys id info which was generated when the script tag was created and is stored here as a closure
 		// but for now, just remove the buttons
 		//this.downloadButton.remove();
 		//this.deleteButton.remove();
@@ -185,41 +185,41 @@ Libraries.prototype._doAddFile = function(text, filename, id) {
 };
 
 var LinkedList = function() {
-	this._data = null;
-	this._prev = this;
-	this._next = this;
+	this.data = null;
+	this.prev = this;
+	this.next = this;
 };
-LinkedList.prototype._add = function(data) {
+LinkedList.prototype.add = function(data) {
 	
 	// this must be called on the sentinel
 	
 	var elt = new LinkedList();
-	elt._data = data;
-	elt._next = this;
-	elt._prev = this._prev;
+	elt.data = data;
+	elt.next = this;
+	elt.prev = this.prev;
 	
-	if (this._next === this) { this._next = elt; } else { this._prev._next = elt; }
-	this._prev = elt;
+	if (this.next === this) { this.next = elt; } else { this.prev.next = elt; }
+	this.prev = elt;
 	
 	return elt;
 };
-LinkedList.prototype._remove = function() {
+LinkedList.prototype.remove = function() {
 	
 	// this cannot be called on the sentinel
-	this._prev._next = this._next;
-	this._next._prev = this._prev;
+	this.prev.next = this.next;
+	this.next.prev = this.prev;
 };
-LinkedList.prototype._enumerate = function() {
+LinkedList.prototype.enumerate = function() {
 	
 	// this must be called on the sentinel
 	
 	var list = [];
-	var elt = this._next;
+	var elt = this.next;
 	
 	while (elt !== this)
 	{
-		list.push(elt._data);
-		elt = elt._next;
+		list.push(elt.data);
+		elt = elt.next;
 	}
 	
 	return list;

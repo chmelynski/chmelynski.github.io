@@ -151,8 +151,9 @@ function SwitchTabs() {
 	}
 }
 
+var ctx = document.getElementById('diagram').getContext('2d');
 var codemirror = InitCodemirror(document.getElementById('codemirror'));
-var diagram = new Diagram(document.getElementById('diagram').getContext('2d'), SetCodemirrorText);
+var diagram = new Diagram(ctx, SetCodemirrorText);
 diagram.receiveText(code, codemirror.lastLine());
 document.getElementById('diagram').focus();
 

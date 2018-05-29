@@ -1,0 +1,88 @@
+
+channel_alias
+
+Channels that exist on an object may be aliased to appear on another object.
+This allows control of the channel from more than one location.
+A channel_alias simply reflects the target_channel properties and values.
+
+Parent Objects
+bulge_binding
+modifier
+node
+
+Extends
+channel
+
+Properties
+target_channel - A string representing the URI referring to the channel that this channel is an alias of.
+
+The current_value attribute is overridden anytime an animation is associated with the channel.
+
+
+
+material_instance.id: string - unique identifier within the file, required
+material_instance.url: string - #URI of a material asset definition to instantiate
+material_instance.geometry: string - #URI of a geometry definition to attach to
+material_instance.groups: string[] - polygon group names to attach the material to
+
+material_instance is an instance class that may override defaults in the referenced material definition.
+All fields of the material definition, with the exception of the id and uv_set fields, may be overridden in this instance element.
+
+
+node_instance.id: string - unique identifier within current file scope
+node_instance.url: string - #URI to a node definition - the given node and all of its descendants are instantiated
+node_instance.parent?: string - #URI to another scene node instance
+node_instance.parent_in_place?: string - #URI to another scene node instance, maintaining its world space transform
+node_instance.conform_target?: string - #URI to another scene node to follow
+node_instance.geometries?: geometry_instance[] - 
+node_instance.preview?: preview - used as a stand-in if the node geometry cannot be found
+
+sample url: "basketball:/DAZ/Props/Balls.dsf#basketball"
+All properties of node can be overriden in node_instance, except for id, type, and presentation.
+
+
+A scene is a collection of new instances and property settings.
+Scene objects can exist in either a .duf or a .dsf file, but only one scene object can exist per file.
+A scene object can represent either an entire scene (scene replacement) or to augment or replace parts of a scene).
+
+scene.presentation: presentation
+scene.nodes: node_instance[]
+scene.uvs: uv_set_instance[]
+scene.modifiers: modifier_instance[]
+scene.materials: material_instance[]
+scene.animations: channel_animation[]
+scene.current_camera: string - #URI of a camera node_instance
+scene.extra: any[]
+
+
+presentation parents: modifier, node, scene
+presentation.type: string - a content type path (e.g. "Modifier/Pose")
+presentation.label: string - a user-friendly brief name
+presentation.description: string - a sentence describing the item
+presentation.icon_large: ?? - 132x176 image
+presentation.icon_small?: ?? - 66x88 image
+presentation.colors: [float3, float3] - compatible with icon image colors
+
+
+
+node transforms:
+
+If type is set to "figure" then this node is understood to be the root node of a figure.
+
+The name attribute may be used by applications to provide another addressing mechanism for nodes in the scene.  In object URI's, if "name" is used as the scheme identifier, then the value of the name attribute is used to look up an item rather than using the id attribute.  If the name attribute is missing, applications should use the id attribute in its place wherever needed.
+
+The translation, rotation, scale, and general_scale elements each represent transforms that convert to transform matrices.  To arrive at the full base transform for the node, each of those elements is converted to matrix form.  The full transform for a node is determined using the following algorithm:
+
+center_offset = center_point - parent.center_point
+global_translation = parent.global_transform * (center_offset + translation)
+global_rotation = parent.global_rotation * orientation * rotation * orientation^-1
+global_scale for nodes that inherit scale = parent.global_scale * orientation * general_scale * orientation^-1
+global_scale for nodes = parent.global_scale * parent.local_scale^-1 * orientation * scale * general_scale * orientation^-1
+global_transform = global_translation * global_rotation * global_scale
+
+Vertices are taken to global space by post-multiplying as follows:
+
+global_vertex = global_transform * vertex
+
+
+

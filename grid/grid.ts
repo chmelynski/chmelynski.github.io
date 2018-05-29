@@ -11,7 +11,7 @@
 // =Styles['default']
 // =Styles['default'].extend('bold', true)
 
-namespace Eyeshade {
+namespace Hyperdeck {
 
 interface Set<T> {
 	add(value: T): Set<T>;

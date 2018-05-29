@@ -1,0 +1,28 @@
+
+<html>
+<body>
+
+<script>var exports = {};</script>
+<script src="xml.js"></script>
+
+<input type="file" onchange="Load(this.files)" />
+
+<script>
+
+function Load(files) {
+
+	var fileReader = new FileReader();
+	
+	fileReader.onload = function(event) {
+		
+		var xml = Xml.Parse(event.target.result);
+		debugger;
+	};
+	
+	if (files.length > 0) { fileReader.readAsText(files[0]); }
+}
+
+</script>
+</body>
+</html>
+

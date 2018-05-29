@@ -1,0 +1,12 @@
+
+plaster wall:
+displacement - perlin64, -0.50 to +0.50
+bump - perlin4, -0.10 to +0.10
+
+smoother plaster wall:
+displacement - perlin64, -0.30 to +0.30
+bump - perlin4, -0.20 to +0.20
+
+
+need to generate a matrix of examples
+

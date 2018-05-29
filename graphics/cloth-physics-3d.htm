@@ -1,0 +1,133 @@
+
+<html>
+<head>
+<script src="../everything/griddl/js/lib/babylon.math.js"></script>
+</head>
+<body>
+
+<canvas width="1200" height="500" style="border:1px solid gray"></canvas>
+
+<script>
+
+var ctx = document.getElementsByTagName('canvas')[0].getContext('2d');
+
+var Point = function(x, y, z) {
+	
+	this.x = x;
+	this.y = y;
+	this.z = z;
+};
+
+var Spring = function(p, q, length) {
+	this.p = p;
+	this.q = q;
+	this.length = length;
+};
+Spring.prototype.getForces = function () {
+	
+	var dx = this.p.x - this.q.x;
+	var dy = this.p.y - this.q.y;
+	var dz = this.p.z - this.q.z;
+	var dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+	var diff = (this.length - dist) / dist;
+	
+	//if (dist > tear_distance) { this.p.remove_constraint(this); }
+	
+	var stiffness = 0.5;
+	var fx = dx * diff * stiffness;
+	var fy = dy * diff * stiffness;
+	var fz = dz * diff * stiffness;
+	
+	var pforce = new Force(p, {x:fx,y:fy,z:fz});
+	var qforce = new Force(q, {x:-fx,y:-fy,z:-fz});
+	
+	return [ pforce , qforce ];
+};
+Spring.prototype.draw = function() {
+	
+	// we need to project the point into 3D
+	
+	var p = Project(camera, this.p);
+	var q = Project(camera, this.q);
+	
+	ctx.moveTo(p.x, p.y);
+	ctx.lineTo(q.x, q.y);
+};
+
+var Force = function(point, vector) {
+	
+	this.point = point;
+	this.vector = vector;
+};
+Force.prototype.apply = function() {
+	this.point.x += this.vector.x;
+	this.point.y += this.vector.y;
+	this.point.z += this.vector.z;
+};
+Force.prototype.draw = function() { };
+
+var camera = {};
+camera.fov = 0.78; // field of view in the y direction, in radians
+camera.aspect = ctx.canvas.width / ctx.canvas.height;
+camera.znear = 0.01;
+camera.zfar = 1.0;
+camera.position = new BABYLON.Vector3(1, 50, 100);
+camera.target = new BABYLON.Vector3(0, 75, 0);
+camera.viewMatrix = BABYLON.Matrix.LookAtLH(camera.position, camera.target, BABYLON.Vector3.Up());
+camera.projectionMatrix = BABYLON.Matrix.PerspectiveFovLH(camera.fov, camera.aspect, camera.znear, camera.zfar);
+camera.transformMatrix = camera.viewMatrix.multiply(camera.projectionMatrix);
+function Project(camera, point) { return BABYLON.Vector3.TransformCoordinates(point, camera.transformMatrix); }
+
+function Main() {
+	
+	var points = [];
+	var springs = [];
+	
+	var w = 10;
+	var h = 10;
+	
+	var spacing = 10;
+	
+	for (var i = 0; i < w; i++)
+	{
+		for (var j = 0; j < h; j++)
+		{
+			var x = 0 + i * spacing;
+			var y = 100 - j * 5;
+			var z = 0 + j * spacing;
+			var point = new Point(x, y, z);
+			points.push(point);
+		}
+	}
+	
+	for (var i = 0; i < w - 1; i++)
+	{
+		for (var j = 0; j < h - 1; j++)
+		{
+			var horip = points[(i + 0) * h + j];
+			var horiq = points[(i + 1) * h + j];
+			var vertp = points[i * h + (j + 0)];
+			var vertq = points[i * h + (j + 1)];
+			
+			springs.push(new Spring(horip, horiq, spacing));
+			springs.push(new Spring(vertp, vertq, spacing));
+		}
+	}
+	
+	ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+	
+	for (var i = 0; i < springs.length; i++)
+	{
+		var spring = springs[i];
+		spring.draw();
+	}
+}
+
+Main();
+
+</script>
+</body>
+</html>
+
+
+

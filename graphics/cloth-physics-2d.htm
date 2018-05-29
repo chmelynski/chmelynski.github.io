@@ -1,0 +1,185 @@
+
+<html>
+<head>
+<title>Cloth Physics</title>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<script>
+
+var physics_accuracy = 3;
+var mouse_influence = 20;
+var mouse_cut = 5;
+var gravity = 1200;
+var cloth_height = 30;
+var cloth_width = 50;
+var start_y = 20;
+var spacing = 7;
+var tear_distance = 60;
+
+window.requestAnimFrame =
+    window.requestAnimationFrame ||
+    window.webkitRequestAnimationFrame ||
+    window.mozRequestAnimationFrame ||
+    window.oRequestAnimationFrame ||
+    window.msRequestAnimationFrame ||
+    function (callback) {
+        window.setTimeout(callback, 1000 / 60);
+};
+
+var canvas;
+var ctx;
+var cloth;
+var boundsx;
+var boundsy;
+var mouse = {down:false,button:1,x:0,y:0,px:0,py:0};
+
+var Point = function (x, y) {this.x=x;this.y=y;this.px=x;this.py=y;this.vx=0;this.vy=0;this.pin_x=null;this.pin_y=null;this.constraints=[];};
+Point.prototype.update = function (delta) {
+	
+	if (mouse.down)
+	{
+		var diff_x = this.x - mouse.x;
+		var diff_y = this.y - mouse.y;
+		var dist = Math.sqrt(diff_x * diff_x + diff_y * diff_y);
+		
+		if (mouse.button == 1)
+		{
+			if (dist < mouse_influence)
+			{
+				this.px = this.x - (mouse.x - mouse.px) * 1.8;
+				this.py = this.y - (mouse.y - mouse.py) * 1.8;
+			}
+		}
+		else if (dist < mouse_cut)
+		{
+			this.constraints = [];
+		}
+	}
+	
+	this.vy += gravity;
+	
+	delta *= delta;
+	nx = this.x + ((this.x - this.px) * .99) + ((this.vx / 2) * delta);
+	ny = this.y + ((this.y - this.py) * .99) + ((this.vy / 2) * delta);
+	
+	this.px = this.x;
+	this.py = this.y;
+	
+	this.x = nx;
+	this.y = ny;
+	
+	this.vx = 0;
+	this.vy = 0;
+};
+Point.prototype.draw = function () { if (!this.constraints.length) { return; } var i = this.constraints.length; while (i--) { this.constraints[i].draw(); } };
+Point.prototype.resolve_constraints = function () {
+	
+	if (this.pin_x != null && this.pin_y != null) { this.x = this.pin_x; this.y = this.pin_y; return; } // if the point is pinned, fix x,y and return
+	
+	var i = this.constraints.length;
+	while (i--) { this.constraints[i].resolve(); }
+	
+	// keep the point within the bounds of the canvas
+	this.x > boundsx ? this.x = 2 * boundsx - this.x : 1 > this.x && (this.x = 2 - this.x);
+	this.y < 1 ? this.y = 2 - this.y : this.y > boundsy && (this.y = 2 * boundsy - this.y);
+};
+Point.prototype.attach = function (point) { this.constraints.push(new Constraint(this, point)); };
+Point.prototype.remove_constraint = function (constraint) { this.constraints.splice(this.constraints.indexOf(constraint), 1); };
+Point.prototype.pin = function (pinx, piny) { this.pin_x = pinx; this.pin_y = piny; };
+
+var Cloth = function () {
+	
+	this.points = [];
+	
+	var start_x = canvas.width / 2 - cloth_width * spacing / 2;
+	
+	for (var y = 0; y <= cloth_height; y++)
+	{
+		for (var x = 0; x <= cloth_width; x++)
+		{
+			var p = new Point(start_x + x * spacing, start_y + y * spacing);
+			if (x != 0) { p.attach(this.points[this.points.length - 1]); }
+			
+			// if this is removed, the points all collapse into an almost flat heap, and then flop about interminably
+			// so first, we should probably make the points take up some space - add another constraint such that points repel each other at short distances
+			// also, we want to move this whole simulation into 3D
+			if (y == 0) { p.pin(p.x, p.y); } // attach top row of points to an imaginary fixture
+			
+			if (y != 0) { p.attach(this.points[x + (y - 1) * (cloth_width + 1)]); }
+			this.points.push(p);
+		}
+	}
+};
+Cloth.prototype.update = function () {
+	
+	for (var i = 0; i < physics_accuracy; i++)
+	{
+		//var p = this.points.length;
+		//while (p--) this.points[p].resolve_constraints();
+		
+		this.points.forEach(function(p) { p.resolve_constraints(); });
+	}
+	
+	//i = this.points.length;
+	//while (i--) this.points[i].update(.016);
+	
+	this.points.forEach(function(p) { p.update(.016); });
+};
+Cloth.prototype.draw = function () { ctx.beginPath(); var i = cloth.points.length; while (i--) { cloth.points[i].draw(); } ctx.stroke(); };
+function update() { ctx.clearRect(0, 0, canvas.width, canvas.height); cloth.update(); cloth.draw(); requestAnimFrame(update); }
+function start() {
+	
+	canvas  = document.getElementById('c');
+	ctx     = canvas.getContext('2d');
+	
+	canvas.width  = 560;
+	canvas.height = 350;
+	
+	canvas.onmousedown = function (e) {
+		mouse.button  = e.which;
+		mouse.px      = mouse.x;
+		mouse.py      = mouse.y;
+		var rect      = canvas.getBoundingClientRect();
+		mouse.x       = e.clientX - rect.left,
+		mouse.y       = e.clientY - rect.top,
+		mouse.down    = true;
+		e.preventDefault();
+	};
+	
+	canvas.onmouseup = function (e) {
+		mouse.down = false;
+		e.preventDefault();
+	};
+	
+	canvas.onmousemove = function (e) {
+		mouse.px  = mouse.x;
+		mouse.py  = mouse.y;
+		var rect  = canvas.getBoundingClientRect();
+		mouse.x   = e.clientX - rect.left,
+		mouse.y   = e.clientY - rect.top,
+		e.preventDefault();
+	};
+	
+	canvas.oncontextmenu = function (e) {
+		e.preventDefault();
+	};
+	
+	boundsx = canvas.width - 1;
+	boundsy = canvas.height - 1;
+	
+	ctx.strokeStyle = '#888';
+	
+	cloth = new Cloth();
+	
+	update();
+}
+
+start();
+
+</script>
+</body>
+</html>
+

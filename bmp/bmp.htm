@@ -1,0 +1,68 @@
+
+<html>
+<head>
+</head>
+<body>
+
+<script>var exports = {};</script>
+<script src="bmp.js"></script>
+
+<script>
+
+function Uint8ArrayToBase64String(uint8array) {
+	var nMod3 = '';
+	var sB64Enc = '';
+	
+	function uint6ToB64(n) { return n<26?n+65:n<52?n+71:n<62?n-4:n===62?43:n===63?47:65;}
+	
+	for (var nLen = uint8array.length, nUint24 = 0, nIdx = 0; nIdx < nLen; nIdx++)
+	{
+		nMod3 = nIdx % 3;
+		//if (nIdx > 0 && (nIdx * 4 / 3) % 76 === 0) { sB64Enc += "\r\n"; }
+		nUint24 |= uint8array[nIdx] << (16 >>> nMod3 & 24);
+		
+		if (nMod3 === 2 || uint8array.length - nIdx === 1)
+		{
+			var a = uint6ToB64(nUint24 >>> 18 & 63);
+			var b = uint6ToB64(nUint24 >>> 12 & 63);
+			var c = uint6ToB64(nUint24 >>> 06 & 63);
+			var d = uint6ToB64(nUint24 >>> 00 & 63);
+			sB64Enc += String.fromCharCode(a, b, c, d);
+			nUint24 = 0;
+		}
+	}
+	
+	return sB64Enc.replace(/A(?=A$|$)/g, "=");
+}
+function Download() {
+	
+	var uint8array = bmp.write();
+	
+	var blob = new Blob([uint8array],{type:'image/bitmap'});
+	var fileReader = new FileReader();
+	
+	fileReader.onload = function(event) {
+		var a = document.createElement('a');
+		a.href = event.target.result;
+		a.download = 'filename.bmp';
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+	};
+	
+	fileReader.readAsDataURL(blob);
+}
+
+var bmp = new Bitmap(10, 10, 3);
+bmp.setPixel(0, 0, {r:255,g:0,b:0});
+
+var img = document.createElement('img');
+img.style.border = '1px solid gray';
+img.src = 'data:image/bmp;base64,' + Uint8ArrayToBase64String(bmp.write());
+document.body.appendChild(img);
+
+</script>
+
+</body>
+</html>
+

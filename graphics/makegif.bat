@@ -1,0 +1,1 @@
+C:\Users\adam\Desktop\ImageMagick\convert -delay 10 -loop 0 "C:\Users\adam\Desktop\frames\*.bmp" "C:\Users\adam\Desktop\animated.gif"

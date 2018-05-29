@@ -1,0 +1,151 @@
+
+<html>
+<head>
+<script src="../everything/griddl/js/griddl.graphics.js"></script>
+</head>
+<body>
+
+<div><button onclick="Upload()">Upload</button></div>
+
+<canvas width="1200" height="500" style="border:1px solid gray;margin-top:5px"></canvas>
+
+<script>
+
+function Upload() {
+	
+	var fileChooser = document.createElement('input');
+	fileChooser.type = 'file';
+	
+	fileChooser.onchange = function() {
+		var fileReader = new FileReader();
+		fileReader.onload = function(event) { LoadImage(event.target.result); };
+		fileReader.readAsArrayBuffer(fileChooser.files[0]);
+	};
+	
+	fileChooser.click();
+}
+function LoadImage(arrayBuffer) {
+	
+	var uint8array = new Uint8Array(arrayBuffer);
+	var b64 = 'data:image/png;base64,' + Uint8ArrayToBase64String(uint8array); // assumes .png for now
+	var img = document.createElement('img');
+	img.src = b64;
+	
+	var canvas = document.createElement('canvas');
+	canvas.width = img.width;
+	canvas.height = img.height;
+	var ctx = canvas.getContext('2d');
+	ctx.drawImage(img, 0, 0);
+	var imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
+	
+	var colors = [];
+	
+	for (var y = 0; y < imageData.height; y++)
+	{
+		for (var x = 0; x < imageData.width; x++)
+		{
+			var index = (y * imageData.width + x) * 4;
+			var color = {};
+			color.r = imageData.data[index + 0];
+			color.g = imageData.data[index + 1];
+			color.b = imageData.data[index + 2];
+			colors.push(color);
+		}
+	}
+	
+	var geometry = ColorsToGeometry(colors);
+	Draw(geometry);
+}
+function Uint8ArrayToBase64String(uint8array) {
+	var nMod3 = '';
+	var sB64Enc = '';
+	
+	function uint6ToB64(n) { return n<26?n+65:n<52?n+71:n<62?n-4:n===62?43:n===63?47:65;}
+	
+	for (var nLen = uint8array.length, nUint24 = 0, nIdx = 0; nIdx < nLen; nIdx++)
+	{
+		nMod3 = nIdx % 3;
+		//if (nIdx > 0 && (nIdx * 4 / 3) % 76 === 0) { sB64Enc += "\r\n"; }
+		nUint24 |= uint8array[nIdx] << (16 >>> nMod3 & 24);
+		
+		if (nMod3 === 2 || uint8array.length - nIdx === 1)
+		{
+			var a = uint6ToB64(nUint24 >>> 18 & 63);
+			var b = uint6ToB64(nUint24 >>> 12 & 63);
+			var c = uint6ToB64(nUint24 >>> 06 & 63);
+			var d = uint6ToB64(nUint24 >>> 00 & 63);
+			sB64Enc += String.fromCharCode(a, b, c, d);
+			nUint24 = 0;
+		}
+	}
+	
+	return sB64Enc.replace(/A(?=A$|$)/g, "=");
+}
+
+function ColorsToGeometry(colors) {
+	
+	var geometry = new Griddl.Graphics.Mesh();
+	geometry.vertices = [];
+	geometry.polygons = [];
+	
+	// what we need is to detect a point mesh - if a mesh has vertices but no polygons, it's a point mesh
+	// then we can mix a point mesh with line or regular meshes without having to set a global renderMode variable
+	// which we need to be able to do to display 3D bubble charts with axes
+	
+	var samplePoints = 10000;
+	var sampleRate = samplePoints / colors.length;
+	
+	colors.forEach(function(color) {
+		
+		var rand = Math.random();
+		
+		if (rand < sampleRate)
+		{
+			geometry.vertices.push([color.r-128,color.g-128,color.b-128]);
+		}
+	});
+	
+	return geometry;
+}
+function MakeUniformPointCube() {
+	
+	var geometry = new Griddl.Graphics.Mesh();
+	geometry.vertices = [];
+	geometry.polygons = [];
+	
+	for (var x = 0; x <= 255; x += 15)
+	{
+		for (var y = 0; y <= 255; y += 15)
+		{
+			for (var z = 0; z <= 255; z += 15)
+			{
+				geometry.vertices.push([x-128,y-128,z-128]);
+			}
+		}
+	}
+	
+	return geometry;
+}
+
+function Draw(geometry) {
+	
+	Griddl.Graphics.renderMode = Griddl.Graphics.POINT;
+	var mesh = Griddl.Graphics.ConvertToBabylon(geometry);
+	var node = new Griddl.Graphics.Node(mesh);
+	var scene = new Griddl.Graphics.Scene();
+	scene.nodes.push(node);
+	scene.setCameraPosition(4, -1000, 4);
+	var ctx = document.getElementsByTagName('canvas')[0].getContext('2d');
+	var device = new Griddl.Graphics.Device(ctx, 0, 0, ctx.canvas.width, ctx.canvas.height);
+	device.Render(scene);
+	
+	Griddl.Graphics.OrbitControls(device, scene);
+}
+
+Draw(MakeUniformPointCube());
+
+</script>
+
+</body>
+</html>
+

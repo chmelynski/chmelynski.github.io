@@ -1,0 +1,31 @@
+	// all these getters and setters were here to split the set command to pdf/ctx.  what now?  i think we can delete them
+	get textAlign(): TextAlign { return this._textAlign; }
+	set textAlign(value: TextAlign) { this._textAlign = value; }
+	get textBaseline(): TextBaseline { return this._textBaseline; }
+	set textBaseline(value: TextBaseline) { this._textBaseline = value; }
+	get lineWidth(): number { return this._lineWidth; }
+	set lineWidth(value: number) { this._lineWidth = value; }
+	get fillStyle(): string { return this._fillStyle; }
+	set fillStyle(value: string) { this._fillStyle = value; this.fillColor = this.ParseColor(value); }
+	get strokeStyle(): string { return this._strokeStyle; }
+	set strokeStyle(value: string) { this._strokeStyle = value; this.strokeColor = this.ParseColor(value); }
+	get lineDashOffset(): number { return this._lineDashOffset; }
+	set lineDashOffset(value: number) { this._lineDashOffset = value; }
+	get lineJoin(): string { return this._lineJoin; }
+	set lineJoin(value: string) { this._lineJoin = value; }
+	get lineCap(): string { return this._lineCap; }
+	set lineCap(value: string) { this._lineCap = value; }
+	get miterLimit(): number { return this._miterLimit; }
+	set miterLimit(value: number) { this._miterLimit = value; }
+	get globalAlpha(): number { return this._globalAlpha; }
+	set globalAlpha(value: number) { this._globalAlpha = value; }
+	get globalCompositeOperation(): string { return this._globalCompositeOperation; }
+	set globalCompositeOperation(value: string) { this._globalCompositeOperation = value; }
+	get shadowColor(): string { return this._shadowColor; }
+	set shadowColor(value: string) { this._shadowColor = value; }
+	get shadowBlur(): number { return this._shadowBlur; }
+	set shadowBlur(value: number) { this._shadowBlur = value; }
+	get shadowOffsetX(): number { return this._shadowOffsetX; }
+	set shadowOffsetX(value: number) { this._shadowOffsetX = value; }
+	get shadowOffsetY(): number { return this._shadowOffsetY; }
+	set shadowOffsetY(value: number) { this._shadowOffsetY = value; }

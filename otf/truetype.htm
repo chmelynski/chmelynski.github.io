@@ -1,0 +1,76 @@
+
+<html>
+<head>
+</head>
+<body>
+
+<script src="http://code.jquery.com/jquery-1.7.2.min.js"></script>
+<!-- <script src="Layout2.js"></script> -->
+
+<div id="dropTarget" style="border:3px dashed #5f90d0; font-size:30px;width:300px;height:100px;padding:20px;margin:0 auto; text-align: center">Drag TTF file here </div>
+<div id="font-container"></div>
+
+<script src="TrueType.js" type="text/javascript"></script>
+
+<!-- <script>$("#dropTarget").on("drop", function(e) { setTimeout(function() { layout.go(); }, 500); });</script> -->
+
+<script>
+
+// demo from http://stevehanov.ca/blog/index.php?id=143
+
+function ShowTtfFile(arrayBuffer) {
+	
+	var font = new TrueTypeFont(arrayBuffer);
+	
+	var width = font.xMax - font.xMin;
+	var height = font.yMax - font.yMin;
+	var scale = 64 / font.unitsPerEm; // many small canvases
+	//var scale = 1024 / font.unitsPerEm; // one big canvas
+	
+	var container = document.getElementById("font-container");
+	while (container.firstChild) { container.removeChild(container.firstChild); }
+	
+	for (var i = 0; i < font.length; i++) // many small canvases
+	//for (var i = 15; i < 16; i++) // one big canvas
+	{
+		var canvas = document.createElement("canvas");
+		canvas.style.border = "1px solid gray";
+		canvas.width = width * scale;
+		canvas.height = height * scale;
+		var ctx = canvas.getContext("2d");
+		
+		var x = 5;
+		var y = canvas.height - 5;
+		
+		ctx.fillStyle = "#000000";
+		
+		var fn = function(point) {
+			var p = {};
+			p.x = x + point.x * scale;
+			p.y = y - point.y * scale;
+			p.onCurve = point.onCurve;
+			return p;
+		};
+		
+		font.drawGlyph(i, ctx, fn);
+		container.appendChild(canvas);
+	}
+}
+
+var dropTarget = document.getElementById("dropTarget");
+
+dropTarget.ondragover = function(e) { e.preventDefault(); };
+
+dropTarget.ondrop = function(e) {
+	e.preventDefault();
+	if (!e.dataTransfer || !e.dataTransfer.files) { alert("Your browser didn't include any files in the drop event"); return; }
+	var reader = new FileReader();
+	reader.readAsArrayBuffer(e.dataTransfer.files[0]);
+	reader.onload = function(e) { ShowTtfFile(reader.result); };
+};
+
+</script>
+
+
+</body>
+</html>

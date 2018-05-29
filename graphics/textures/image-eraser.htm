@@ -1,0 +1,685 @@
+
+<html>
+<head>
+<title>Image Eraser</title>
+</head>
+<body>
+
+<input type="file" id="fileChooser" style="display:none" onchange="Load(this.files)" />
+<input type="file" id="fileChooserOutline" style="display:none" onchange="LoadOutline(this.files)" />
+
+<canvas id="origCanvas" style="display:none"></canvas>
+
+<table>
+<tr>
+<td><button onclick="document.getElementById('fileChooser').click()">Load Image</button></td>
+<td><button onclick="document.getElementById('fileChooserOutline').click()">Load Outline</button></td>
+<td><button onclick="SaveOutline()">Save Outline</button></td>
+<td><button onclick="GenerateMask()">Generate Mask</button></td>
+<td><button onclick="GenerateColorMask()">Generate Color Mask</button></td>
+</tr>
+</table>
+
+<table>
+<tr>
+<td><canvas id="eraserCanvas" width="300" height="300" tabindex="1" style="border:1px solid gray;"></canvas></td>
+<td><canvas id="eraserMaskCanvas" width="300" height="300" style="border:1px solid gray;"></canvas></td>
+</tr>
+</table>
+
+<script>
+
+// TO DO:
+// .duf export
+// server
+
+var origCanvas = document.getElementById('origCanvas');
+var origCtx = null;
+
+var eraserCanvas = document.getElementById('eraserCanvas');
+var eraserCtx = null;
+
+var eraserMaskCanvas = document.getElementById('eraserMaskCanvas');
+var eraserMaskCtx = null;
+
+// image data variables
+var origImageData = null;
+
+var groundImageData = null;
+var groundMask = null;
+
+// the segmentation sets an intial value for the eraser mask, which we then edit with the erase editor
+
+var eraserImageData = null; // this is displayed on the editor canvas - it is the application of the eraserMask to origImageData
+var eraserMask = null;
+
+var activeColor = null;
+var selectColor = false;
+
+var outlines = [];
+
+// { x : 0 , y : 0 , s : 'line' or 'quadratic0' or 'quadratic1' or 'cubic0' or 'cubic1' or 'cubic2' or 'close' or 'end' }
+var outline = [];
+var outlineCursor = null;
+var selectedPoint = null;
+
+outlines.push(outline);
+
+// subsequent outlines define 'holes' in the image
+// we call .fillPath() separately for each outline
+// the first call draws white on a black background
+// and then subsequent calls (the holes) draw black over the white
+
+// key controls:
+// a = add quadratic curve (endpoint at current mouse position, interpolated control point)
+// s = add cubic curve
+// d = start new path (a hole)
+
+function DrawOutline() {
+	
+	// this could be expensive.  maybe an overlay canvas would be better
+	eraserCtx.clearRect(0, 0, eraserCtx.canvas.width, eraserCtx.canvas.height);
+	eraserCtx.drawImage(theimg, 0, 0);
+	
+	for (var k = 0; k < outlines.length; k++)
+	{
+		var outline = outlines[k];
+		
+		eraserCtx.strokeStyle = 'rgb(0,0,0)';
+		
+		eraserCtx.beginPath();
+		eraserCtx.moveTo(outline[0].x, outline[0].y);
+		
+		for (var i = 0; i < outline.length; i++)
+		{
+			var p = outline[i];
+			
+			if (p.s == 'line')
+			{
+				eraserCtx.lineTo(outline[i+1].x, outline[i+1].y);
+			}
+			else if (p.s == 'quadratic0')
+			{
+				eraserCtx.quadraticCurveTo(outline[i+1].x, outline[i+1].y, outline[i+2].x, outline[i+2].y);
+				i += 1;
+			}
+			else if (p.s == 'cubic0')
+			{
+				eraserCtx.bezierCurveTo(outline[i+1].x, outline[i+1].y, outline[i+2].x, outline[i+2].y, outline[i+3].x, outline[i+3].y);
+				i += 2;
+			}
+			else if (p.s == 'close')
+			{
+				eraserCtx.closePath();
+			}
+			else if (p.s == 'end')
+			{
+				
+			}
+			else
+			{
+				throw new Error();
+			}
+		}
+		
+		eraserCtx.stroke();
+		
+		var r = 2;
+		
+		for (var i = 0; i < outline.length; i++)
+		{
+			var p = outline[i];
+			
+			if (p.s == 'line' || p.s == 'quadratic0' || p.s == 'cubic0' || p.s == 'close' || p.s == 'end')
+			{
+				eraserCtx.fillStyle = 'rgb(255,0,0)';
+				if (p == selectedPoint) { eraserCtx.fillStyle = 'rgb(0,0,255)'; }
+			}
+			else if (p.s == 'quadratic1' || p.s == 'cubic1' || p.s == 'cubic2')
+			{
+				eraserCtx.fillStyle = 'rgb(0,255,0)';
+			}
+			else
+			{
+				throw new Error();
+			}
+			
+			eraserCtx.beginPath();
+			eraserCtx.arc(p.x, p.y, r, 0, Math.PI * 2, true);
+			eraserCtx.fill();
+		}
+	}
+}
+function OutlineOperations(op) {
+	
+	var p = outline[outlineCursor];
+	
+	if (op == 'insert')
+	{
+		var q = null;
+		
+		if (p.s == 'line')
+		{
+			q = outline[outlineCursor + 1];
+		}
+		else if (p.s == 'quadratic0')
+		{
+			q = outline[outlineCursor + 2];
+		}
+		else if (p.s == 'cubic0')
+		{
+			q = outline[outlineCursor + 3];
+		}
+		else if (p.s == 'close')
+		{
+			q = outline[0];
+		}
+		else
+		{
+			throw new Error();
+		}
+		
+		var newPoint = { x : (p.x + q.x) / 2 , y : (p.y + q.y) / 2 , s : 'line' };
+		
+		if (p.s == 'line')
+		{
+			outline = outline.slice(0, outlineCursor + 1).concat([newPoint]).concat(outline.slice(outlineCursor + 1));
+		}
+		else if (p.s == 'quadratic0')
+		{
+			outline = outline.slice(0, outlineCursor + 1).concat([newPoint]).concat(outline.slice(outlineCursor + 2));
+		}
+		else if (p.s == 'cubic0')
+		{
+			outline = outline.slice(0, outlineCursor + 1).concat([newPoint]).concat(outline.slice(outlineCursor + 3));
+		}
+		else if (p.s == 'close')
+		{
+			outline.push(newPoint);
+		}
+		else
+		{
+			throw new Error();
+		}
+	}
+	else if (op == 'delete')
+	{
+		// this requires us to convert both the trailing and following segments to lines
+		// which means we have to backtrack to find the previous endpoint and slice accordingly
+	}
+	else if (op == 'convertToLine')
+	{
+		if (p.s == 'line' || p.s == 'close' || p.s == 'end')
+		{
+			
+		}
+		else if (p.s == 'quadratic0')
+		{
+			outline = outline.slice(0, outlineCursor + 1).concat(outline.slice(outlineCursor + 2));
+			p.s = 'line';
+		}
+		else if (p.s == 'cubic0')
+		{
+			outline = outline.slice(0, outlineCursor + 1).concat(outline.slice(outlineCursor + 3));
+			p.s = 'line';
+		}
+		else
+		{
+			throw new Error();
+		}
+	}
+	else if (op == 'convertToQuadratic')
+	{
+		var q = null;
+		
+		if (p.s == 'line')
+		{
+			q = outline[outlineCursor + 1];
+		}
+		else if (p.s == 'quadratic0')
+		{
+			q = outline[outlineCursor + 2];
+		}
+		else if (p.s == 'cubic0')
+		{
+			q = outline[outlineCursor + 3];
+		}
+		else if (p.s == 'close')
+		{
+			q = outline[0];
+		}
+		else
+		{
+			throw new Error();
+		}
+		
+		var newPoint = { x : (p.x + q.x) / 2 , y : (p.y + q.y) / 2 , s : 'quadratic1' };
+		
+		if (p.s == 'line')
+		{
+			outline = outline.slice(0, outlineCursor + 1).concat([newPoint]).concat(outline.slice(outlineCursor + 1));
+		}
+		else if (p.s == 'quadratic0')
+		{
+			outline = outline.slice(0, outlineCursor + 1).concat([newPoint]).concat(outline.slice(outlineCursor + 2));
+		}
+		else if (p.s == 'cubic0')
+		{
+			outline = outline.slice(0, outlineCursor + 1).concat([newPoint]).concat(outline.slice(outlineCursor + 3));
+		}
+		else if (p.s == 'close')
+		{
+			outline.push(newPoint);
+		}
+		else
+		{
+			throw new Error();
+		}
+		
+		p.s = 'quadratic0';
+	}
+	else if (op == 'convertToCubic')
+	{
+		var q = null;
+		
+		if (p.s == 'line')
+		{
+			q = outline[outlineCursor + 1];
+		}
+		else if (p.s == 'quadratic0')
+		{
+			q = outline[outlineCursor + 2];
+		}
+		else if (p.s == 'cubic0')
+		{
+			q = outline[outlineCursor + 3];
+		}
+		else if (p.s == 'close')
+		{
+			q = outline[0];
+		}
+		else
+		{
+			throw new Error();
+		}
+		
+		
+		var dx = q.x - p.x;
+		var dy = q.y - p.y;
+		
+		var newPoint1 = { x : p.x + dx / 3 * 1 , y : p.y + dy / 3 * 1 , s : 'cubic1' };
+		var newPoint2 = { x : p.x + dx / 3 * 2 , y : p.y + dy / 3 * 2 , s : 'cubic2' };
+		
+		if (p.s == 'line')
+		{
+			outline = outline.slice(0, outlineCursor + 1).concat([newPoint1, newPoint2]).concat(outline.slice(outlineCursor + 1));
+		}
+		else if (p.s == 'quadratic0')
+		{
+			outline = outline.slice(0, outlineCursor + 1).concat([newPoint1, newPoint2]).concat(outline.slice(outlineCursor + 2));
+		}
+		else if (p.s == 'cubic0')
+		{
+			outline = outline.slice(0, outlineCursor + 1).concat([newPoint1, newPoint2]).concat(outline.slice(outlineCursor + 3));
+		}
+		else if (p.s == 'close')
+		{
+			outline.push(newPoint);
+		}
+		else
+		{
+			throw new Error();
+		}
+		
+		p.s = 'cubic0';
+	}
+	else
+	{
+		throw new Exception();
+	}
+	
+	DrawOutline();
+}
+function SetOutlineHandlers() {
+	
+	var mousedown = false;
+	var dx = 0;
+	var dy = 0;
+	var mx = 0;
+	var my = 0;
+	
+	eraserCanvas.focus();
+	
+	eraserCanvas.onmouseup = function(e) { mousedown = false; };
+	eraserCanvas.onmousedown = function(e) {
+		
+		mousedown = true;
+		
+		var x = e.offsetX;
+		var y = e.offsetY;
+		
+		outlineCursor = null;
+		selectedPoint = null;
+		
+		var breakLoop = false;
+		
+		for (var k = 0; k < outlines.length; k++)
+		{
+			for (var i = 0; i < outlines[k].length; i++)
+			{
+				var p = outlines[k][i];
+				
+				dx = p.x - x;
+				dy = p.y - y;
+				
+				if (-2 <= dx && dx <= 2 && -2 <= dy && dy <= 2)
+				{
+					outline = outlines[k];
+					outlineCursor = i;
+					selectedPoint = outline[i];
+					breakLoop = true;
+					break;
+				}
+			}
+			
+			if (breakLoop) { break; }
+		}
+		
+		DrawOutline();
+	}
+	eraserCanvas.onmousemove = function(e) {
+		
+		mx = e.offsetX;
+		my = e.offsetY;
+		
+		if (mousedown && outlineCursor !== null)
+		{
+			outline[outlineCursor].x = e.offsetX + dx;
+			outline[outlineCursor].y = e.offsetY + dy;
+			DrawOutline();
+		}
+	};
+	eraserCanvas.onkeydown = function(e) {
+		
+		if (outline.length == 0)
+		{
+			var newPoint = { x : mx , y : my , s : 'end' };
+			outline.push(newPoint);
+		}
+		else
+		{
+			if (e.keyCode == 65) // a = add quadratic curve
+			{
+				var p = outline[outline.length - 1];
+				p.s = 'quadratic0';
+				var newPoint1 = { x : (p.x + mx) / 2 , y : (p.y + my) / 2 , s : 'quadratic1' };
+				var newPoint2 = { x : mx , y : my , s : 'end' };
+				outline.push(newPoint1);
+				outline.push(newPoint2);
+			}
+			else if (e.keyCode == 83) // s = add cubic curve
+			{
+				var p = outline[outline.length - 1];
+				p.s = 'cubic0';
+				var dx = mx - p.x;
+				var dy = my - p.y;
+				var newPoint1 = { x : p.x + dx / 3 * 1 , y : p.y + dy / 3 * 1 , s : 'cubic1' };
+				var newPoint2 = { x : p.x + dx / 3 * 2 , y : p.y + dy / 3 * 2 , s : 'cubic2' };
+				var newPoint3 = { x : mx , y : my , s : 'end' };
+				outline.push(newPoint1);
+				outline.push(newPoint2);
+				outline.push(newPoint3);
+			}
+			else if (e.keyCode == 68) // d = start new path (a hole)
+			{
+				outline = [];
+				outlines.push(outline);
+				var newPoint = { x : mx , y : my , s : 'end' };
+				outline.push(newPoint);
+			}
+		}
+		
+		DrawOutline();
+	}
+}
+function LoadOutline(files) {
+	
+	var fileReader = new FileReader();
+	
+	fileReader.onload = function(event) {
+		
+		var json = event.target.result;
+		outlines = JSON.parse(json);
+		outlineCursor = null;
+		selectedPoint = null;
+		DrawOutline();
+	};
+	
+	if (files.length > 0)
+	{
+		fileReader.readAsText(files[0]);
+	}
+}
+function SaveOutline() {
+	var downloadLink = document.createElement('a');
+	var url = window.URL;
+	downloadLink.href = 'data:text/json,'+JSON.stringify(outlines);
+	downloadLink.download = imgname + '.json';
+	document.body.appendChild(downloadLink);
+	downloadLink.click();
+	document.body.removeChild(downloadLink);
+}
+function GenerateMask() {
+	
+	eraserMaskCtx.fillStyle = 'rgb(0,0,0)';
+	eraserMaskCtx.fillRect(0, 0, eraserMaskCtx.canvas.width, eraserMaskCtx.canvas.height);
+	
+	for (var k = 0; k < outlines.length; k++)
+	{
+		var outline = outlines[k];
+		
+		if (k == 0)
+		{
+			eraserMaskCtx.fillStyle = 'rgb(255,255,255)'; // first outline is the foreground
+		}
+		else
+		{
+			eraserMaskCtx.fillStyle = 'rgb(0,0,0)'; // subsequent outlines are holes
+		}
+		
+		eraserMaskCtx.beginPath();
+		eraserMaskCtx.moveTo(outline[0].x, outline[0].y);
+		
+		for (var i = 0; i < outline.length; i++)
+		{
+			var p = outline[i];
+			
+			if (p.s == 'line')
+			{
+				eraserMaskCtx.lineTo(outline[i+1].x, outline[i+1].y);
+			}
+			else if (p.s == 'quadratic0')
+			{
+				eraserMaskCtx.quadraticCurveTo(outline[i+1].x, outline[i+1].y, outline[i+2].x, outline[i+2].y);
+				i += 1;
+			}
+			else if (p.s == 'cubic0')
+			{
+				eraserMaskCtx.bezierCurveTo(outline[i+1].x, outline[i+1].y, outline[i+2].x, outline[i+2].y, outline[i+3].x, outline[i+3].y);
+				i += 2;
+			}
+			else if (p.s == 'close')
+			{
+				eraserMaskCtx.closePath();
+			}
+			else if (p.s == 'end')
+			{
+				eraserMaskCtx.closePath();
+			}
+			else
+			{
+				throw new Error();
+			}
+		}
+		
+		eraserMaskCtx.fill();
+	}
+	
+	eraserMask = eraserMaskCtx.getImageData(0, 0, eraserMaskCtx.canvas.width, eraserMaskCtx.canvas.height);
+}
+
+function OutlineToPath() {
+	
+	var path = new Path2D();
+	
+	path.moveTo(outline[0].x, outline[0].y);
+	
+	for (var i = 0; i < outline.length; i++)
+	{
+		var p = outline[i];
+		
+		if (p.s == 'line')
+		{
+			path.lineTo(outline[i+1].x, outline[i+1].y);
+		}
+		else if (p.s == 'quadratic0')
+		{
+			path.quadraticCurveTo(outline[i+1].x, outline[i+1].y, outline[i+2].x, outline[i+2].y);
+			i += 1;
+		}
+		else if (p.s == 'cubic0')
+		{
+			path.bezierCurveTo(outline[i+1].x, outline[i+1].y, outline[i+2].x, outline[i+2].y, outline[i+3].x, outline[i+3].y);
+			i += 2;
+		}
+		else if (p.s == 'close')
+		{
+			path.closePath();
+		}
+		else if (p.s == 'end')
+		{
+			path.closePath();
+		}
+		else
+		{
+			throw new Error();
+		}
+	}
+	
+	return path;
+}
+
+function GenerateColorMask() {
+	
+	var path = OutlineToPath(outlines[0]);
+	
+	eraserMaskCtx.fillStyle = 'rgb(255,255,255)';
+	eraserMaskCtx.fillRect(0, 0, eraserMaskCtx.canvas.width, eraserMaskCtx.canvas.height);
+	
+	var maskImageData = eraserMaskCtx.getImageData(0, 0, eraserMaskCtx.canvas.width, eraserMaskCtx.canvas.height);
+	
+	for (var y = 0; y < maskImageData.height; y++)
+	{
+		for (var x = 0; x < maskImageData.width; x++)
+		{
+			if (!eraserMaskCtx.isPointInPath(path, x, y)) { continue; }
+			
+			var index = (y * maskImageData.width + x) * 4;
+			var color = {};
+			color.r = origImageData.data[index + 0];
+			color.g = origImageData.data[index + 1];
+			color.b = origImageData.data[index + 2];
+			
+			var grayscale = ColorFunctor(color);
+			
+			maskImageData.data[index + 0] = grayscale;
+			maskImageData.data[index + 1] = grayscale;
+			maskImageData.data[index + 2] = grayscale;
+		}
+	}
+	
+	eraserMaskCtx.putImageData(maskImageData, 0, 0);
+}
+function ColorFunctor(color) {
+	
+	// this has to be changed on a case-by-case basis
+	
+	if (color.b > color.r)
+	{
+		return 0;
+	}
+	else
+	{
+		return 255;
+	}
+}
+
+var imgname = null;
+var theimg = null;
+function Load(files) {
+	
+	var fileReader = new FileReader();
+	
+	var title = null;
+	
+	fileReader.onload = function(event) {
+		
+		var dataUrl = event.target.result;
+		var img = document.createElement('img');
+		img.src = dataUrl;
+		theimg = img;
+		
+		title += ' ' + img.width + 'x' + img.height + ' (' + Math.floor(img.height / img.width * 100, 1) + '%)';
+		
+		origCanvas.width = img.width;
+		origCanvas.height = img.height;
+		origCtx = origCanvas.getContext('2d');
+		
+		eraserCanvas.width = img.width;
+		eraserCanvas.height = img.height;
+		eraserCtx = eraserCanvas.getContext('2d');
+		
+		eraserMaskCanvas.width = img.width;
+		eraserMaskCanvas.height = img.height;
+		eraserMaskCtx = eraserMaskCanvas.getContext('2d');
+		
+		origCtx.clearRect(0, 0, img.width, img.height);
+		origCtx.drawImage(img, 0, 0);
+		
+		origImageData = origCtx.getImageData(0, 0, img.width, img.height);
+		
+		eraserMaskCtx.fillStyle = 'rgb(0,0,0)';
+		eraserMaskCtx.fillRect(0, 0, eraserMaskCanvas.width, eraserMaskCanvas.height);
+		eraserMask = eraserMaskCtx.getImageData(0, 0, eraserMaskCanvas.width, eraserMaskCanvas.height);
+		
+		eraserCtx.putImageData(origImageData, 0, 0);
+		eraserImageData = eraserCtx.getImageData(0, 0, eraserCanvas.width, eraserCanvas.height);
+		
+		SetOutlineHandlers();
+		
+		document.getElementsByTagName('title')[0].innerText = title;
+	};
+	
+	if (files.length > 0)
+	{
+		fileReader.readAsDataURL(files[0]);
+		imgname = files[0].name.substr(0, files[0].name.length - 4);
+		title = files[0].name;
+	}
+}
+function Download(text, filename) {
+	var downloadLink = document.createElement('a');
+	var url = window.URL;
+	downloadLink.href = text;
+	downloadLink.download = filename;
+	document.body.appendChild(downloadLink);
+	downloadLink.click();
+	document.body.removeChild(downloadLink);
+}
+
+</script>
+</body>
+</html>
+
+<!-- alt+4 -->
+

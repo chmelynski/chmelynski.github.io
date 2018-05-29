@@ -18,121 +18,118 @@ var Data = function(json, type, name) {
 		json.params.afterChange = '';
 	}
 	
-	this._type = json.type;
-	this._name = json.name;
-	this._visible = json.visible; // can't use ?: here because visible can be set to false
+	this.type = json.type;
+	this.name = json.name;
+	this.visible = json.visible; // can't use ?: here because visible can be set to false
 	
-	this._div = null;
-	this._errorSpan = null;
-	this._datguiDiv = null;
-	this._contentDiv = null;
-	this._codemirror = null;
+	this.div = null;
+	this.errorSpan = null;
+	this.datguiDiv = null;
+	this.contentDiv = null;
+	this.codemirror = null;
 	
-	// the top of the undo stack is the current state - new states get pushed on add and on setting this._data
-	this._undo = {};
-	this._undo.stack = []; // { data , headers } - entirely possible that we should store display and form as well
-	this._undo.index = -1;
-	this._undo.size = 0;
-	this._undo.sizes = [];
-	this._undo.capacity = 50;
-	this._undo.pushOnAdd = true;
+	// the top of the undo stack is the current state - new states get pushed on add and on setting this.data
+	this.undo = {};
+	this.undo.stack = []; // { data , headers } - entirely possible that we should store display and form as well
+	this.undo.index = -1;
+	this.undo.size = 0;
+	this.undo.sizes = [];
+	this.undo.capacity = 50;
+	this.undo.pushOnAdd = true;
 	
-	this._format = json.params.format; // json, headerList
-	this._display = json.params.display; // json, yaml, csv, tsv, grid, pre, (tree - to do; matrix, formula - to finish)
-	this._form = json.params.form; // object, list, listOfObjects, listOfLists, other
-	this._headers = json.params.headers; // this is needed to specify which columns to display and in what order - handsontable gives the user the ability to reorder columns, and we want to save that configuration
-	this._afterChange = json.params.afterChange ? json.params.afterChange : '';
+	this.format = json.params.format; // json, headerList
+	this.display = json.params.display; // json, yaml, csv, tsv, grid, pre, (tree - to do; matrix, formula - to finish)
+	this.form = json.params.form; // object, list, listOfObjects, listOfLists, other
+	this.headers = json.params.headers; // this is needed to specify which columns to display and in what order - handsontable gives the user the ability to reorder columns, and we want to save that configuration
+	this.afterChange = json.params.afterChange ? json.params.afterChange : '';
 	
-	this._gridParams = json.grid;
+	this.gridParams = json.grid;
 	
-	this._data = ParseFormat.apply(this, [json.data]);
-	
-	Object.defineProperty(this, 'data', {
-		get : function() { return this._data; },
-		//set : function (value) { this._data = value; }
-	});
-	
-	Object.defineProperty(this, 'headers', {
-		get : function() { return this._headers; },
-		//set : function (value) { this._headers = value; }
-	});
-	
-	Object.defineProperty(this, 'gridParams', {
-		get : function() { return this._gridParams; },
-		set : function (value) { this._gridParams = value; }
-	});
-	
-	Object.defineProperty(this, 'display', {
-		get : function() { return this._display; },
-		set : function (value) { this._display = value; }
-	});
-	
-	Object.defineProperty(this, 'afterChange', {
-		get : function() { return this._afterChange; },
-		set : function (value) { this._afterChange = value; }
-	});
+	this.data = ParseFormat.apply(this, [json.data]);
 	
 	// determining form can be an expensive operation, so we cache the result and remember it as long as we can
 	// for example, if the data is modified by the user interacting with a grid, we can be assured the data stays in a certain form
 	// the only time the slate gets completely cleared is when the user introduces arbitrary data - via script, upload, or blur
-	if (this._form === null) { this._determineDataForm(); }
-	if (this._headers === null) { this._introspectHeaders(); }
+	if (this.form === null) { this.determineDataForm(); }
+	if (this.headers === null) { this.introspectHeaders(); }
 };
-Data.prototype._add = function() {
+Data.prototype.add = function() {
 	
 	var comp = this;
 	
-	comp._div.html('');
-	comp._datguiDiv = $('<div class="data-control"></div>').appendTo(comp._div);
-	comp._errorSpan = $('<span style="color:red"></span>').appendTo(comp._div);
-	comp._contentDiv = $('<div class="data-editor"></div>').appendTo(comp._div);
+	comp.div.html('');
+	comp.datguiDiv = $('<div class="data-control"></div>').appendTo(comp.div);
+	comp.errorSpan = $('<span style="color:red"></span>').appendTo(comp.div);
+	comp.contentDiv = $('<div class="data-editor"></div>').appendTo(comp.div);
 	
-	comp._refreshDatgui();
+	comp.refreshDatgui();
 	
-	if (comp._grid && comp._display != 'grid')
+	if (comp.grid && comp.display != 'grid')
 	{
-		comp._gridParams = comp._grid._write();
-		comp._grid = null;
+		comp.gridParams = comp.grid.write();
+		comp.grid = null;
 	}
 	
 	var initText = '';
 	
-	if (comp._display == 'json' || comp._display == 'yaml' || comp._display == 'csv' || comp._display == 'tsv')
+	if (comp.display == 'json' || comp.display == 'yaml' || comp.display == 'csv' || comp.display == 'tsv')
 	{
-		var textbox = $('<textarea></textarea>').appendTo(comp._contentDiv);
+		var textbox = $('<textarea></textarea>').appendTo(comp.contentDiv);
 		
 		var options = {};
-		options.mode = {json:{name:'javascript',json:true},yaml:'yaml',csv:'plain',tsv:'plain'}[comp._display];
+		options.mode = {json:{name:'javascript',json:true},yaml:'yaml',csv:'plain',tsv:'plain'}[comp.display];
 		options.smartIndent = false;
 		options.lineNumbers = true;
 		options.lineWrapping = true;
-		comp._codemirror = CodeMirror.fromTextArea(textbox[0], options);
+		comp.codemirror = CodeMirror.fromTextArea(textbox[0], options);
 		
-		initText = Write.apply(comp, [comp._display]);
-		comp._codemirror.getDoc().setValue(initText);
+		initText = Write.apply(comp, [comp.display]);
+		comp.codemirror.getDoc().setValue(initText);
 		
-		comp._codemirror.on('change', function() { comp._markDirty(); });
-		comp._codemirror.on('blur', function() {
+		comp.codemirror.on('change', function() { comp.markDirty(); });
+		comp.codemirror.on('blur', function() {
 			
-			var text = comp._codemirror.getValue();
-			var success = comp._setText(text);
+			var text = comp.codemirror.getValue();
+			var success = comp.setText(text);
 			
 			if (success)
 			{
-				comp._refreshDatgui();
-				var formattedText = Write.apply(comp, [comp._display]);
-				comp._codemirror.getDoc().setValue(formattedText);
-				comp._runAfterChange();
+				comp.refreshDatgui();
+				var formattedText = Write.apply(comp, [comp.display]);
+				comp.codemirror.getDoc().setValue(formattedText);
+				comp.runAfterChange();
 			}
 		});
 	}
-	else if (comp._display == 'grid')
+	else if (comp.display == 'grid')
 	{
-		comp._grid = new Hyperdeck.Grid(comp, comp._contentDiv);
+		comp.grid = new Hyperdeck.Grid(comp, comp.contentDiv[0]);
 	}
-	else if (comp._display == 'pre' || comp._display == 'readonly')
+	else if (comp.display == 'tree')
 	{
-		if (comp._form == 'listOfObjects' || comp._form == 'listOfLists')
+		var ctx = document.createElement('canvas').getContext('2d');
+		ctx.canvas.style.margin = '3px';
+		ctx.canvas.tabIndex = 1;
+		ctx.canvas.focus();
+		comp.contentDiv[0].appendChild(ctx.canvas);
+		
+		var options = {
+			top: 20,
+			left: 50,
+			indent: 20,
+			handleRadius: 5,
+			textMargin: 15,
+			twigHeight: 15,
+			maxVisible: 30,
+			font: '10pt Courier New',
+			drawHandle: null
+		};
+		
+		comp.tree = new Hyperdeck.Tree(ctx, comp.data, options);
+	}
+	else if (comp.display == 'pre' || comp.display == 'readonly')
+	{
+		if (comp.form == 'listOfObjects' || comp.form == 'listOfLists')
 		{
 			initText = DisplayAsTable(comp);
 		}
@@ -141,115 +138,115 @@ Data.prototype._add = function() {
 			initText = DisplayAsPre(comp);
 		}
 		
-		comp._contentDiv.html(initText);
+		comp.contentDiv.html(initText);
 	}
-	else if (comp._display == 'summary')
+	else if (comp.display == 'summary')
 	{
 		var ls = [];
 		
 		ls.push('<pre>');
-		ls.push('form: ' + comp._form);
-		if (comp._headers) { ls.push('headers: ' + comp._headers.join(', ')); }
-		if (comp._form == 'listOfObjects' || comp._form == 'listOfLists' || comp._form == 'list')
+		ls.push('form: ' + comp.form);
+		if (comp.headers) { ls.push('headers: ' + comp.headers.join(', ')); }
+		if (comp.form == 'listOfObjects' || comp.form == 'listOfLists' || comp.form == 'list')
 		{
-			ls.push('length: ' + comp._data.length);
+			ls.push('length: ' + comp.data.length);
 		}
 		ls.push('</pre>');
 		
-		comp._contentDiv.html(ls.join('\n'));
+		comp.contentDiv.html(ls.join('\n'));
 	}
-	else if (comp._display == 'gui')
+	else if (comp.display == 'gui')
 	{
-		comp._contentDiv.append($('<hr />'));
+		comp.contentDiv.append($('<hr />'));
 		
 		var datagui = new dat.GUI({autoPlace:false, width:"100%"});
 		
-		for (var key in comp._data)
+		for (var key in comp.data)
 		{
-			var control = datagui.add(comp._data, key);
-			var type = Object.prototype.toString.call(comp._data[key]);
+			var control = datagui.add(comp.data, key);
+			var type = Object.prototype.toString.call(comp.data[key]);
 			
 			if (type == '[object String]')
 			{
 				// if the string has to be parsed (like in rgb() strings),
 				// then intermediate values often make no sense and throw errors
-				control.onFinishChange(function(value) { comp._runAfterChange(); });
+				control.onFinishChange(function(value) { comp.runAfterChange(); });
 			}
 			else
 			{
-				control.onChange(function(value) { comp._runAfterChange(); });
+				control.onChange(function(value) { comp.runAfterChange(); });
 			}
 		}
 		
-		comp._contentDiv.append($(datagui.domElement));
+		comp.contentDiv.append($(datagui.domElement));
 	}
 	else
 	{
 		throw new Error();
 	}
 	
-	if (comp._undo.pushOnAdd) { comp._pushUndo(initText.length); }
+	if (comp.undo.pushOnAdd) { comp.pushUndo(initText.length); }
 };
-Data.prototype._write = function() {
+Data.prototype.write = function() {
 	
 	var comp = this;
 	
 	var json = {};
-	json.type = comp._type;
-	json.name = comp._name;
-	json.visible = comp._visible;
+	json.type = comp.type;
+	json.name = comp.name;
+	json.visible = comp.visible;
 	json.data = WriteFormat.apply(comp);
 	json.params = {};
-	json.params.format = comp._format;
-	json.params.display = comp._display;
-	json.params.form = comp._form;
-	json.params.headers = comp._headers;
-	json.params.afterChange = comp._afterChange;
-	if (comp._grid) { json.grid = comp._grid._write(); }
+	json.params.format = comp.format;
+	json.params.display = comp.display;
+	json.params.form = comp.form;
+	json.params.headers = comp.headers;
+	json.params.afterChange = comp.afterChange;
+	if (comp.grid) { json.grid = comp.grid.write(); }
 	return json;
 };
 
-Data.prototype._refreshDatgui = function() {
+Data.prototype.refreshDatgui = function() {
 	
 	var comp = this;
-	comp._datguiDiv.html('');
+	comp.datguiDiv.html('');
 	
 	var displayOptionDict = {};
-	displayOptionDict.other = ['json','yaml','readonly','summary'];
-	displayOptionDict.listOfObjects = ['json','yaml','grid','csv','tsv','readonly','summary'];
-	displayOptionDict.listOfLists = ['json','yaml','csv','tsv','readonly','summary'];
-	displayOptionDict.list = ['json','yaml','csv','tsv','readonly','summary'];
-	displayOptionDict.object = ['json','yaml','gui','readonly','summary'];
+	displayOptionDict.other = ['json','tree','yaml','readonly','summary'];
+	displayOptionDict.listOfObjects = ['json','tree','yaml','grid','csv','tsv','readonly','summary'];
+	displayOptionDict.listOfLists = ['json','tree','yaml','csv','tsv','readonly','summary'];
+	displayOptionDict.list = ['json','tree','yaml','csv','tsv','readonly','summary'];
+	displayOptionDict.object = ['json','tree','yaml','gui','readonly','summary'];
 	
-	var displayOptions = displayOptionDict[comp._form];
+	var displayOptions = displayOptionDict[comp.form];
 	
-	if (displayOptions.indexOf(comp._display) == -1) { comp._display = 'json'; }
+	if (displayOptions.indexOf(comp.display) == -1) { comp.display = 'json'; }
 	
 	function Option(str) {
-		return '<option' + ((comp._display == str) ? ' selected' : '') + '>' + str + '</option>';
+		return '<option' + ((comp.display == str) ? ' selected' : '') + '>' + str + '</option>';
 	}
 	
-	$('<span>View:</span>').appendTo(comp._datguiDiv);
+	$('<span>View:</span>').appendTo(comp.datguiDiv);
 	$('<select>' + displayOptions.map(Option).join('') + '</select>')
-		.appendTo(comp._datguiDiv).on('change', function() { comp._display = this.value; comp._markDirty(); comp._add(); });
+		.appendTo(comp.datguiDiv).on('change', function() { comp.display = this.value; comp.markDirty(); comp.add(); });
 
-	$('<span>On change:</span>').appendTo(comp._datguiDiv);
-	$('<input type="text" placeholder="Hyperdeck.Run(\'js1\')"></input>').attr('value', comp._afterChange).appendTo(comp._datguiDiv)
-		.on('change', function() { comp._afterChange = this.value; comp._markDirty(); });
+	$('<span>On change:</span>').appendTo(comp.datguiDiv);
+	$('<input type="text" placeholder="Hyperdeck.Run(\'js1\')"></input>').attr('value', comp.afterChange).appendTo(comp.datguiDiv)
+		.on('change', function() { comp.afterChange = this.value; comp.markDirty(); });
 
 	$('<button type="button" data-toggle="tooltip" data-placement="bottom" title="Download" data-original-title="Download" class="btn btn-default btn-sm"><i class="fa fa-download"></i></button>')
-		.appendTo(comp._datguiDiv).on('click', function() { comp._download(); }).tooltip();
+		.appendTo(comp.datguiDiv).on('click', function() { comp.download(); }).tooltip();
 	$('<button type="button" data-toggle="tooltip" data-placement="bottom" title="Upload" data-original-title="Upload" class="btn btn-default btn-sm"><i class="fa fa-upload"></i></button>')
-		.appendTo(comp._datguiDiv).on('click', function() { comp._upload(); }).tooltip();
+		.appendTo(comp.datguiDiv).on('click', function() { comp.upload(); }).tooltip();
 	
 	$('<button type="button" data-toggle="tooltip" data-placement="bottom" title="Clear" data-original-title="Clear" class="btn btn-default btn-sm"><i class="fa fa-ban"></i></button>')
-		.appendTo(comp._datguiDiv).on('click', function() { comp._set([{A:1,B:2,C:3},{A:4,B:5,C:6},{A:7,B:8,C:9}]); }).tooltip();
+		.appendTo(comp.datguiDiv).on('click', function() { comp.set([{A:1,B:2,C:3},{A:4,B:5,C:6},{A:7,B:8,C:9}]); }).tooltip();
 };
 
-Data.prototype._showError = function(e) {
+Data.prototype.showError = function(e) {
 	
 	var comp = this;
-	comp._errorSpan.text(e);
+	comp.errorSpan.text(e);
 };
 
 function ParseFormat(data) {
@@ -258,9 +255,9 @@ function ParseFormat(data) {
 	
 	var result = null;
 	
-	if (comp._format == 'headerList')
+	if (comp.format == 'headerList')
 	{
-		// comp._headers: ["foo","bar"]
+		// comp.headers: ["foo","bar"]
 		// data: [[1,2],[3,4]]
 		// => [{"foo":1,"bar":2},{"foo":3,"bar":4}]
 		
@@ -270,9 +267,9 @@ function ParseFormat(data) {
 		{
 			var obj = {};
 			
-			for (var k = 0; k < comp._headers.length; k++)
+			for (var k = 0; k < comp.headers.length; k++)
 			{
-				obj[comp._headers[k]] = data[i][k];
+				obj[comp.headers[k]] = data[i][k];
 			}
 			
 			objs.push(obj);
@@ -280,7 +277,7 @@ function ParseFormat(data) {
 		
 		result = objs;
 	}
-	else if (comp._format == 'json')
+	else if (comp.format == 'json')
 	{
 		result = data;
 	}
@@ -297,19 +294,19 @@ function WriteFormat() {
 	
 	var result = null;
 	
-	if (comp._form == 'listOfObjects')
+	if (comp.form == 'listOfObjects')
 	{
-		comp._format = 'headerList';
+		comp.format = 'headerList';
 		
 		var matrix = [];
 		
-		for (var i = 0; i < comp._data.length; i++)
+		for (var i = 0; i < comp.data.length; i++)
 		{
 			var row = [];
 			
-			for (var k = 0; k < comp._headers.length; k++)
+			for (var k = 0; k < comp.headers.length; k++)
 			{
-				row.push(comp._data[i][comp._headers[k]]);
+				row.push(comp.data[i][comp.headers[k]]);
 			}
 			
 			matrix.push(row);
@@ -319,58 +316,58 @@ function WriteFormat() {
 	}
 	else
 	{
-		comp._format = 'json';
-		result = comp._data;
+		comp.format = 'json';
+		result = comp.data;
 	}
 	
 	return result;
 }
-Data.prototype._introspectHeaders = function() {
+Data.prototype.introspectHeaders = function() {
 	
 	var comp = this;
 	
-	comp._headers = [];
+	comp.headers = [];
 	
-	if (comp._form == 'object')
+	if (comp.form == 'object')
 	{
-		for (var key in comp._data)
+		for (var key in comp.data)
 		{
-			comp._headers.push(key);
+			comp.headers.push(key);
 		}
 	}
-	else if (comp._form == 'listOfObjects')
+	else if (comp.form == 'listOfObjects')
 	{
-		for (var i = 0; i < comp._data.length; i++)
+		for (var i = 0; i < comp.data.length; i++)
 		{
-			for (var key in comp._data[i])
+			for (var key in comp.data[i])
 			{
-				if (comp._headers.indexOf(key) == -1)
+				if (comp.headers.indexOf(key) == -1)
 				{
-					comp._headers.push(key);
+					comp.headers.push(key);
 				}
 			}
 		}
 	}
-	else if (comp._form == 'listOfLists')
+	else if (comp.form == 'listOfLists')
 	{
 		var max = 0;
 		
-		for (var i = 0; i < comp._data.length; i++)
+		for (var i = 0; i < comp.data.length; i++)
 		{
-			max = Math.max(max, comp._data[i].length);
+			max = Math.max(max, comp.data[i].length);
 		}
 		
 		for (var k = 0; k < max; k++)
 		{
-			comp._headers.push(k);
+			comp.headers.push(k);
 		}
 	}
 	else
 	{
-		comp._headers = null;
+		comp.headers = null;
 	}
 };
-Data.prototype._enforceHeaderOrder = function() {
+Data.prototype.enforceHeaderOrder = function() {
 	
 	var comp = this;
 	
@@ -379,26 +376,26 @@ Data.prototype._enforceHeaderOrder = function() {
 	
 	var newdata = [];
 	
-	for (var i = 0; i < comp._data.length; i++)
+	for (var i = 0; i < comp.data.length; i++)
 	{
 		var obj = {};
 		
-		for (var k = 0; k < comp._headers.length; k++)
+		for (var k = 0; k < comp.headers.length; k++)
 		{
-			var header = comp._headers[k];
-			obj[header] = comp._data[i][header];
+			var header = comp.headers[k];
+			obj[header] = comp.data[i][header];
 		}
 		
 		newdata.push(obj);
 	}
 	
-	comp._data = newdata;
+	comp.data = newdata;
 };
-Data.prototype._determineDataForm = function() {
+Data.prototype.determineDataForm = function() {
 	
 	var comp = this;
 	
-	comp._form = DetermineDataForm(comp._data);
+	comp.form = DetermineDataForm(comp.data);
 };
 function DetermineDataForm(data) {
 	
@@ -579,58 +576,58 @@ function DisplayAsPre(comp) {
 	
 	var l = [];
 	
-	if (comp._form == 'listOfObjects')
+	if (comp.form == 'listOfObjects')
 	{
-		l.push('\t' + comp._headers.join('\t'));
+		l.push('\t' + comp.headers.join('\t'));
 		
-		for (var i = 0; i < comp._data.length; i++)
+		for (var i = 0; i < comp.data.length; i++)
 		{
 			var row = [];
 			row.push(i.toString());
 			
-			for (var k = 0; k < comp._headers.length; k++)
+			for (var k = 0; k < comp.headers.length; k++)
 			{
-				row.push(comp._data[i][comp._headers[k]]);
+				row.push(comp.data[i][comp.headers[k]]);
 			}
 			
 			l.push(row.join('\t'));
 		}
 	}
-	else if (comp._form == 'listOfLists')
+	else if (comp.form == 'listOfLists')
 	{
-		l.push('\t' + comp._headers.join('\t'));
+		l.push('\t' + comp.headers.join('\t'));
 		
-		for (var i = 0; i < comp._data.length; i++)
+		for (var i = 0; i < comp.data.length; i++)
 		{
 			var row = [];
 			row.push(i.toString());
 			
-			for (var j = 0; j < comp._data[i].length; j++)
+			for (var j = 0; j < comp.data[i].length; j++)
 			{
-				row.push(comp._data[i][j]);
+				row.push(comp.data[i][j]);
 			}
 			
 			l.push(row.join('\t'));
 		}
 	}
-	else if (comp._form == 'object')
+	else if (comp.form == 'object')
 	{
-		for (var k = 0; k < comp._headers.length; k++)
+		for (var k = 0; k < comp.headers.length; k++)
 		{
-			var key = comp._headers[k];
-			l.push(key + ': ' + comp._data[key]);
+			var key = comp.headers[k];
+			l.push(key + ': ' + comp.data[key]);
 		}
 	}
-	else if (comp._form == 'list')
+	else if (comp.form == 'list')
 	{
-		for (var i = 0; i < comp._data.length; i++)
+		for (var i = 0; i < comp.data.length; i++)
 		{
-			l.push(i.toString() + '\t' + comp._data[i]);
+			l.push(i.toString() + '\t' + comp.data[i]);
 		}
 	}
 	else
 	{
-		l = [JSON.stringify(comp._data)];
+		l = [JSON.stringify(comp.data)];
 	}
 	
 	return '<pre>' + l.join('\n') + '</pre>';
@@ -641,32 +638,32 @@ function DisplayAsTable(comp) {
 	
 	l.push('<table class="data-component-display">');
 	l.push('<tr><th></th><th>');
-	l.push(comp._headers.join('</th><th>'));
+	l.push(comp.headers.join('</th><th>'));
 	l.push('</th></tr>');
 	
-	if (comp._form == 'listOfObjects')
+	if (comp.form == 'listOfObjects')
 	{
-		for (var i = 0; i < comp._data.length; i++)
+		for (var i = 0; i < comp.data.length; i++)
 		{
 			l.push('<tr><td>' + i.toString() + '</td>');
 			
-			for (var k = 0; k < comp._headers.length; k++)
+			for (var k = 0; k < comp.headers.length; k++)
 			{
-				l.push('<td>' + comp._data[i][comp._headers[k]] + '</td>');
+				l.push('<td>' + comp.data[i][comp.headers[k]] + '</td>');
 			}
 			
 			l.push('</tr>');
 		}
 	}
-	else if (comp._form == 'listOfLists')
+	else if (comp.form == 'listOfLists')
 	{
-		for (var i = 0; i < comp._data.length; i++)
+		for (var i = 0; i < comp.data.length; i++)
 		{
 			l.push('<tr><td>' + i.toString() + '</td>');
 			
-			for (var j = 0; j < comp._data[i].length; j++)
+			for (var j = 0; j < comp.data[i].length; j++)
 			{
-				l.push('<td>' + comp._data[i][j] + '</td>');
+				l.push('<td>' + comp.data[i][j] + '</td>');
 			}
 			
 			l.push('</tr>');
@@ -677,35 +674,35 @@ function DisplayAsTable(comp) {
 	return l.join('');
 }
 
-Data.prototype._pushUndo = function(size) {
+Data.prototype.pushUndo = function(size) {
 	
 	var comp = this;
 	
 	//console.log('----------');
 	
-	if (size > comp._undo.capacity) { return; }
+	if (size > comp.undo.capacity) { return; }
 	
 	// ok, so what if index is not at the top of the stack?  that means that we're editing data that is the result of an undo
 	// basically comp is a fork in the tree
 	// so the correct thing to do is to discard the potential redos in the now-defunct trunk
-	for (var i = comp._undo.stack.length - 1; i > comp._undo.index; i--)
+	for (var i = comp.undo.stack.length - 1; i > comp.undo.index; i--)
 	{
-		comp._undo.stack.pop();
-		comp._undo.size -= comp._undo.sizes.pop();
+		comp.undo.stack.pop();
+		comp.undo.size -= comp.undo.sizes.pop();
 		//console.log('pop');
 	}
 	
-	comp._undo.stack.push({ data : comp._data , headers : comp._headers });
-	comp._undo.index = comp._undo.stack.length - 1;
-	comp._undo.sizes.push(size);
-	comp._undo.size += size;
+	comp.undo.stack.push({ data : comp.data , headers : comp.headers });
+	comp.undo.index = comp.undo.stack.length - 1;
+	comp.undo.sizes.push(size);
+	comp.undo.size += size;
 	//console.log('push');
 	
-	while (comp._undo.size > comp._undo.capacity)
+	while (comp.undo.size > comp.undo.capacity)
 	{
-		comp._undo.stack.shift();
-		comp._undo.size -= comp._undo.sizes.shift();
-		comp._undo.index--;
+		comp.undo.stack.shift();
+		comp.undo.size -= comp.undo.sizes.shift();
+		comp.undo.index--;
 		//console.log('shift');
 	}
 	
@@ -715,100 +712,100 @@ Data.prototype.Undo = function() {
 	
 	var comp = this;
 	
-	if (comp._undo.index == 0) { return; }
-	comp._undo.index--;
-	comp._data = comp._undo.stack[comp._undo.index].data;
-	comp._headers = comp._undo.stack[comp._undo.index].headers;
-	comp._markDirty();
-	comp._undo.pushOnAdd = false;
-	comp._add();
-	comp._undo.pushOnAdd = true;
+	if (comp.undo.index == 0) { return; }
+	comp.undo.index--;
+	comp.data = comp.undo.stack[comp.undo.index].data;
+	comp.headers = comp.undo.stack[comp.undo.index].headers;
+	comp.markDirty();
+	comp.undo.pushOnAdd = false;
+	comp.add();
+	comp.undo.pushOnAdd = true;
 };
 Data.prototype.Redo = function() {
 	
 	var comp = this;
 	
-	if (comp._undo.index == comp._undo.stack.length - 1) { return; }
-	comp._undo.index++;
-	comp._data = comp._undo.stack[comp._undo.index].data;
-	comp._headers = comp._undo.stack[comp._undo.index].headers;
-	comp._markDirty();
-	comp._undo.pushOnAdd = false;
-	comp._add();
-	comp._undo.pushOnAdd = true;
+	if (comp.undo.index == comp.undo.stack.length - 1) { return; }
+	comp.undo.index++;
+	comp.data = comp.undo.stack[comp.undo.index].data;
+	comp.headers = comp.undo.stack[comp.undo.index].headers;
+	comp.markDirty();
+	comp.undo.pushOnAdd = false;
+	comp.add();
+	comp.undo.pushOnAdd = true;
 };
 
-Data.prototype._runAfterChange = function() {
+Data.prototype.runAfterChange = function() {
 	var comp = this;
-	(new Function('args', comp._afterChange))();
+	(new Function('args', comp.afterChange))();
 };
 
-Data.prototype._setText = function(text) {
+Data.prototype.setText = function(text) {
 	
 	var comp = this;
 	var success = false;
-	comp._errorSpan.text('');
+	comp.errorSpan.text('');
 	
 	try
 	{
 		if (text == '')
 		{
-			comp._data = [];
-			comp._form = 'listOfObjects';
-			comp._headers = [];
+			comp.data = [];
+			comp.form = 'listOfObjects';
+			comp.headers = [];
 		}
-		else if (comp._display == 'json')
+		else if (comp.display == 'json')
 		{
 			ReadJson.apply(comp, [text]);
 		}
-		else if (comp._display == 'yaml')
+		else if (comp.display == 'yaml')
 		{
 			ReadYaml.apply(comp, [text]);
 		}
-		else if (comp._display == 'csv')
+		else if (comp.display == 'csv')
 		{
 			ReadCsv.apply(comp, [text]);
 		}
-		else if (comp._display == 'tsv')
+		else if (comp.display == 'tsv')
 		{
 			ReadTsv.apply(comp, [text]);
 		}
 		else
 		{
-			throw new Error('Invalid display type: ' + comp._display);
+			throw new Error('Invalid display type: ' + comp.display);
 		}
 		
 		success = true;
 	}
 	catch (e)
 	{
-		comp._showError(e, comp._display);
+		comp.showError(e, comp.display);
 	}
 	
 	return success;
 };
-Data.prototype._setData = function(data) {
+Data.prototype.setData = function(data) {
 	
 		var comp = this;
 		var success = false;
-		comp._errorSpan.text('');
+		comp.errorSpan.text('');
 		
 		try
 		{
-			comp._data = JSON.parse(JSON.stringify(data));
-			comp._markDirty();
-			comp._determineDataForm();
-			comp._introspectHeaders();
+			comp.data = JSON.parse(JSON.stringify(data));
+			comp.markDirty();
+			comp.determineDataForm();
+			comp.introspectHeaders();
 			success = true;
 		}
 		catch(e)
 		{
-			comp._showError(e, comp._display);
+			comp.showError(e, comp.display);
 		}
 		
 		return success;
 };
-Data.prototype._get = function(options) {
+Data.prototype.get = function(options) {
 	
 	var comp = this;
 	
@@ -820,33 +817,33 @@ Data.prototype._get = function(options) {
 	}
 	else
 	{
-		result = comp._data;
+		result = comp.data;
 	}
 	
 	return result;
 };
-Data.prototype._set = function(data, options) {
+Data.prototype.set = function(data, options) {
 	
 	var comp = this;
 	var success = false;
 	
 	if (options && options.format)
 	{
-		comp._display = options.format;
-		success = comp._setText(data);
+		comp.display = options.format;
+		success = comp.setText(data);
 	}
 	else
 	{
-		success = comp._setData(data);
+		success = comp.setData(data);
 	}
 	
 	if (success)
 	{
 		// pushUndo is called from add - problem is, if we set this.data while hidden, and then trigger an add() by changing to visible, we'll push twice
-		//if (this.visible) { this.add(); } else { this.pushUndo(JSON.stringify(this._data).length); }
-		comp._markDirty();
-		comp._add();
-		comp._runAfterChange();
+		//if (this.visible) { this.add(); } else { this.pushUndo(JSON.stringify(this.data).length); }
+		comp.markDirty();
+		comp.add();
+		comp.runAfterChange();
 	}
 };
 
@@ -858,8 +855,8 @@ Data.prototype.downloadJSON = function() { Download.apply(this, [WriteJson.apply
 Data.prototype.downloadYAML = function() { Download.apply(this, [WriteYaml.apply(this), '.yaml']); };
 Data.prototype.downloadTSV = function() { Download.apply(this, [WriteTsv.apply(this), '.tsv']); };
 Data.prototype.downloadCSV = function() { Download.apply(this, [WriteCsv.apply(this), '.csv']); };
-	
-Data.prototype._upload = function() {
+
+Data.prototype.upload = function() {
 	
 	var comp = this;
 	
@@ -895,7 +892,7 @@ Data.prototype._upload = function() {
 				throw new Error();
 			}
 			
-			comp._add();
+			comp.add();
 		};
 		
 		if (fileChooser[0].files.length > 0)
@@ -911,9 +908,9 @@ Data.prototype._upload = function() {
 			}
 			else
 			{
-				if (comp._display == 'json' || comp._display == 'yaml' || comp._display == 'csv' || comp._display == 'tsv')
+				if (comp.display == 'json' || comp.display == 'yaml' || comp.display == 'csv' || comp.display == 'tsv')
 				{
-					format = comp._display;
+					format = comp.display;
 				}
 				else
 				{
@@ -927,23 +924,23 @@ Data.prototype._upload = function() {
 	
 	fileChooser.click();
 };
-Data.prototype._download = function() {
+Data.prototype.download = function() {
 	
 	var comp = this;
 	
-	if (comp._display == 'json')
+	if (comp.display == 'json')
 	{
 		comp.downloadJSON();
 	}
-	else if (comp._display == 'yaml')
+	else if (comp.display == 'yaml')
 	{
 		comp.downloadYAML();
 	}
-	else if (comp._display == 'csv' || comp._display == 'grid')
+	else if (comp.display == 'csv' || comp.display == 'grid')
 	{
 		comp.downloadCSV();
 	}
-	else if (comp._display == 'tsv')
+	else if (comp.display == 'tsv')
 	{
 		comp.downloadTSV();
 	}
@@ -968,8 +965,8 @@ function Upload(fn, display) {
 		fileReader.onload = function(event)
 		{
 			fn.apply(comp, [event.target.result]);
-			comp._display = display;
-			comp._add();
+			comp.display = display;
+			comp.add();
 		};
 		
 		if (fileChooser[0].files.length > 0)
@@ -985,7 +982,7 @@ function Download(text, ext) {
 	
 	var comp = this;
 	
-	var filename = comp._name + ext;
+	var filename = comp.name + ext;
 	
 	var reader = new FileReader();
 	reader.readAsDataURL(new Blob([text], {type:'text/plain'})); 
@@ -1045,40 +1042,40 @@ function ReadJson(text) {
 	
 	var comp = this;
 	
-	comp._data = JSON.parse(text);
+	comp.data = JSON.parse(text);
 	
-	comp._form = DetermineDataForm(comp._data);
-	comp._introspectHeaders();
+	comp.form = DetermineDataForm(comp.data);
+	comp.introspectHeaders();
 }
 function ReadYaml(text) {
 	
 	var comp = this;
 	
-	comp._data = jsyaml.load(text);
+	comp.data = jsyaml.load(text);
 	
-	comp._form = DetermineDataForm(comp._data);
-	comp._introspectHeaders();
+	comp.form = DetermineDataForm(comp.data);
+	comp.introspectHeaders();
 }
 function WriteJson() {
 	
 	var comp = this;
 	
-	if (comp._form == 'listOfObjects')
+	if (comp.form == 'listOfObjects')
 	{
 		var ls = [];
 		
 		ls.push('[');
 		
-		for (var i = 0; i < comp._data.length; i++)
+		for (var i = 0; i < comp.data.length; i++)
 		{
 			ls.push('\t{');
 			
-			for (var k = 0; k < comp._headers.length; k++)
+			for (var k = 0; k < comp.headers.length; k++)
 			{
-				ls.push('\t\t"' + comp._headers[k] + '": ' + WriteObjToString(comp._data[i][comp._headers[k]], null) + ((k < comp._headers.length - 1) ? ',' : ''));
+				ls.push('\t\t"' + comp.headers[k] + '": ' + WriteObjToString(comp.data[i][comp.headers[k]], null) + ((k < comp.headers.length - 1) ? ',' : ''));
 			}
 			
-			ls.push('\t}' + ((i < comp._data.length - 1) ? ',' : ''));
+			ls.push('\t}' + ((i < comp.data.length - 1) ? ',' : ''));
 		}
 		
 		ls.push(']');
@@ -1087,22 +1084,22 @@ function WriteJson() {
 	}
 	else
 	{
-		return JSON.stringify(comp._data);
+		return JSON.stringify(comp.data);
 	}
 }
 function WriteYaml() {
 	
 	var comp = this;
 	
-	if (comp._form == 'listOfObjects')
+	if (comp.form == 'listOfObjects')
 	{
 		var ls = [];
 		
-		for (var i = 0; i < comp._data.length; i++)
+		for (var i = 0; i < comp.data.length; i++)
 		{
-			for (var k = 0; k < comp._headers.length; k++)
+			for (var k = 0; k < comp.headers.length; k++)
 			{
-				ls.push(((k == 0) ? '-' : ' ') + ' ' + comp._headers[k] + ': ' +  WriteObjToString(comp._data[i][comp._headers[k]], null));
+				ls.push(((k == 0) ? '-' : ' ') + ' ' + comp.headers[k] + ': ' +  WriteObjToString(comp.data[i][comp.headers[k]], null));
 			}
 		}
 		
@@ -1110,7 +1107,7 @@ function WriteYaml() {
 	}
 	else
 	{
-		return jsyaml.dump(comp._data);
+		return jsyaml.dump(comp.data);
 	}
 }
 
@@ -1119,14 +1116,14 @@ function ReadCsvOld(text) {
 	var comp = this;
 	
 	// this csv library interprets bare numbers as strings - we need to look through the objects and parse strings to numbers
-	comp._data = $.csv.toObjects(text);
-	comp._form = DetermineDataForm(comp._data);
-	comp._introspectHeaders();
-	comp._parseDatatypes();
+	comp.data = $.csv.toObjects(text);
+	comp.form = DetermineDataForm(comp.data);
+	comp.introspectHeaders();
+	comp.parseDatatypes();
 }
-Data.prototype._parseDatatypes = function() {
+Data.prototype.parseDatatypes = function() {
 	var comp = this;
-	ParseDatatypeRec(comp._data);
+	ParseDatatypeRec(comp.data);
 };
 function ParseDatatypeRec(obj) {
 	
@@ -1354,7 +1351,7 @@ function ReadSeparatedValues(text, delimiter) {
 	
 	if (areAllRowLengthsUnity)
 	{
-		comp._form = 'list';
+		comp.form = 'list';
 		data = matrix.map(function(row) { return ParseStringToObj(row[0]); }); // interpret text as a list
 	}
 	else
@@ -1381,7 +1378,7 @@ function ReadSeparatedValues(text, delimiter) {
 		
 		if (isListOfLists)
 		{
-			comp._form = 'listOfLists';
+			comp.form = 'listOfLists';
 			
 			headers = [];
 			for (var j = 0; j < headerIndexes.length; j++) { headers.push(j); }
@@ -1406,7 +1403,7 @@ function ReadSeparatedValues(text, delimiter) {
 		}
 		else
 		{
-			comp._form = 'listOfObjects';
+			comp.form = 'listOfObjects';
 			
 			headers = matrix[0];
 			
@@ -1424,8 +1421,8 @@ function ReadSeparatedValues(text, delimiter) {
 		}
 	}
 	
-	comp._data = data;
-	comp._headers = headers;
+	comp.data = data;
+	comp.headers = headers;
 }
 function WriteSeparatedValues(delimiter) {
 	
@@ -1433,21 +1430,21 @@ function WriteSeparatedValues(delimiter) {
 	
 	var ls = [];
 	
-	if (comp._form == 'list')
+	if (comp.form == 'list')
 	{
-		ls = comp._data.map(function(val) { return WriteObjToString(val, delimiter); });
+		ls = comp.data.map(function(val) { return WriteObjToString(val, delimiter); });
 	}
 	else
 	{
-		ls.push(comp._headers.join(delimiter));
+		ls.push(comp.headers.join(delimiter));
 		
-		for (var i = 0; i < comp._data.length; i++)
+		for (var i = 0; i < comp.data.length; i++)
 		{
 			var entries = [];
 			
-			for (var k = 0; k < comp._headers.length; k++)
+			for (var k = 0; k < comp.headers.length; k++)
 			{
-				var val = comp._data[i][comp._headers[k]];
+				var val = comp.data[i][comp.headers[k]];
 				var str = WriteObjToString(val, delimiter)
 				entries.push(str);
 			}

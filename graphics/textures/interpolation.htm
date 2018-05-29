@@ -1,0 +1,177 @@
+
+<html>
+<head>
+<style>
+canvas { border: 1px solid gray; margin: 1em; }
+</style>
+</head>
+<body>
+
+<script src="image.js"></script>
+
+<script>
+
+var acanvas = document.createElement('canvas');
+var bcanvas = document.createElement('canvas');
+var ccanvas = document.createElement('canvas');
+
+var wd = 300;
+var hg = 300;
+
+var wd3 = wd / 3;
+var hg3 = hg / 3;
+
+acanvas.width = bcanvas.width = ccanvas.width = wd;
+acanvas.height = bcanvas.height = ccanvas.height = hg;
+
+document.body.appendChild(acanvas);
+document.body.appendChild(bcanvas);
+document.body.appendChild(ccanvas);
+
+var actx = acanvas.getContext('2d');
+var bctx = bcanvas.getContext('2d');
+var cctx = ccanvas.getContext('2d');
+
+var rbuf = new Float64Array(wd3 * hg3);
+var gbuf = new Float64Array(wd3 * hg3);
+var bbuf = new Float64Array(wd3 * hg3);
+
+var aimg = actx.getImageData(0, 0, wd, hg);
+var bimg = bctx.getImageData(0, 0, wd, hg);
+var cimg = cctx.getImageData(0, 0, wd, hg);
+
+var rsamples = [ 255, 239,   0,  31, 239,   0,   0, 255, 127,  31, 255,   0,   0,   0, 239,   0 ];
+var gsamples = [  63, 255,  79, 255, 255,  79,   0,  63,   0, 255,  63,  79,   0,  79, 255,   0 ];
+var bsamples = [   0,  15, 255, 223,  15, 255, 143,   0,   0, 223,   0, 255, 143, 255,  15, 143 ];
+
+for (var i = 0; i < 3; i++)
+{
+	for (var j = 0; j < 3; j++)
+	{
+		var rsamps = [];
+		rsamps.push(rsamples[(i + 0) * 4 + (j + 0)]);
+		rsamps.push(rsamples[(i + 0) * 4 + (j + 1)]);
+		rsamps.push(rsamples[(i + 1) * 4 + (j + 0)]);
+		rsamps.push(rsamples[(i + 1) * 4 + (j + 1)]);
+		
+		var gsamps = [];
+		gsamps.push(gsamples[(i + 0) * 4 + (j + 0)]);
+		gsamps.push(gsamples[(i + 0) * 4 + (j + 1)]);
+		gsamps.push(gsamples[(i + 1) * 4 + (j + 0)]);
+		gsamps.push(gsamples[(i + 1) * 4 + (j + 1)]);
+		
+		var bsamps = [];
+		bsamps.push(bsamples[(i + 0) * 4 + (j + 0)]);
+		bsamps.push(bsamples[(i + 0) * 4 + (j + 1)]);
+		bsamps.push(bsamples[(i + 1) * 4 + (j + 0)]);
+		bsamps.push(bsamples[(i + 1) * 4 + (j + 1)]);
+		
+		NearestInterpolation(rsamps, wd3, hg3, rbuf);
+		NearestInterpolation(gsamps, wd3, hg3, gbuf);
+		NearestInterpolation(bsamps, wd3, hg3, bbuf);
+		
+		var k = 0;
+		
+		for (var y = 0; y < hg3; y++)
+		{
+			for (var x = 0; x < wd3; x++)
+			{
+				var imgindex = ((i * hg3 + y) * hg + j * wd3 + x) * 4;
+				aimg.data[imgindex + 0] = rbuf[k];
+				aimg.data[imgindex + 1] = gbuf[k];
+				aimg.data[imgindex + 2] = bbuf[k];
+				aimg.data[imgindex + 3] = 255;
+				k++;
+			}
+		}
+	}
+}
+
+actx.putImageData(aimg, 0, 0);
+
+//debugger; // this stops the bug - no idea why. no idea why timing matters here.  does something need time to complete?
+
+/*
+for (var i = 0; i < 3; i++)
+{
+	for (var j = 0; j < 3; j++)
+	{
+		var rsamps = [];
+		rsamps.push(rsamples[(i + 0) * 4 + (j + 0)]);
+		rsamps.push(rsamples[(i + 0) * 4 + (j + 1)]);
+		rsamps.push(rsamples[(i + 1) * 4 + (j + 0)]);
+		rsamps.push(rsamples[(i + 1) * 4 + (j + 1)]);
+		
+		var gsamps = [];
+		gsamps.push(gsamples[(i + 0) * 4 + (j + 0)]);
+		gsamps.push(gsamples[(i + 0) * 4 + (j + 1)]);
+		gsamps.push(gsamples[(i + 1) * 4 + (j + 0)]);
+		gsamps.push(gsamples[(i + 1) * 4 + (j + 1)]);
+		
+		var bsamps = [];
+		bsamps.push(bsamples[(i + 0) * 4 + (j + 0)]);
+		bsamps.push(bsamples[(i + 0) * 4 + (j + 1)]);
+		bsamps.push(bsamples[(i + 1) * 4 + (j + 0)]);
+		bsamps.push(bsamples[(i + 1) * 4 + (j + 1)]);
+		
+		BilinearInterpolation(rsamps, wd3, hg3, rbuf);
+		BilinearInterpolation(gsamps, wd3, hg3, gbuf);
+		BilinearInterpolation(bsamps, wd3, hg3, bbuf);
+		
+		var k = 0;
+		
+		for (var y = 0; y < hg3; y++)
+		{
+			for (var x = 0; x < wd3; x++)
+			{
+				var imgindex = ((i * hg3 + y) * hg + j * wd3 + x) * 4;
+				bimg.data[imgindex + 0] = rbuf[k];
+				bimg.data[imgindex + 1] = gbuf[k];
+				bimg.data[imgindex + 2] = bbuf[k];
+				bimg.data[imgindex + 3] = 255;
+				k++;
+			}
+		}
+	}
+}
+
+bctx.putImageData(bimg, 0, 0);
+*/
+
+for (var i = 1; i < 2; i++)
+{
+	for (var j = 1; j < 2; j++)
+	{
+		var rsamps = [];
+		var gsamps = [];
+		var bsamps = [];
+		
+		// need a toroidal shuffle of samples -> samps, both of length 16
+		
+		BicubicInterpolation(rsamples, wd3, hg3, rbuf);
+		BicubicInterpolation(gsamples, wd3, hg3, gbuf);
+		BicubicInterpolation(bsamples, wd3, hg3, bbuf);
+		
+		var k = 0;
+		
+		for (var y = 0; y < hg3; y++)
+		{
+			for (var x = 0; x < wd3; x++)
+			{
+				var imgindex = ((i * hg3 + y) * hg + j * wd3 + x) * 4;
+				cimg.data[imgindex + 0] = rbuf[k];
+				cimg.data[imgindex + 1] = gbuf[k];
+				cimg.data[imgindex + 2] = bbuf[k];
+				cimg.data[imgindex + 3] = 255;
+				k++;
+			}
+		}
+	}
+}
+
+cctx.putImageData(cimg, 0, 0);
+
+</script>
+</body>
+</html>
+

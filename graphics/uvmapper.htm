@@ -1,0 +1,244 @@
+
+<html>
+<head>
+<script src="everything/griddl/js/griddl.graphics.js"></script>
+<style>
+input { margin:1px; }
+</style>
+</head>
+<body>
+
+<div>
+<button onclick="UploadMesh()">Upload Mesh</button>
+<button onclick="UploadProjections()">Upload Projections</button>
+<button onclick="DownloadProjections()">Download Projections</button>
+</div>
+
+<canvas width="500" height="500" style="position:absolute;top:3em;left:43em;border:1px solid gray"></canvas>
+
+<table id="ui" style="position:absolute;top:3em;left:3em"></table>
+
+<script>
+
+// select contiguous range of polygons
+// project onto a plane (or a cylinder, which can be unrolled to a plane)
+// trim the plane
+// arrange the planes into a uv map
+// unroll cylinders and trim planes
+// arrange - this might as well be a separate step
+
+var mesh = null;
+
+var data = [];
+data.push({startPoly:0,endPoly:0,planePoint:{x:0,y:0,z:0},planeVector:{x:0,y:0,z:0},cylinderRadius:0});
+data.push({startPoly:0,endPoly:0,planePoint:{x:0,y:0,z:0},planeVector:{x:0,y:0,z:0},cylinderRadius:0});
+
+var ctx = document.getElementsByTagName('canvas')[0].getContext('2d');
+var wd = null;
+var hg = null;
+
+// geometries for the projection planes
+var planes = null;
+var arrows = null;
+
+
+MakeUi();
+Draw();
+
+var referenceImageData = null;
+
+function MakeUi() {
+	
+	var table = document.getElementById('ui');
+	table.innerHTML = '';
+	//table.innerHTML = '<tr><th>poly start</th><th>poly end</th><th>plane point x</th><th>plane point y</th><th>plane point z</th><th>plane vector x</th><th>plane vector y</th><th>plane vector z</th><th>cylinder r</th></tr>';
+	
+	var l = [];
+	
+	for (var i = 0; i < data.length; i++)
+	{
+		var o = data[i];
+		
+		// huh, these are all going into one <td>.  still looks fine though
+		var tr = document.createElement('tr');
+		table.appendChild(tr);
+		var td = document.createElement('td');
+		tr.appendChild(td);
+		
+		var inputSize = 3;
+		
+		var startPolyInput = document.createElement('input');
+		td.appendChild(startPolyInput);
+		startPolyInput.type = 'text';
+		startPolyInput.size = inputSize;
+		startPolyInput.value = o.startPoly;
+		
+		var endPolyInput = document.createElement('input');
+		td.appendChild(endPolyInput);
+		endPolyInput.type = 'text';
+		endPolyInput.size = inputSize;
+		endPolyInput.value = o.endPoly;
+		
+		var xPlanePointInput = document.createElement('input');
+		td.appendChild(xPlanePointInput);
+		xPlanePointInput.type = 'text';
+		xPlanePointInput.size = inputSize;
+		xPlanePointInput.value = o.planePoint.x;
+		
+		var yPlanePointInput = document.createElement('input');
+		td.appendChild(yPlanePointInput);
+		yPlanePointInput.type = 'text';
+		yPlanePointInput.size = inputSize;
+		yPlanePointInput.value = o.planePoint.y;
+		
+		var zPlanePointInput = document.createElement('input');
+		td.appendChild(zPlanePointInput);
+		zPlanePointInput.type = 'text';
+		zPlanePointInput.size = inputSize;
+		zPlanePointInput.value = o.planePoint.z;
+		
+		var xPlaneVectorInput = document.createElement('input');
+		td.appendChild(xPlaneVectorInput);
+		xPlaneVectorInput.type = 'text';
+		xPlaneVectorInput.size = inputSize;
+		xPlaneVectorInput.value = o.planeVector.x;
+		
+		var yPlaneVectorInput = document.createElement('input');
+		td.appendChild(yPlaneVectorInput);
+		yPlaneVectorInput.type = 'text';
+		yPlaneVectorInput.size = inputSize;
+		yPlaneVectorInput.value = o.planeVector.y;
+		
+		var zPlaneVectorInput = document.createElement('input');
+		td.appendChild(zPlaneVectorInput);
+		zPlaneVectorInput.type = 'text';
+		zPlaneVectorInput.size = inputSize;
+		zPlaneVectorInput.value = o.planeVector.z;
+		
+		var cylinderRadiusInput = document.createElement('input');
+		td.appendChild(cylinderRadiusInput);
+		cylinderRadiusInput.type = 'text';
+		cylinderRadiusInput.size = inputSize;
+		cylinderRadiusInput.value = o.cylinderRadius;
+		
+		(function Handlers(obj) {
+			startPolyInput.onchange = function(e) { obj.startPoly = parseInt(this.value); Draw(ctx, data); };
+			endPolyInput.onchange = function(e) { obj.endPoly = parseInt(this.value); Draw(ctx, data); };
+			xPlanePointInput.onchange = function(e) { obj.planePoint.x = parseInt(this.value); Draw(ctx, data); };
+			yPlanePointInput.onchange = function(e) { obj.planePoint.y = parseInt(this.value); Draw(ctx, data); };
+			zPlanePointInput.onchange = function(e) { obj.planePoint.z = parseInt(this.value); Draw(ctx, data); };
+			xPlaneVectorInput.onchange = function(e) { obj.planeVector.x = parseInt(this.value); Draw(ctx, data); };
+			yPlaneVectorInput.onchange = function(e) { obj.planeVector.y = parseInt(this.value); Draw(ctx, data); };
+			zPlaneVectorInput.onchange = function(e) { obj.planeVector.z = parseInt(this.value); Draw(ctx, data); };
+			cylinderRadiusInput.onchange = function(e) { obj.cylinderRadius = parseInt(this.value); Draw(ctx, data); };
+		})(o);
+	}
+	
+	var tr = document.createElement('tr');
+	table.appendChild(tr);
+	var td = document.createElement('td');
+	tr.appendChild(td);
+	var button = document.createElement('button');
+	td.appendChild(button);
+	button.innerText = 'Add Row';
+	
+	button.onclick = function() {
+		data.push({startPoly:0,endPoly:0,planePoint:{x:0,y:0,z:0},planeVector:{x:0,y:0,z:0},cylinderRadius:0});
+		MakeUi(data);
+		Draw(ctx, data);
+	};
+}
+
+function Draw() {
+	var geometry = new Griddl.Graphics.Mesh();
+	geometry.vertices = [];
+	geometry.vertices.push([0, 0, 0]);
+	geometry.vertices.push([0, 1, 0]);
+	geometry.vertices.push([1, 1, 0]);
+	geometry.vertices.push([1, 0, 0]);
+	geometry.polygons = [];
+	geometry.polygons.push([null, null, 0, 1, 2, 3]);
+	Griddl.Graphics.renderMode = Griddl.Graphics.LINE;
+	var mesh = Griddl.Graphics.ConvertToBabylon(geometry);
+	var node = new Griddl.Graphics.Node(mesh);
+	var scene = new Griddl.Graphics.Scene();
+	scene.nodes.push(node);
+	scene.setCameraPosition(4, 4, 4);
+	var device = new Griddl.Graphics.Device(ctx, 0, 0, ctx.canvas.width, ctx.canvas.height);
+	device.Render(scene);
+	Griddl.Graphics.OrbitControls(device, scene);
+}
+
+function UploadMesh() {
+	
+	var fileChooser = document.createElement('input');
+	fileChooser.type = 'file';
+	
+	fileChooser.onchange = function() {
+		var fileReader = new FileReader();
+		fileReader.onload = function(event) {
+			var json = JSON.parse(event.target.result);
+			poly = json.geometry_library[0]; // or something
+			Draw();
+		};
+		fileReader.readAsText(fileChooser.files[0]);
+	};
+	
+	fileChooser.click();
+}
+function UploadProjections() {
+	
+	var fileChooser = document.createElement('input');
+	fileChooser.type = 'file';
+	
+	fileChooser.onchange = function() {
+		var fileReader = new FileReader();
+		fileReader.onload = function(event) {
+			data = JSON.parse(event.target.result);
+			MakeUi();
+			Draw();
+		};
+		fileReader.readAsText(fileChooser.files[0]);
+	};
+	
+	fileChooser.click();
+}
+function DownloadProjections() {
+	var a = document.createElement('a');
+	a.href = 'data:text/json,'+JSON.stringify(data);
+	a.download = 'uvmapper.json';
+	document.body.appendChild(a);
+	a.click();
+	document.body.removeChild(a);
+}
+
+function Uint8ArrayToBase64String(uint8Array) {
+	var nMod3 = '';
+	var sB64Enc = '';
+	
+	function uint6ToB64(n) { return n<26?n+65:n<52?n+71:n<62?n-4:n===62?43:n===63?47:65;}
+	
+	for (var nLen = uint8Array.length, nUint24 = 0, nIdx = 0; nIdx < nLen; nIdx++)
+	{
+		nMod3 = nIdx % 3;
+		//if (nIdx > 0 && (nIdx * 4 / 3) % 76 === 0) { sB64Enc += "\r\n"; }
+		nUint24 |= uint8Array[nIdx] << (16 >>> nMod3 & 24);
+		
+		if (nMod3 === 2 || uint8Array.length - nIdx === 1)
+		{
+			var a = uint6ToB64(nUint24 >>> 18 & 63);
+			var b = uint6ToB64(nUint24 >>> 12 & 63);
+			var c = uint6ToB64(nUint24 >>> 06 & 63);
+			var d = uint6ToB64(nUint24 >>> 00 & 63);
+			sB64Enc += String.fromCharCode(a, b, c, d);
+			nUint24 = 0;
+		}
+	}
+	
+	return sB64Enc.replace(/A(?=A$|$)/g, "=");
+}
+
+</script>
+</body>
+</html>
+

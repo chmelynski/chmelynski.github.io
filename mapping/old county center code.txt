@@ -1,0 +1,100 @@
+
+// prep county centers
+//var fipss = [];
+//var coordView = new DataView(new ArrayBuffer(list.length * 16));
+//var pixelView = new DataView(new ArrayBuffer(list.length * 16));
+//for (var i = 0; i < list.length; i++)
+//{
+//	fipss.push(list[i][0]);
+//	coordView.setFloat64(i * 16 + 0, list[i][2]);
+//	coordView.setFloat64(i * 16 + 8, list[i][1]);
+//}
+//return [fipss, coordView, pixelView];
+
+
+function DrawCountyCenters() {
+	
+	Mapper.ProjectPointPack(projection, countyCenterCoordPack, countyCenterPixelPack);
+	
+	var r = 3;
+	
+	var n = countyCenterPixelPack.byteLength / 16;
+	var k = 0;
+	
+	for (var i = 0; i < n; i++)
+	{
+		var x = countyCenterPixelPack.getFloat64(k + 0);
+		var y = countyCenterPixelPack.getFloat64(k + 8);
+		k += 16;
+		
+		ctx.fillStyle = (params.countyFips.indexOf(countyFipss[i]) >= 0) ? 'red' : 'gray';
+		
+		ctx.beginPath();
+		ctx.arc(x, y, r, 0, Math.PI * 2, false);
+		ctx.fill();
+	}
+}
+function ToggleCountyCenter(ax, ay) {
+	
+	var n = countyCenterPixelPack.byteLength / 16;
+	var k = 0;
+	
+	var min = +Infinity;
+	var fips = null;
+	
+	for (var i = 0; i < n; i++)
+	{
+		var x = countyCenterPixelPack.getFloat64(k + 0);
+		var y = countyCenterPixelPack.getFloat64(k + 8);
+		k += 16;
+		
+		var d = Math.hypot(ax - x, ay - y);
+		if (d < min) { min = d; fips = countyFipss[i]; }
+	}
+	
+	if (fips !== null)
+	{
+		if (params.countyFips.indexOf(fips) >= 0)
+		{
+			params.countyFips.splice(params.countyFips.indexOf(fips), 1);
+		}
+		else
+		{
+			params.countyFips.push(fips);
+		}
+		
+		params.stateFips = [];
+		
+		for (var k = 0; k < params.countyFips.length; k++)
+		{
+			if (params.stateFips.indexOf(params.countyFips[k].substr(0, 2)) < 0)
+			{
+				params.stateFips.push(params.countyFips[k].substr(0, 2));
+			}
+		}
+		
+		OnChange();
+	}
+}
+
+
+
+if (topo)
+{
+	for (var objkey in topo.objects)
+	{
+		var obj = topo.objects[objkey];
+		for (var k = 0; k < obj.geometries.length; k++)
+		{
+			var props = obj.geometries[k].properties;
+			if (!props) { continue; }
+			var lng = props.INTPTLON;
+			var lat = props.INTPTLAT;
+			var name = props.NAME;
+			
+			var p = projection([lng, lat]);
+			ctx.fillText(name, p[0], p[1]);
+		}
+	}
+}
+

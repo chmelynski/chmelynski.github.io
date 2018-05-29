@@ -1,0 +1,49 @@
+	if (workbook.cipher)
+	{
+		ciphertext = text;
+		
+		var ls = [];
+		ls.push('<div class="modal fade" id="decryption-modal"><div class="modal-dialog"><div class="modal-content">');
+		ls.push('<div class="modal-body"><div id="passwordDiv">');
+		ls.push('<form class="form-horizontal" id="decrypt-form"><div class="form-group">');
+		ls.push('<label class="col-sm-3" for="decrypt-password">Password</label>');
+		ls.push('<div class="col-sm-9">');
+		ls.push('<input class="form-control" name="decrypt-password" id="decrypt-password" type="password"></input>');
+		ls.push('</div></div>');
+		ls.push('</form></div></div><div class="modal-footer">');
+		ls.push('<label id="decrypt-error" style="color:red"></label>')
+		ls.push('<button class="btn btn-success" id="decrypt-submit">Decrypt</button>');
+		ls.push('</div></div></div></div></div>');
+		
+		var passwordDiv = $(ls.join(''));
+		$('body').append(passwordDiv);
+		$('#decryption-modal').modal('show');
+		
+		var process_decrypt = function (event) {
+			event.preventDefault();
+			password = $('#decrypt-password').val();
+			
+			try
+			{
+				var plaintext = sjcl.decrypt(password, ciphertext);
+				$('#decryption-modal').modal('hide');
+				Main(plaintext);
+				ciphertext = null; // save will only work if ciphertext=null, to avoid double-encrypting
+			}
+			catch (e)
+			{
+				$('#decrypt-error').text('Incorrect password');
+			}
+		};
+		
+		$("#decrypt-form").on('submit', function(e) {
+			e.stopPropagation();
+			process_decrypt(e);
+		});
+		
+		$("#decrypt-submit").on('click', function(e) {
+			process_decrypt(e);
+		});
+		
+		return;
+	}

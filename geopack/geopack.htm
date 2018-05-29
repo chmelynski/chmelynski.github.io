@@ -1,0 +1,163 @@
+
+<html>
+<body>
+
+<script>var exports = {};</script>
+<script src="../xml/xml.js"></script>
+<script src="../osm/osm.js"></script>
+<script src="geopack.js"></script>
+
+<label>Load OSMs: </label><span id="loaded">0</span> of <span id="toload">0</span> <input type="file" multiple onchange="LoadOsms(this.files)" />
+<label>Load Geopack: </label><input type="file" onchange="LoadGeopack(this.files)" />
+<button onclick="Download()">Download Geopack</button>
+<br><br>
+
+<script>
+
+var width = 6000;
+var height = 6000;
+var metersPerPixel = 3;
+var box = { minLat: 40.54, maxLat: 40.93, minLng: -74.05, maxLng: -73.70 };
+
+var geopack = null;
+
+function LoadOsms(files) {
+	
+	var toload = files.length;
+	document.getElementById('toload').innerText = toload.toString();
+	
+	var loaded = 0;
+	var osms = [];
+	
+	for (var i = 0; i < files.length; i++)
+	{
+		(function(thefile) {
+			var fileReader = new FileReader();
+			
+			fileReader.onload = function(event) {
+				
+				var text = event.target.result;
+				
+				var xml = Xml.Parse(text);
+				var osm = Osm.MakeOsm(xml);
+				osms.push(osm);
+				
+				loaded++;
+				document.getElementById('loaded').innerText = loaded.toString();
+				
+				if (loaded == toload) { OnAllLoaded(osms); }
+			};
+			
+			fileReader.readAsText(thefile);
+		})(files[i]);
+	}
+}
+function OnAllLoaded(osms) {
+	
+	var osm = Osm.Combine(osms);
+	
+	geopack = Geopack.GeopackOsm(osm, box);
+	
+	var mercator = {
+		lat: (osm.bounds.maxLat + osm.bounds.minLat) / 2,
+		lng: (osm.bounds.maxLng + osm.bounds.minLng) / 2,
+		metersPerPixel: metersPerPixel
+	};
+	
+	var canvas = document.createElement('canvas');
+	canvas.width = width;
+	canvas.height = height;
+	document.body.appendChild(canvas);
+	var ctx = canvas.getContext('2d');
+	
+	ctx.fillStyle = 'white';
+	ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+	
+	ctx.translate(ctx.canvas.width / 2, ctx.canvas.height / 2);
+	
+	ctx.strokeStyle = 'black';
+	ctx.lineWidth = 1;
+	ctx.beginPath();
+	Geopack.DrawGeopack(ctx, mercator, geopack);
+	ctx.stroke();
+}
+function LoadGeopack(files) {
+	
+	var fileReader = new FileReader();
+	
+	fileReader.onload = function(event) {
+		
+		geopack = event.target.result;
+		
+		var view = new DataView(geopack);
+		
+		var minLat = view.getFloat64(0);
+		var maxLat = view.getFloat64(8);
+		var minLng = view.getFloat64(16);
+		var maxLng = view.getFloat64(24);
+		
+		var mercator = {
+			lat: (maxLat + minLat) / 2,
+			lng: (maxLng + minLng) / 2,
+			metersPerPixel: metersPerPixel
+		};
+		
+		//var mercator = {
+		//	lat: 40.768821, // astoria
+		//	lng: -73.919250,
+		//	metersPerPixel: metersPerPixel
+		//};
+		
+		//var mercator = {
+		//	lat: 40.738100, // manhattan
+		//	lng: -73.989717,
+		//	metersPerPixel: metersPerPixel
+		//};
+		
+		var canvas = document.createElement('canvas');
+		canvas.width = width;
+		canvas.height = height;
+		document.body.appendChild(canvas);
+		var ctx = canvas.getContext('2d');
+		
+		Draw(ctx, mercator, geopack);
+	};
+	
+	if (files.length > 0) { fileReader.readAsArrayBuffer(files[0]); }
+}
+function Download() {
+	
+	var blob = new Blob([geopack], { type: 'text/plain' });
+	
+	var fileReader = new FileReader();
+	
+	fileReader.onload = function(event) {
+		var a = document.createElement('a');
+		a.href = event.target.result;
+		a.download = 'foo.geopack';
+		//document.body.appendChild(a);
+		a.click();
+		//document.body.removeChild(a);
+	};
+	
+	fileReader.readAsDataURL(blob);
+}
+function Draw(ctx, mercator, geopack) {
+	
+	ctx.fillStyle = 'white';
+	ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+	
+	ctx.translate(ctx.canvas.width / 2, ctx.canvas.height / 2);
+	
+	ctx.strokeStyle = 'black';
+	ctx.lineWidth = 1;
+	ctx.beginPath();
+	Geopack.DrawGeopack(ctx, mercator, geopack);
+	ctx.stroke();
+}
+
+</script>
+</body>
+</html>
+
+ 

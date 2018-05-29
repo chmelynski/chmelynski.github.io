@@ -24,64 +24,9 @@ var lastDeletedObj = null;
 var password = null; // SaveToText encrypts if password is not null (and if a flag is true)
 var ciphertext = null; // Main sets this if it receives ciphertext.  then Decrypt() will re-run Main
 
-var Main = function(text) {
-	
-	if (typeof text === 'undefined')
-	{
-		text = $('#frce').text(); // document.getElementById('frce').innerText
-	}
-	
-	var workbook = JSON.parse(text);
-	
-	if (workbook.cipher)
-	{
-		ciphertext = text;
-		
-		var ls = [];
-		ls.push('<div class="modal fade" id="decryption-modal"><div class="modal-dialog"><div class="modal-content">');
-		ls.push('<div class="modal-body"><div id="passwordDiv">');
-		ls.push('<form class="form-horizontal" id="decrypt-form"><div class="form-group">');
-		ls.push('<label class="col-sm-3" for="decrypt-password">Password</label>');
-		ls.push('<div class="col-sm-9">');
-		ls.push('<input class="form-control" name="decrypt-password" id="decrypt-password" type="password"></input>');
-		ls.push('</div></div>');
-		ls.push('</form></div></div><div class="modal-footer">');
-		ls.push('<label id="decrypt-error" style="color:red"></label>')
-		ls.push('<button class="btn btn-success" id="decrypt-submit">Decrypt</button>');
-		ls.push('</div></div></div></div></div>');
-		
-		var passwordDiv = $(ls.join(''));
-		$('body').append(passwordDiv);
-		$('#decryption-modal').modal('show');
-		
-		var process_decrypt = function (event) {
-			event.preventDefault();
-			password = $('#decrypt-password').val();
-			
-			try
-			{
-				var plaintext = sjcl.decrypt(password, ciphertext);
-				$('#decryption-modal').modal('hide');
-				Main(plaintext);
-				ciphertext = null; // save will only work if ciphertext=null, to avoid double-encrypting
-			}
-			catch (e)
-			{
-				$('#decrypt-error').text('Incorrect password');
-			}
-		};
-		
-		$("#decrypt-form").on('submit', function(e) {
-			e.stopPropagation();
-			process_decrypt(e);
-		});
-		
-		$("#decrypt-submit").on('click', function(e) {
-			process_decrypt(e);
-		});
-		
-		return;
-	}
+var MathJax = null;
+
+var Main = function(workbook) {
 	
 	var jsons = null;
 	
@@ -111,7 +56,7 @@ var Main = function(text) {
 	//    (loaded == toLoad) will be reached during a NewComponent call
 	if (loaded == toLoad) { AfterAllLoaded(); }
 	
-	//comps.forEach(function(comp) { if (comp._afterAllLoaded) { comp._afterAllLoaded(); } });
+	//comps.forEach(function(comp) { if (comp.afterAllLoaded) { comp.afterAllLoaded(); } });
 	
 	MakeSortable();
 	MarkClean();
@@ -132,19 +77,19 @@ var Main = function(text) {
 var NewComponent = function(json, type, name) {
 	
 	var comp = new Components[type](json, type, name);
-	comp._markDirty = MarkDirty;
-	names[comp._name] = comp;
+	comp.markDirty = MarkDirty;
+	names[comp.name] = comp;
 	comps.push(comp);
-	comp._div = createComponentDivToUse($('#cells'), comp);
-	comp._div.css('border', '1px solid gray');
-	comp._div.css('background-color', 'rgb(230,230,230)');
-	comp._add();
-	if (comp._afterLoad) { comp._afterLoad(AfterLoadCallback); } else { loaded++; }
+	comp.div = createComponentDivToUse($('#cells'), comp);
+	comp.div.css('border', '1px solid gray');
+	comp.div.css('background-color', 'rgb(230,230,230)');
+	comp.add();
+	if (comp.afterLoad) { comp.afterLoad(AfterLoadCallback); } else { loaded++; }
 };
 
 /*
 
-Main calls NewComponent, which calls comp._afterLoad if it exists, and reference counts, sending AfterLoadCallback(comp) as a callback
+Main calls NewComponent, which calls comp.afterLoad if it exists, and reference counts, sending AfterLoadCallback(comp) as a callback
 AfterLoadCallback checks the reference count and calls AfterAllLoaded if it works
 in most components, afterLoad calls addOutputElements, then makes its ajax calls
 
@@ -161,7 +106,7 @@ var AfterLoadCallback = function(comp) {
 	}
 };
 var AfterAllLoaded = function() {
-	comps.forEach(function(comp) { if (comp._afterAllLoaded) { comp._afterAllLoaded(); } });
+	comps.forEach(function(comp) { if (comp.afterAllLoaded) { comp.afterAllLoaded(); } });
 	toLoad = 0; // this means that subsequent NewComponent calls will not trigger this
 	
 	// MathJax.isReady needs to be set before we call MathJax.Hub.Typeset
@@ -181,21 +126,21 @@ var RenameComponent = function(comp, newname) {
 	if (names[newname] || $('#' + newname).length > 0)
 	{
 		$.alert('Name "' + newname + '" conflicts with an existing name.', 'danger');
-		return comp._name;
+		return comp.name;
 	}
 	
-	delete names[comp._name];
-	$('#'+comp._name).attr('id', newname);
-	$('#'+comp._name+'Component').attr('id', newname+'Component');
-	comp._name = newname;
-	names[comp._name] = comp;
-	return comp._name;
+	delete names[comp.name];
+	$('#'+comp.name).attr('id', newname);
+	$('#'+comp.name+'Component').attr('id', newname+'Component');
+	comp.name = newname;
+	names[comp.name] = comp;
+	return comp.name;
 };
 var DeleteComponent = function(comp) {
 	lastDeletedObj = comp;
-	$('#'+comp._name).remove();
-	comp._div.parent().remove();
-	delete names[comp._name];
+	$('#'+comp.name).remove();
+	comp.div.parent().remove();
+	delete names[comp.name];
 	var i = comps.indexOf(comp);
 	comps.splice(i, 1);
 };
@@ -203,13 +148,13 @@ var RestoreComponent = function() {
 	
 	// basically the same code as NewComponent
 	var comp = lastDeletedObj;
-	while (names[comp._name]) { comp._name += ' - copy'; }
-	comp._div = CreateComponentDiv($('#cells'), comp);
-	comp._div.css('border', '1px solid gray');
-	comp._div.css('background-color', 'rgb(230,230,230)');
-	comp._add();
+	while (names[comp.name]) { comp.name += ' - copy'; }
+	comp.div = CreateComponentDiv($('#cells'), comp);
+	comp.div.css('border', '1px solid gray');
+	comp.div.css('background-color', 'rgb(230,230,230)');
+	comp.add();
 	if (!dirty) { MarkDirty(); }
-	names[comp._name] = comp;
+	names[comp.name] = comp;
 	comps.push(comp);
 	MakeSortable();
 	lastDeletedObj = null;
@@ -254,7 +199,7 @@ var UniqueName = function(type, n) {
 
 var SaveToText = function(bEncrypt) {
 	metadata.version = 1;
-	var components = comps.map(function(comp) {return comp._write();});
+	var components = comps.map(function(comp) {return comp.write();});
 	var workbook = {metadata:metadata,components:components};
 	var text = JSON.stringify(workbook);
 	if (bEncrypt && password != null) { text = sjcl.encrypt(password, text); }
@@ -272,7 +217,7 @@ var MakeSortable = function() {
 		});
 		
 		$('#output').html('');
-		comps.forEach(function(comp) { if (comp._addOutputElements) { comp._addOutputElements(); } });
+		comps.forEach(function(comp) { if (comp.addOutputElements) { comp.addOutputElements(); } });
 		AfterAllLoaded();
 	}});
 };
@@ -280,11 +225,11 @@ var MakeSortable = function() {
 var LocalCreateComponentDiv = function(parent, comp) {
 	var div = $('<div></div>').appendTo(parent);
 	var headerDiv = $('<div style="margin:0.3em"></div>').appendTo(div);
-	var clientDiv = $('<div id="' + comp._name + 'Component" class="' + (comp._visible ? '' : 'griddl-component-body-hidden') + '"></div>').appendTo(div);
+	var clientDiv = $('<div id="' + comp.name + 'Component" class="' + (comp.visible ? '' : 'griddl-component-body-hidden') + '"></div>').appendTo(div);
 	headerDiv.append($('<img src="" class="reorder-handle"></img>').css('cursor', 'move'));
-	headerDiv.append($('<label>' + comp._type + '</label>'));
-	headerDiv.append($('<input type="text" value="' + comp._name + '"></input>').on('blur', function(e) { RenameComponent(comp, this.value); }));
-	headerDiv.append($('<button>+/-</button>').on('click', function() { if (comp._visible) { Hide(comp); } else { Show(comp); } }));
+	headerDiv.append($('<label>' + comp.type + '</label>'));
+	headerDiv.append($('<input type="text" value="' + comp.name + '"></input>').on('blur', function(e) { RenameComponent(comp, this.value); }));
+	headerDiv.append($('<button>+/-</button>').on('click', function() { if (comp.visible) { Hide(comp); } else { Show(comp); } }));
 	headerDiv.append($('<button>Del</button>').on('click', function() { DeleteComponent(comp); }));
 	return clientDiv;
 };
@@ -300,9 +245,9 @@ var CreateComponentDiv = function(parent, comp) {
 	clientDiv.addClass('griddl-component-body');
 	
 	// we'll put a modified id on the clientDiv, so that we can refer to it from CSS components
-	// we can't tag the component client div with the bare comp._name, because if it is an HTML component, the created div will have id = comp._name
-	clientDiv.attr('id', comp._name + 'Component'); 
-	if (!comp._visible) { clientDiv.addClass('griddl-component-body-hidden'); }
+	// we can't tag the component client div with the bare comp.name, because if it is an HTML component, the created div will have id = comp.name
+	clientDiv.attr('id', comp.name + 'Component'); 
+	if (!comp.visible) { clientDiv.addClass('griddl-component-body-hidden'); }
 	
 	headerDiv.append(AddReorderHandle(comp));
 	headerDiv.append(AddTypeLabel(comp));
@@ -330,14 +275,14 @@ function AddTypeLabel(comp) {
 	
 	var typeLabel = $(document.createElement('label'));
 	typeLabel.addClass('griddl-component-head-type');
-	typeLabel.html(comp._type);
+	typeLabel.html(comp.type);
 	return typeLabel;
 }
 function AddNameBox(comp) {
 	
 	var nameBox = $(document.createElement('input'));
 	nameBox.attr('type', 'text');
-	nameBox.attr('value', comp._name);
+	nameBox.attr('value', comp.name);
 	nameBox.addClass('griddl-component-head-name form-control input-sm');
 	
 	nameBox.on('blur', function(e) {
@@ -361,11 +306,11 @@ function AddMinimizeButton(comp) {
 	var plus = "fa-plus";
 	
 	var $icon = $("<i class='fa'></i>");
-	$icon.addClass(comp._visible ? minus : plus);
+	$icon.addClass(comp.visible ? minus : plus);
 	button.append($icon);
 	
 	button.on('click', function() {
-		if (comp._visible) { Hide(comp); } else { Show(comp); }
+		if (comp.visible) { Hide(comp); } else { Show(comp); }
 	});
 	
 	return button;
@@ -397,11 +342,11 @@ var createComponentDivToUse = CreateComponentDiv;
 var Upload = function() {
 	
 	// interface required:
-	//  comp._setArrayBuffer
+	//  comp.setArrayBuffer
 	//    OR
-	//  comp._setText
+	//  comp.setText
 	
-	// and optionally comp._setExt to set the extension (useful for images and fonts, for instance)
+	// and optionally comp.setExt to set the extension (useful for images and fonts, for instance)
 	
 	// we also want drag-n-drop
 	
@@ -416,13 +361,13 @@ var Upload = function() {
 		
 		fileReader.onload = function(event)
 		{
-			if (comp._setArrayBuffer)
+			if (comp.setArrayBuffer)
 			{
-				comp._setArrayBuffer(event.target.result);
+				comp.setArrayBuffer(event.target.result);
 			}
-			else if (comp._setText)
+			else if (comp.setText)
 			{
-				comp._setText(event.target.result);
+				comp.setText(event.target.result);
 			}
 		};
 		
@@ -430,13 +375,13 @@ var Upload = function() {
 		{
 			var f = fileChooser[0].files[0];
 			
-			if (comp._setExt) { comp._setExt(f.name.substring(f.name.lastIndexOf('.') + 1)); }
+			if (comp.setExt) { comp.setExt(f.name.substring(f.name.lastIndexOf('.') + 1)); }
 			
-			if (comp._setArrayBuffer)
+			if (comp.setArrayBuffer)
 			{
 				fileReader.readAsArrayBuffer(f);
 			}
-			else if (comp._setText)
+			else if (comp.setText)
 			{
 				fileReader.readAsText(f);
 			}
@@ -450,8 +395,8 @@ var Download = function() {
 	var comp = this;
 	
 	var a = document.createElement('a');
-	a.href = comp._getHref();
-	a.download = comp._name + (comp._ext ? '.' : '') + comp._ext;
+	a.href = comp.getHref();
+	a.download = comp.name + (comp.ext ? '.' : '') + comp.ext;
 	a.click();
 };
 
@@ -467,10 +412,8 @@ var Import = function() {
 		fileReader.onload = function(event)
 		{
 			var text = event.target.result;
-			
-			$('#cells').children().remove();
-			
-			Hyperdeck.Main(text);
+			var workbook = JSON.parse(text);
+			Hyperdeck.Main(workbook);
 		};
 		
 		if (fileChooser.files.length > 0)
@@ -488,8 +431,8 @@ var Export = function() {
 	var text = SaveToText(false);
 	
 	var downloadLink = document.createElement('a');
-	downloadLink.href = window.URL.createObjectURL(new Blob([text], {type : 'text/plain'}));
-	downloadLink.download = filename + '.json';
+	downloadLink.href = window.URL.createObjectURL(new Blob([text], {type : 'text/json'}));
+	downloadLink.download = filename;
 	downloadLink.click();
 };
 var ExportHtml = function() {
@@ -582,7 +525,7 @@ var ConfirmDelete = function (event) {
 	
 	var comp = event.data;
 	var modal = $("<div class='modal'><div class='modal-dialog modal-sm'><div class='modal-content'><div class='modal-header text-center'><h3></h3><button class='btn btn-success'>Confirm</button><button data-dismiss='modal' class='btn btn-danger'>Cancel</button></div></div></div></div>");
-	$('h3', modal).text("Delete " + comp._name + "?");
+	$('h3', modal).text("Delete " + comp.name + "?");
 	$('body').append(modal);
 	
 	$('.btn-success', modal).on('click', function(event) {
@@ -597,31 +540,31 @@ var ConfirmDelete = function (event) {
 // there's a case to be made that show/hide should destroy/recreate the component body, rather than just show/hide
 // Show2 and Hide2 implement the destroy/recreate variant
 var Show2 = function(comp) {
-	comp._markDirty();
-	comp._add();
-	comp._div.parent().find('.griddl-component-head').find('i.fa-plus').removeClass('fa-plus').addClass('fa-minus');
-	comp._visible = true;
+	comp.markDirty();
+	comp.add();
+	comp.div.parent().find('.griddl-component-head').find('i.fa-plus').removeClass('fa-plus').addClass('fa-minus');
+	comp.visible = true;
 };
 var Hide2 = function(comp) {
-	comp._markDirty();
-	comp._div.html('');
-	comp._div.parent().find('.griddl-component-head').find('i.fa-minus').removeClass('fa-minus').addClass('fa-plus');
-	comp._visible = false;
+	comp.markDirty();
+	comp.div.html('');
+	comp.div.parent().find('.griddl-component-head').find('i.fa-minus').removeClass('fa-minus').addClass('fa-plus');
+	comp.visible = false;
 };
 var Show = function(comp) {
-	comp._markDirty();
-	comp._div.removeClass('griddl-component-body-hidden');
-	comp._div.parent().find('.griddl-component-head').find('i.fa-plus').removeClass('fa-plus').addClass('fa-minus');
-	comp._visible = true;
+	comp.markDirty();
+	comp.div.removeClass('griddl-component-body-hidden');
+	comp.div.parent().find('.griddl-component-head').find('i.fa-plus').removeClass('fa-plus').addClass('fa-minus');
+	comp.visible = true;
 	
 	// this fixes this bug: when a component containing a codemirror was initially hidden, and then we maximized, the text would not appear
-	if (comp._codemirror) { comp._codemirror.refresh(); }
+	if (comp.codemirror) { comp.codemirror.refresh(); }
 };
 var Hide = function(comp) {
-	comp._markDirty();
-	comp._div.addClass('griddl-component-body-hidden');
-	comp._div.parent().find('.griddl-component-head').find('i.fa-minus').removeClass('fa-minus').addClass('fa-plus');
-	comp._visible = false;
+	comp.markDirty();
+	comp.div.addClass('griddl-component-body-hidden');
+	comp.div.parent().find('.griddl-component-head').find('i.fa-minus').removeClass('fa-minus').addClass('fa-plus');
+	comp.visible = false;
 };
 
 var FetchComponent = function(name) {
@@ -660,7 +603,7 @@ $(document).ready(function() {
       $btn.addClass('active').siblings().removeClass("active");
       $("#cells-container").css('display', 'block').removeClass('col-sm-6').addClass('col-sm-12');
       $("#output-container").css('display', 'none');
-      comps.forEach(function(comp) { if (comp._codemirror) { comp._codemirror.refresh(); } });
+      comps.forEach(function(comp) { if (comp.codemirror) { comp.codemirror.refresh(); } });
   });
 
   $("#show-all").on('click', function(e) {
@@ -670,7 +613,7 @@ $(document).ready(function() {
       MarkDirty();
       $btn.addClass('active').siblings().removeClass("active");
       $("#cells-container, #output-container").css('display', 'block').removeClass("col-sm-12").addClass("col-sm-6");
-      comps.forEach(function(comp) { if (comp._codemirror) { comp._codemirror.refresh(); } });
+      comps.forEach(function(comp) { if (comp.codemirror) { comp.codemirror.refresh(); } });
   });
 
   $("#show-widgets").on('click', function(e) {
@@ -769,9 +712,9 @@ function save_as(newname) {
 // API
 var Hyperdeck = {};
 var Components = Hyperdeck.Components = {};
-Hyperdeck.Get = function(name, options) { var comp = FetchComponent(name); return comp._get(options); };
-Hyperdeck.Set = function(name, data, options) { var comp = FetchComponent(name); comp._set(data, options); };
-Hyperdeck.Run = function(name, thisArg) { var comp = FetchComponent(name); return comp._exec(thisArg); };
+Hyperdeck.Get = function(name, options) { var comp = FetchComponent(name); return comp.get(options); };
+Hyperdeck.Set = function(name, data, options) { var comp = FetchComponent(name); comp.set(data, options); };
+Hyperdeck.Run = function(name, thisArg) { var comp = FetchComponent(name); return comp.exec(thisArg); };
 //Hyperdeck.New = function(json) { NewComponent(new Components[json.type]()); };
 //Hyperdeck.Rem = function(name) { DeleteComponent(FetchComponent(name)); };
 Hyperdeck.Import = Import;

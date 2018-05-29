@@ -1,9 +1,6 @@
 <html>
 <head>
-<link rel="stylesheet" href="../code/codemirror-5.0.css" />
 <style>
-
-.CodeMirror { border: 1px solid gray; cursor: text; height: 550px; }
 
 .grid-column-row { margin: 1em 0 0 0.5em; }
 .grid-column-row input { margin-left: 0.5em; }
@@ -22,15 +19,9 @@
 </head>
 <body>
 
-<script src="../jquery-1.10.2.min.js"></script>
-<script src="../code/codemirror-5.0.js"></script>
-<script src="../code/codemirror-5.0-javascript.js"></script>
-
-<script src="../assets.js"></script>
 <script src='grid.js'></script>
 
 <div style="margin: 1em">
-<button onclick="RunCode()">Run Code</button>
 <input type="file" multiple onchange="LoadAssets(this.files, OnLoad)">
 <button onclick='Download("tsv")'>Download TSV</button>
 <button onclick='Upload("tsv")'>Upload TSV</button>
@@ -120,65 +111,6 @@ function Download(format) {
 	};
 	
 	fileReader.readAsDataURL(blob);
-}
-
-function RunCode() { (new Function('', codemirror.getValue()))(); }
-function InitCodemirror(div, code) {
-	
-	var textarea = document.createElement('textarea');
-	div.appendChild(textarea);
-	
-	var options = {
-		//smartIndent: true,
-		lineNumbers: true,
-		lineWrapping: true,
-		//foldGutter: true,
-		//tabSize: 2,
-		//indentUnit: 2,
-		//indentWithTabs: true,
-		//gutters: ['CodeMirror-linenumbers','CodeMirror-foldgutter'],
-		//extraKeys: {'Ctrl-Q': function(cm) { cm.foldCode(cm.getCursor()); }},
-		mode: 'javascript'
-	};
-	
-	var cm = CodeMirror.fromTextArea(textarea, options);
-	
-	//cm.on('change', function() {
-	//	
-	//});
-	//
-	//cm.on('focus', function() {
-	//	
-	//});
-	//
-	//cm.on('blur', function() {
-	//	//doc.setGutterMarker(line: integer|LineHandle, gutterID: string, value: Element)
-	//	diagram.receiveText(cm.getValue(), cm.getCursor().line);
-	//});
-	
-	cm.getDoc().setValue(code);
-	
-	return cm;
-}
-
-var canvasActive = true;
-function SwitchTabs() {
-	
-	if (canvasActive)
-	{
-		document.getElementById('codemirror').style.display = 'block';
-		document.getElementById('container').style.display = 'none';
-		codemirror.refresh();
-		codemirror.focus();
-		canvasActive = false;
-	}
-	else
-	{
-		document.getElementById('codemirror').style.display = 'none';
-		document.getElementById('container').style.display = 'block';
-		document.getElementById('tree').focus();
-		canvasActive = true;
-	}
 }
 
 function DisplayColumnsUi(grid) {
@@ -407,8 +339,8 @@ function DisplayMultisortUi() {
 
 function RandomData() {
 	
-	var rows = 100;
-	var cols = 24;
+	var rows = 1000000;
+	var cols = 10;
 	
 	params.data = [];
 	params.headers = [];
@@ -456,14 +388,8 @@ var params = {
 
 RandomData();
 
-var codemirror = InitCodemirror(document.getElementById('codemirror'), '');
-
-document.getElementById('container').addEventListener('keydown', function(e) { if (e.keyCode == 27) { SwitchTabs(); } });
-document.getElementById('codemirror').addEventListener('keydown', function(e) { if (e.keyCode == 27) { SwitchTabs(); } });
-
 var div = document.getElementById('container');
-var grid = new Eyeshade.Grid(params, div);
-//DisplayColumnsUi(grid);
+var grid = new Hyperdeck.Grid(params, div);
 
 </script>
 </body>

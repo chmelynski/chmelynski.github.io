@@ -5,8 +5,8 @@
 // style formulas support named styles, as well as anything else that produces a style object
 // =Styles['default']
 // =Styles['default'].extend('bold', true)
-var Eyeshade;
-(function (Eyeshade) {
+var Hyperdeck;
+(function (Hyperdeck) {
     var sprintf;
     /* class Scrollbar {
         
@@ -2625,7 +2625,7 @@ var Eyeshade;
         };
         return Grid;
     }());
-    Eyeshade.Grid = Grid;
+    Hyperdeck.Grid = Grid;
     function KeyToChar(key, shift) {
         var from48To57 = [')', '!', '@', '#', '$', '%', '^', '&', '*', '('];
         var from186To192 = [[';', ':'], ['=', '+'], [',', '<'], ['-', '_'], ['.', '>'], ['/', '?'], ['`', '~']];
@@ -2979,4 +2979,4 @@ var Eyeshade;
         }
         return val;
     };
-})(Eyeshade || (Eyeshade = {}));
+})(Hyperdeck || (Hyperdeck = {}));

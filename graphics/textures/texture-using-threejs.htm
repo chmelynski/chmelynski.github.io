@@ -1,0 +1,64 @@
+
+<html>
+<body>
+<script>
+
+var loader = new THREE.TextureLoader();
+var count = 0;
+var goal = 0;
+var textures = {};
+
+function Load(name, url) {
+	goal++;
+	loader.load(url, function(texture) {
+		textures[name] = texture;
+		count++;
+		if (count == goal) { MakeScene(); }
+	});
+}
+
+Load('a', 'http://localhost/texture.png');
+Load('b', 'http://localhost/texture2.png');
+Load('c', 'http://localhost/texture3.png');
+
+function MakeScene() {
+	
+	var wd = 600;
+	var hg = 600;
+	var scene = new THREE.Scene();
+	var camera = new THREE.PerspectiveCamera(45, wd/hg, 0.1, 1000);
+	
+	var renderer = new THREE.WebGLRenderer();
+	renderer.setSize(wd, hg);
+	renderer.setClearColor(0xffffff);
+	$('#output').html('').append($(renderer.domElement));
+	
+	var w = textures.a.image.width / 256;
+	var h = textures.a.image.height / 256;
+	
+	//var geometry = new THREE.BoxGeometry(1, 2, 1);
+	var geometry = new THREE.PlaneGeometry(w, h);
+	var material = new THREE.MeshPhongMaterial({map:textures.a,alphaMap:textures.b});
+	material.transparent = true;
+	//var material = new THREE.MeshBasicMaterial({color:0x009900});
+	var cube = new THREE.Mesh(geometry, material);
+	cube.position.set(0, 1, 0);
+	scene.add(cube);
+	
+	var light2 = new THREE.PointLight(0xffffff, 0.7);
+	light2.position.set(3, 3, 3);
+	scene.add(light2);
+	
+	var light = new THREE.AmbientLight(0xffffff, 0.4);
+	scene.add(light);
+	
+	camera.position.set(1, 1, 8);
+	camera.lookAt(cube);
+	
+	renderer.render(scene, camera);
+}
+
+</script>
+</body>
+</html>
+

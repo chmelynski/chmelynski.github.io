@@ -1,0 +1,31 @@
+
+var intersectionIndex = 0;
+var intersection = xs[intersectionIndex++];
+var oldIntersection = null;
+var fill = false;
+
+for (var xPix = bbox.xMin; xPix <= bbox.xMax; xPix++)
+{
+	for (var j = 0; j < this.n; j++)
+	{
+		var x = xPix + (j + 0.5) / this.n;
+		
+		if (x >= intersection)
+		{
+			fill = !fill;
+			
+			do
+			{
+				oldIntersection = intersection;
+				intersection = xs[intersectionIndex++];
+			}
+			while (intersection == oldIntersection); // but what if duplicate intersections are intentional?  how can you tell?
+		}
+		
+		if (fill)
+		{
+			var sampleIndex = (yPix * this.width + xPix) * this.nn + i * this.n + j;
+			this.samples[sampleIndex] = 1;
+		}
+	}
+}

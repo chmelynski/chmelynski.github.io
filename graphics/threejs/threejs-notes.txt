@@ -1,0 +1,141 @@
+
+Object3D
+ id - readonly – Unique number for this object instance.
+ uuid - UUID of this object instance. This gets automatically assigned, so this shouldn't be edited.
+ name - Optional name of the object (doesn't need to be unique).
+ parent - Object's parent in the scene graph.
+ children - Array with object's children.
+ position - Object's local position.
+ rotation - Object's local rotation (Euler angles), in radians.
+ scale - Object's local scale.
+ up - Up direction. Default is THREE.Vector3( 0, 1, 0 ).
+ matrix - Local transform.
+ quaternion - Object's local rotation as Quaternion.
+ visible - Object gets rendered if true. default – true
+ castShadow - Gets rendered into shadow map. default – false
+ receiveShadow - Material gets baked in shadow receiving. default – false
+ frustumCulled - When this is set, it checks every frame if the object is in the frustum of the camera. Otherwise the object gets drawn every frame even if it isn't visible. default – true
+ matrixAutoUpdate - When this is set, it calculates the matrix of position, (rotation or quaternion) and scale every frame and also recalculates the matrixWorld property. default – true
+ matrixWorldNeedsUpdate - When this is set, it calculates the matrixWorld in that frame and resets this property to false. default – false
+ userData - An object that can be used to store custom data about the Object3d. It should not hold references to functions as these will not be cloned.
+ matrixWorld - The global transform of the object. If the Object3d has no parent, then it's identical to the local transform.
+.applyMatrix ( matrix )
+
+matrix - matrix
+This updates the position, rotation and scale with the matrix.
+# .translateX ( distance )
+
+distance - Distance.
+Translates object along x axis by distance.
+# .translateY ( distance )
+
+distance - Distance.
+Translates object along y axis by distance.
+# .translateZ ( distance )
+
+distance - Distance.
+Translates object along z axis by distance.
+# .rotateX ( rad )
+
+rad - the angle to rotate in radians.
+Rotates the object around x axis in local space.
+# .rotateY ( rad )
+
+rad - the angle to rotate in radians.
+Rotates the object around y axis in local space.
+# .rotateZ ( rad )
+
+rad - the angle to rotate in radians.
+Rotates the object around z axis in local space.
+# .localToWorld ( vector )
+
+vector - A local vector.
+Updates the vector from local space to world space.
+# .worldToLocal ( vector )
+
+vector - A world vector.
+Updates the vector from world space to local space.
+# .lookAt ( vector )
+
+vector - A world vector to look at.
+Rotates object to face point in space.
+# .add ( object, ... )
+
+object - An object.
+Adds object as child of this object. An arbitrary number of objects may be added.
+# .remove ( object, ... )
+
+object - An object.
+Removes object as child of this object. An arbitrary number of objects may be removed.
+# .traverse ( callback )
+
+callback - A function with as first argument an object3D object.
+Executes the callback on this object and all descendants.
+# .traverseVisible ( callback )
+
+callback - A function with as first argument an object3D object.
+Like traverse, but the callback will only be executed for visible objects. Descendants of invisible objects are not traversed.
+# .traverseAncestors ( callback )
+
+callback - A function with as first argument an object3D object.
+Executes the callback on all ancestors.
+# .updateMatrix ()
+
+Updates local transform.
+# .updateMatrixWorld ( force )
+
+Updates global transform of the object and its children.
+# .clone ( recursive )
+
+recursive -- if true, descendants of the object are also cloned. Default is true.
+Returns a clone of this object and optionaly all descendants.
+# .getObjectByName ( name )
+
+name -- String to match to the children's Object3d.name property. 
+Searches through the object's children and returns the first with a matching name.
+# .getObjectById ( id )
+
+id -- Unique number of the object instance
+Searches through the object's children and returns the first with a matching id.
+# .getWorldPosition ( optionalTarget )
+
+optionalTarget — Optional target to set the result. Otherwise, a new `Vector3` is instantiated. (optional)
+Returns a vector representing the position of the object in world space.
+# .getWorldQuaternion ( optionalTarget )
+
+optionalTarget — Optional target to set the result. Otherwise, a new `Quaternion` is instantiated. (optional)
+Returns a quaternion representing the rotation of the object in world space.
+# .getWorldRotation ( optionalTarget )
+
+optionalTarget — Optional target to set the result. Otherwise, a new `Euler` is instantiated. (optional)
+Returns the euler angles representing the rotation of the object in world space.
+# .getWorldScale ( optionalTarget )
+
+optionalTarget — Optional target to set the result. Otherwise, a new `Vector3` is instantiated. (optional)
+Returns a vector of the scaling factors applied to the object for each axis in world space.
+# .getWorldDirection ( optionalTarget )
+
+optionalTarget — Optional target to set the result. Otherwise, a new `Vector3` is instantiated. (optional)
+Returns a vector representing the direction of object's positive z-axis in world space.
+# .translateOnAxis ( axis, distance )
+
+axis -- A normalized vector in object space.
+distance -- The distance to translate.
+Translate an object by distance along an axis in object space. The axis is assumed to be normalized.
+# .rotateOnAxis ( axis, angle )
+
+axis -- A normalized vector in object space. 
+angle -- The angle in radians.
+Rotate an object along an axis in object space. The axis is assumed to be normalized.
+# .raycast ( raycaster, intersects )
+
+Abstract method to get intersections between a casted ray and this object. Subclasses such as Mesh, Line, and Points implement this method in order to participate in raycasting.
+
+
+Mesh < Object3D
+ .morphTargetInfluences - An array of weights typically from 0-1 that specify how much of the morph is applied. Undefined by default, but reset to a blank array by updateMorphTargets.
+ .morphTargetDictionary - A dictionary of morphTargets based on the morphTarget.name property. Undefined by default, but rebuilt updateMorphTargets.
+ .morphTargetBase - Specify the index of the morph that should be used as the base morph. Replaces the positions. Undefined by default, but reset to -1 (non set) by updateMorphTargets.
+MorphAnimMesh < Mesh
+SkinnedMesh < Mesh
+

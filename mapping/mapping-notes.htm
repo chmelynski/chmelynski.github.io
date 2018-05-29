@@ -1,0 +1,503 @@
+
+<html>
+<body>
+
+<!--
+<h4 id=""></h4><pre>
+</pre>
+-->
+
+<a href="#architecture">architecture</a><br>
+<a href="#topodata">topo data</a><br>
+<a href="#census-blocks">census blocks</a><br>
+<a href="#algorithms">algorithms</a><br>
+<a href="#links">links</a><br>
+<a href="#commands">commands</a><br>
+<a href="#d3geo">d3.geo</a><br />
+<a href="#geojson">GeoJSON and TopoJSON</a><br />
+<a href="#turfjs">turf.js</a><br />
+
+<h4 id="architecture">Architecture</h4><pre>
+
+data sources:
+	topojson
+	osm
+	elevation
+
+option for loading data:
+	loaded from script tag - pro: can open .htm and it works, con: must convert .topojson to .js
+	loaded from FileReader - pro: easier than server, con: can't load as you zoom and pan
+	loaded from server - pro: powerful, con: have to start a server
+
+options for drawing paths:
+	use d3.path
+	use custom draw functions
+
+</pre>
+<h4 id="topodata">Topo data</h4><pre>
+
+
+tl_2016_us_state             245 arcs;    508,028 points
+tl_2016_us_county          9,630 arcs;  3,928,313 points
+tl_2016_us_coastline       4,245 arcs;  1,540,622 points
+tl_2016_us_primaryroads   16,361 arcs;  1,624,533 points
+tl_2016_us_rails         209,555 arcs;  3,421,308 points
+tl_2016_us_cd115           1,427 arcs;  2,049,943 points
+
+tl_2016_01_cousub
+tl_2016_01_place
+tl_2016_01_tract
+tl_2016_01_tabblock10
+tl_2016_01_sldl
+tl_2016_01_sldu
+tl_2016_01_unsd
+tl_2016_01_prisecroads
+
+tl_2016_01001_roads
+tl_2016_01001_areawater
+tl_2016_01001_linearwater
+
+tl_2016_42003_roads       93,005 arcs;    702,837 points
+
+lowres                    10,034 arcs;     29,088 points
+counties: FeatureCollection with 3220 features
+ MultiPolygon: 232
+ Polygon: 2988
+ feature.id = FIPS
+states: FeatureCollection with 53 features (50 states + DC, PR, VI)
+ MultiPolygon: 53
+ feature.id = FIPS
+land: Feature
+
+3143 - 3142 counties in 50 states + 1 county-equivalent for DC
+3220 - counties in lowres, which includes PR
+3233 - counties in tl_2016_us_county - PR, VI?
+
+</pre>
+<h4 id="census-blocks">Census Blocks</h4><pre>
+
+A census block is the smallest geographic unit used by the United States Census Bureau for tabulation of 100-percent data (data collected from all houses, rather than a sample of houses). The number of blocks in the United States, including Puerto Rico, for the 2010 Census was 11,155,486.
+
+State Code	State Name	Census 2000 Census Tracts	Census 2000 Block Groups	Census 2000 Tabulation Blocks
+01	Alabama	1,081	3,329	175,220
+02	Alaska	158	533	21,874
+04	Arizona	1,107	3,570	158,294
+05	Arkansas	624	2,135	141,178
+06	California	7,049	22,133	533,163
+08	Colorado	1,062	3,278	141,040
+09	Connecticut	819	2,620	53,835
+10	Delaware	197	502	17,483
+11	District of Columbia	188	433	5,674
+12	Florida	3,154	9,112	362,499
+13	Georgia	1,618	4,788	214,576
+15	Hawaii	286	646	18,990
+16	Idaho	280	954	88,452
+17	Illinois	2,966	9,843	366,137
+18	Indiana	1,414	4,798	201,321
+19	Iowa	793	2,634	168,075
+20	Kansas	727	2,299	173,107
+21	Kentucky	994	3,157	122,141
+22	Louisiana	1,106	3,509	139,867
+23	Maine	348	1,143	56,893
+24	Maryland	1,218	3,678	79,128
+25	Massachusetts	1,367	5,053	109,997
+26	Michigan	2,757	8,450	258,925
+27	Minnesota	1,303	4,082	200,222
+28	Mississippi	605	2,148	136,150
+29	Missouri	1,320	4,540	241,532
+30	Montana	270	874	99,018
+31	Nebraska	503	1,591	133,692
+32	Nevada	487	1,245	60,831
+33	New Hampshire	273	874	34,728
+34	New Jersey	1,950	6,510	141,342
+35	New Mexico	456	1,413	137,055
+36	New York	4,907	15,079	298,506
+37	North Carolina	1,563	5,271	232,403
+38	North Dakota	227	630	84,351
+39	Ohio	2,941	9,354	277,807
+40	Oklahoma	990	2,901	176,064
+41	Oregon	755	2,490	156,232
+42	Pennsylvania	3,135	10,387	322,424
+44	Rhode Island	234	821	21,023
+45	South Carolina	867	2,859	143,919
+46	South Dakota	235	688	77,951
+47	Tennessee	1,261	4,014	182,203
+48	Texas	4,388	14,463	675,062
+49	Utah	496	1,481	74,704
+50	Vermont	179	530	24,824
+51	Virginia	1,541	4,749	145,399
+53	Washington	1,318	4,825	170,871
+54	West Virginia	466	1,588	81,788
+55	Wisconsin	1,333	4,388	200,348
+56	Wyoming	127	398	67,264
+United States	65,443	208,790	8,205,582
+60	American Samoa	21	91	978
+66	Guam	56	203	1,819
+69	Northern Mariana Islands	21	72	1,130
+72	Puerto Rico	861	2,477	56,781
+74	Midway	1	1	2
+78	U.S. Virgin Islands	35	193	2,839
+United States, Puerto Rico and Island Areas	66,438	211,827	8,269,131
+
+</pre>
+<h4 id="d3geo">d3 Geography</h4><pre>
+
+svg.append("path").datum(featureCollection).attr("d", d3.geoPath()) - geoPath generates the functor passed to attr
+
+d3.geoPath(projection, ctx) => generates the path object (the null projection is the identity map, ctx is an optional bound canvas context)
+path(object, arguments) => generates lineTo commands (if bound to ctx) or path string.  Additional arguments are passed along to the pointRadius accessor
+path.area(geojson) => area in square pixels
+path.bounds(geojson) => [[x0,y0],[x1,y1]] - this is useful for zooming in to a particular area
+path.centroid(geojson) => [x,y] - useful for putting a label in the object centroid
+path.projection(projection) - get/set
+path.context(ctx) - get/set
+path.pointRadius(radius) - get/set radius of drawn points
+path.pointRadius(fn(arguments)) - this gets evaluated per feature (which presumably is *this*?), and is passed the arguments sent to the path generator
+
+
+d3.geoConicEqualArea() => projection, conic common map with curved latitude lines
+d3.geoAlbers() => projection, a d3.geoConicEqualArea, centered on the united states (lng is zeroed at about -100 for purposes of centering)
+d3.geoAlbersUsa() => projection, composite projection that fits alaska and hawaii into the lower left corner - cannot call center() on this one
+d3.geoMercator() => projection
+d3.geoEquirectangular()) => projection, rectangular but squished at poles compared to mercator
+d3.geoOrthographic() => projection, the standard globe
+conic.parallels([parallels]) - two standard parallels that define a conic projection
+
+projection([lng,lat]) => [x,y] (or null if the point is outside the clipping bounds)
+projection.invert([x,y]) => [lng,lat]
+
+projection.scale(scale) - get/set
+projection.translate([x,y]) - get/set
+projection.center([lng,lat]) - get/set
+projection.rotate([lambda,phi,gamma]) - get/set
+
+projection.fitExtent([[x0,y0],[x1,y1]], geojson) - set center/scale to fit the specified object in the specified box
+projection.fitSize([x1,y1], geojson) - shorthand for fitExtent with top-left fixed at [0,0]
+
+projection.clipAngle(angleDeg) - get/set small circle clipping angle (null = antimeridian cutting)
+projection.clipExtent([[x0,y0],[x1,y1]]) - get/set
+
+projection.precision(precision) - get/set precision for adaptive resampling
+projection.stream(stream) - ??
+
+
+d3.geoGraticule() => graticule (latitude and longitude lines to display on a projection)
+graticule() => MultiLineString representing all lines
+graticule.lines() => [LineString]
+graticule.outline() => Polygon
+graticule.extent([[minLng,minLat],[maxLng,maxLat]]) - get/set
+graticule.extentMajor([[minLng,minLat],[maxLng,maxLat]]) - get/set
+graticule.extentMinor([[minLng,minLat],[maxLng,maxLat]]) - get/set
+graticule.step([lngStep,latStep]) - get/set, defaults to 10 degrees
+graticule.stepMajor([lngStep,latStep]) - get/set
+graticule.stepMinor([lngStep,latStep]) - get/set
+graticule.precision(angle) - get/set, defaults to 2.5 degrees
+d3.geoGraticule10() => MultiLineString, shorthand for generating the default geometry
+
+
+to do:
+Raw Projections
+Spherical Math
+Spherical Shapes (mostly for drawing circles on a sphere)
+Streams
+Transforms
+
+see https://github.com/d3/d3-tile for a map tile system
+
+</pre>
+<h4 id="geojson">GeoJSON and TopoJSON</h4><pre>
+
+FeatureCollection  - type, features
+Feature            - type, properties, geometry
+GeometryCollection - type, geometries
+Geometry           - type, coordinates
+
+Topology           - type, objects, arcs, transform
+Geometry           - type, arcs, id, etc...
+objects is a dict of Geometry(Collection)s
+
+{ type : Feature            , geometry   : Geometry     , properties : {} }
+{ type : FeatureCollection  , features   : [ Feature ]                    }
+{ type : GeometryCollection , geometries : [ Geometry ]                   }
+
+{ type : Point           , coordinates :       [lng,lat]       }
+{ type : MultiPoint      , coordinates :     [ [lng,lat] ]     }
+{ type : LineString      , coordinates :     [ [lng,lat] ]     }
+{ type : MultiLineString , coordinates :   [ [ [lng,lat] ] ]   }
+{ type : Polygon         , coordinates :   [ [ [lng,lat] ] ]   }
+{ type : MultiPolygon    , coordinates : [ [ [ [lng,lat] ] ] ] 
+
+var featureCollection = {};
+featureCollection.type = 'FeatureCollection';
+featureCollection.features = [];
+featureCollection.features[0] = {}
+featureCollection.features[0].type = 'Feature';
+featureCollection.features[0].properties = {};
+featureCollection.features[0].geometry = {};
+featureCollection.features[0].geometry.type = 'Polygon';
+featureCollection.features[0].geometry.coordinates = [[[lng,lat]]];
+
+https://github.com/topojson/topojson-specification
+
+type : Topology
+objects : {}
+  counties : {}
+    type : GeometryCollection
+    bbox : [minLng,minLat,maxLng,maxLat] // aka [west,south,east,north]
+    geometries : []
+      0 : {}
+        type : MultiPolygon
+        id : int
+        properties : {} // arbitrary
+        arcs : [ [ [ 0,1,-3 ] ] ] // index into arcs (negative means reverse order, but two's complement - so -3 means the reverse of arc 2)
+      1 : {}
+        type : Polygon
+        id : int
+        arcs : [ [ 3,-4,5,6,-7,8 ] ]
+  states : {}
+arcs : []
+  0 : [ [lng,lat] , [lng,lat] , [lng,lat] ] // coordinates are integers, transformed by the transformation below
+  1 : [ [lng,lat] , [lng,lat] , [lng,lat] ]
+transform : {}
+  scale : [ lng , lat ]
+  translate : [ lng , lat ]
+
+var x = {};
+x.type = 'Topology';
+x.objects = {};
+x.objects.foo = {};
+x.objects.foo.type = 'GeometryCollection';
+x.objects.foo.bbox = [minLng,minLat,maxLng,maxLat];
+x.objects.foo.geometries = [];
+x.objects.foo.geometries[0] = {};
+x.objects.foo.geometries[0].type = 'Polygon';
+x.objects.foo.geometries[0].id = 13;
+x.objects.foo.geometries[0].properties = {};
+x.objects.foo.geometries[0].arcs = [[]];
+x.arcs = []
+x.arcs[0] = [[lng,lat],[lng,lat],...]
+x.transform = {};
+x.transform.scale = [lng,lat];
+x.transform.translate = [lng,lat];
+
+https://github.com/topojson/topojson
+https://github.com/topojson/topojson-client
+https://github.com/topojson/topojson-simplify
+
+Algorithm explanation - https://bost.ocks.org/mike/topology/
+
+topology:
+The major thing that topojson does is combine redundant borders into what are called arcs.
+So that the shared border between two states is stored only once, and then referenced by both states.
+Since geojson stores redundant borders and has no conception of arcs, the arcs must be inferred.
+
+quantization:
+The quantization parameter determines the maximum expressible number of unique values per dimension.
+When we quantize, we express each point as a pair of integers, referring to these quantization gridpoints.
+The transform then maps the integer coordinates back to lng,lat.
+This is how we determine which arcs are the same - their points map to the same gridpoint.
+
+delta encoding:
+Once we have quantized the arcs, we can encode all non-first points in an arc as a delta from the previous point.
+Again, this is made possible by the use of integer coordinates.
+
+
+[[40.357824, -80.234785], [40.351247, -80.232134]
+quantize to integer w/ delta encoding =>
+[[23554, 21552], [-2, -5]]
+
+
+TopoJSON
+-------------------
+
+topojson.topology({foo:geojsonObject}, quantization=1e4,1e5,1e6) => {foo:topojsonObject} (objects are modified in place)
+
+
+TopoJSON Client
+-------------------
+
+topojson.feature(topology, object) => Feature or FeatureCollection (Geometry/GeometryCollection are packaged into a Feature/FeatureCollection)
+
+returns the union for the specified array of Polygon and MultiPolygon arguments - interior shared borders are removed
+topojson.merge(topology, objects) => GeoJSON MultiPolygon
+topojson.mergeArcs(topology, objects) => TopoJSON MultiPolygon
+
+the filter function is called for each candidate arc, and is passed the two objects that share that arc
+topojson.mesh(topology, objects, function(topoObjA, topoObjB) => bool) => GeoJSON MultiLineString
+topojson.meshArcs(topology, objects, function(topoObjA, topoObjB) => bool) => TopoJSON MultiLineString
+{ return topoObjA !== topoObjB; } - returns interior boundaries
+{ return topoObjA === topoObjB; } - returns exterior boundaries - if the arc is part of only one object, that object will be both args
+
+topojson.neighbors(objectArray) => [[neighborIndex0,neighborIndex1],[neighborIndex0,neighborIndex1]] - indexes are into the input array?
+
+topojson.bbox(topology) => returns bbox if set, otherwise calculates, assigns to topology.bbox, and returns bbox
+
+topojson.quantize(topology, n) - quantizes, sets bbox
+
+topojson.transform(topology) => transform(point, isDelta) - remove delta-encoding and apply the transform
+topojson.untransform(topology) => transform(point, isDelta) - apply delta-encoding and remove the transform
+transform(point, isDelta) => point - modifies coordinates in-place, if isDelta is true, treats point as the delta to the previously-passed point
+
+</pre>
+<h4 id="turfjs">turf.js</h4><pre>
+
+JOINS
+
+turf.inside(Feature[Point], Feature[MultiPolygon]) => bool
+turf.tag(points, polygons, field, outField) => FeatureCollection(Point) points with containingPolyId property containing values from polyId
+  points (FeatureCollection{Point}) input points
+  polygons (FeatureCollection{Polygon}) input polygons
+  field (string) property in polygons to add to joined { } features
+  outField (string) property in points in which to store joined property from polygons
+
+
+MEASUREMENT
+
+uses the Haversine formula to account for global curvature when units are specified in degrees or radians
+a Feature may be passed in whenever a FeatureCollection is specified
+
+along(Feature[LineString], distance, units='kilometers') => Feature[Point] - point distance units along the line
+destination(Feature[Point], distance, bearingInDegrees, units={'kilometers','miles','degrees','radians'}) => Feature[Point] - go distance/bearing from start
+midpoint(Feature[Point], Feature[Point]) => Feature[Point] - calculated geodesically
+
+bearing(Feature[Point], Feature[Point]) => bearing in decimal degrees
+distance(Feature[Point], Feature[Point], units) => distance between points
+
+area(FeatureCollection) => area in square meters
+lineDistance(FeatureCollection[LineString|Polygon], units) => perimeter length
+
+center(FeatureCollection) => Feature[Point] - absolute center (meaning, the center of the bounding box?)
+centroid(FeatureCollection) => Feature[Point] - mean of vertices
+
+bboxPolygon([minX,minY,maxX,maxY]) => Feature[Polygon]
+envelope(FeatureCollection) => Feature[Polygon] - rectangular bounding box
+square([minX,minY,maxX,maxY]) => [minX,minY,maxX,maxY] - returns a square bbox that contains the specified rectangular bbox
+
+pointOnSurface(FeatureCollection) => Feature[Point] - guaranteed to be on the surface of the feature
+
+
+TRANSFORMATION
+
+bezier
+buffer
+concave
+convex
+difference
+intersect
+simplify
+union
+
+
+AGGREGATION
+
+collect
+
+
+MISC
+
+combine
+explode
+flip
+kinks
+lineSlice
+pointOnLine
+
+
+HELPER
+
+featureCollection
+feature
+lineString
+multiLineString
+point
+polygon
+multiPoint
+multiPolygon
+geometryCollection
+
+
+DATA
+
+random
+sample
+
+
+INTERPOLATION
+
+isolines
+planepoint
+tin
+
+
+GRIDS
+
+hexGrid
+pointGrid
+squareGrid
+triangleGrid
+within
+
+
+CLASSIFICATION
+
+nearest
+
+
+META
+
+propEach
+coordEach
+coordReduce
+featureEach
+getCoord
+
+
+ASSERTIONS
+
+featureOf
+collectionOf
+bbox
+centerOfMass
+circle
+index
+geojsonType
+lineSliceAlong
+propReduce
+coordAll
+geomEach
+tesselate
+
+</pre>
+<h4 id="algorithms">Algorithms</h4><pre>
+
+Spatial indexes, for selecting a bbox-based subset of features to display on a map
+
+https://github.com/mourner/rbush - uses R trees, good if you need to add/remove points, supports bulk additions
+https://github.com/mourner/kdbush - uses a flat KD-tree, only for static indices (points are added once at the beginning), point only - no rectangles, faster
+
+rbush(breadthParamIThink, [W, N, E, S])
+
+interface RTree {
+	
+	constructor(breadth: number, fields: string[]);
+	load(objects: any[]): void;
+}
+
+rbush(9, ['.lng', '.lat', '.lng', '.lat']).load(listOfObjects);
+
+</pre>
+<h4 id="links">Links</h4><div>
+
+<a href="https://github.com/mbloch/mapshaper">https://github.com/mbloch/mapshaper</a><br>
+<a href="https://www.census.gov/cgi-bin/geo/shapefiles/index.php">https://www.census.gov/cgi-bin/geo/shapefiles/index.php</a><br>
+<!-- <a href=""></a><br> -->
+
+</div>
+<h4 id="commands">Commands</h4><pre>
+mapshaper.runCommands('-i tl_2016_01_prisecroads.shp -o format=topojson tl_2016_01_prisecroads.topojson', function() { });
+curl --connect-timeout 10 ftp://ftp2.census.gov/geo/tiger/TIGER2016/TABBLOCK/tl_2016_01_tabblock10.zip > tl_2016_01_tabblock10.zip
+</pre>
+
+</body>
+</html>
+

@@ -573,8 +573,8 @@ class Diagram {
 	compile(): void {
 		
 		var header = [
-			"ctx.canvas.width = document.getElementById('width').value;",
-			"ctx.canvas.height = document.getElementById('height').value;",
+			//"ctx.canvas.width = document.getElementById('width').value;",
+			//"ctx.canvas.height = document.getElementById('height').value;",
 			"ctx.fillStyle = 'white';",
 			"ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);"
 		];

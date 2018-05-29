@@ -1,0 +1,86 @@
+
+<html>
+<head>
+<script src="image.js"></script>
+</head>
+<body>
+
+<input type="file" id="fileChooser" style="display:none" onchange="Load(this.files)" />
+<table style="position:absolute; left:2em; top:1em;">
+<tr>
+<td><button onclick="Draw()">Draw</button></td>
+<td><button onclick="document.getElementById('fileChooser').click()">Load</button></td>
+<td><button onclick="Save()">Save</button></td>
+</tr>
+</table>
+
+<textarea id="text" style="position:absolute; top:5em; left:2em; width:40em; height:40em;">
+
+
+var canvas = document.getElementsByTagName('canvas')[0];
+var g = canvas.getContext('2d');
+g.clearRect(0, 0, g.canvas.width, g.canvas.height);
+
+BumpMapDriver(g);
+
+var imagedata = g.getImageData(0, 0, g.canvas.width, g.canvas.height);
+
+for (var i = 0; i &lt; 20; i++)
+{
+var point = { x : Math.floor(Math.random() * g.canvas.width, 1) , y : Math.floor(Math.random() * g.canvas.height, 1) };
+var length = Math.floor(Math.random() * 300, 1);
+var dirangle = Math.random() * 360;
+var spreadangle = 15;
+var width = 2;
+var branching = 0.02;
+Crack(imagedata, point, length, dirangle, spreadangle, width, branching);
+}
+
+g.putImageData(imagedata, 0, 0);
+
+</textarea>
+
+<canvas style="position:absolute; top:2em; left:43em; border:1px solid gray;" width="600" height="600"></canvas>
+
+<script>
+
+function Save() { Download(document.getElementsByTagName('canvas')[0].toDataURL(), 'download.png'); }
+function Load(files) {
+	
+	var fileReader = new FileReader();
+	
+	fileReader.onload = function(event) {
+		
+		var dataUrl = event.target.result;
+		var img = document.createElement('img');
+		img.src = dataUrl;
+		
+		var canvas = document.getElementsByTagName('canvas')[0];
+		canvas.width = img.width;
+		canvas.height = img.height;
+		var ctx = canvas.getContext('2d');
+		ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+		ctx.drawImage(img, 0, 0);
+	};
+	
+	if (files.length > 0)
+	{
+		fileReader.readAsDataURL(files[0]);
+	}
+}
+function Download(text, filename) {
+	var downloadLink = document.createElement('a');
+	var url = window.URL;
+	downloadLink.href = text;
+	downloadLink.download = filename;
+	document.body.appendChild(downloadLink);
+	downloadLink.click();
+	document.body.removeChild(downloadLink);
+}
+
+function Draw() { (new Function('args', document.getElementById('text').value))(); }
+
+</script>
+</body>
+</html>
+

@@ -1,0 +1,721 @@
+
+<html>
+<head>
+<title>Image Editor</title>
+</head>
+<body>
+
+<input type="file" multiple id="fileChooser" style="display:none" onchange="Load(this.files)" />
+
+<table>
+<tr>
+<td><button onclick="document.getElementById('fileChooser').click()">Load</button></td>
+<td><button onclick="OutlineOperations('insert')">Insert Endpoint</button></td>
+<td><button onclick="OutlineOperations('delete')">Delete Endpoint</button></td>
+<td><button onclick="OutlineOperations('convertToLine')">Convert Segment to Line</button></td>
+<td><button onclick="OutlineOperations('convertToQuadratic')">Convert Segment to Quadratic</button></td>
+<td><button onclick="OutlineOperations('convertToCubic')">Convert Segment to Cubic</button></td>
+<td><button onclick="document.getElementById('fileChooserOutline').click()">Load Outline</button></td>
+<td><button onclick="SaveOutline()">Save Outline</button></td>
+<td><button onclick="SaveImage()">Save Image</button></td>
+<td><button onclick="GenerateMask()">Generate Mask</button></td>
+<td><button onclick="ColorManip()">Color Manip</button></td>
+<td><button onclick="ChangeReferenceColors()">ChangeReferenceColors</button></td>
+</tr>
+</table>
+
+<canvas id="canvas" width="300" height="300" tabindex="1" style="border:1px solid gray;"></canvas>
+
+<script>
+
+var origImageData = null; // if we're drawing the manipulation result on the only visible canvas, we have to store the original pixel data somewhere, because the manipulation function operates on the original colors
+
+var imgname = null; // this is set by Load() and read by DownloadOutline() to produce a matching .json filename
+var theimg = null; // this is set by Load() and read by DrawOutline() to draw the image before drawing the outline.  it could also be used to reset the canvas
+
+var canvas = document.getElementById('canvas');
+var ctx = null;
+
+var fn = Darken;
+
+var activeColor = null;
+var selectColor = false;
+
+// { x : 0 , y : 0 , s : 'line' or 'quadratic0' or 'quadratic1' or 'cubic0' or 'cubic1' or 'cubic2' or 'close' or 'end' }
+var outlines = [];
+var outline = []; // basically the 'active list' of points - onkeydown adds a new point to this list
+var outlineCursor = null;
+var selectedPoint = null;
+
+outlines.push(outline);
+
+// subsequent outlines define 'holes' in the image
+// we call .fillPath() separately for each outline
+// the first call draws white on a black background
+// and then subsequent calls (the holes) draw black over the white
+
+function DrawOutline() {
+	
+	// this could be expensive.  maybe an overlay canvas would be better
+	ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+	ctx.drawImage(theimg, 0, 0);
+	
+	for (var k = 0; k < outlines.length; k++)
+	{
+		var outline = outlines[k];
+		
+		ctx.strokeStyle = 'rgb(0,0,0)';
+		
+		ctx.beginPath();
+		ctx.moveTo(outline[0].x, outline[0].y);
+		
+		for (var i = 0; i < outline.length; i++)
+		{
+			var p = outline[i];
+			
+			if (p.s == 'line')
+			{
+				ctx.lineTo(outline[i+1].x, outline[i+1].y);
+			}
+			else if (p.s == 'quadratic0')
+			{
+				ctx.quadraticCurveTo(outline[i+1].x, outline[i+1].y, outline[i+2].x, outline[i+2].y);
+				i += 1;
+			}
+			else if (p.s == 'cubic0')
+			{
+				ctx.bezierCurveTo(outline[i+1].x, outline[i+1].y, outline[i+2].x, outline[i+2].y, outline[i+3].x, outline[i+3].y);
+				i += 2;
+			}
+			else if (p.s == 'close')
+			{
+				ctx.closePath();
+			}
+			else if (p.s == 'end')
+			{
+				
+			}
+			else
+			{
+				throw new Error();
+			}
+		}
+		
+		ctx.stroke();
+		
+		var r = 2;
+		
+		for (var i = 0; i < outline.length; i++)
+		{
+			var p = outline[i];
+			
+			if (p.s == 'line' || p.s == 'quadratic0' || p.s == 'cubic0' || p.s == 'close' || p.s == 'end')
+			{
+				ctx.fillStyle = 'rgb(255,0,0)';
+				if (p == selectedPoint) { ctx.fillStyle = 'rgb(0,0,255)'; }
+			}
+			else if (p.s == 'quadratic1' || p.s == 'cubic1' || p.s == 'cubic2')
+			{
+				ctx.fillStyle = 'rgb(0,255,0)';
+			}
+			else
+			{
+				throw new Error();
+			}
+			
+			ctx.beginPath();
+			ctx.arc(p.x, p.y, r, 0, Math.PI * 2, true);
+			ctx.fill();
+		}
+	}
+}
+function OutlineOperations(op) {
+	
+	var p = outline[outlineCursor];
+	
+	if (op == 'insert')
+	{
+		var q = null;
+		
+		if (p.s == 'line')
+		{
+			q = outline[outlineCursor + 1];
+		}
+		else if (p.s == 'quadratic0')
+		{
+			q = outline[outlineCursor + 2];
+		}
+		else if (p.s == 'cubic0')
+		{
+			q = outline[outlineCursor + 3];
+		}
+		else if (p.s == 'close')
+		{
+			q = outline[0];
+		}
+		else
+		{
+			throw new Error();
+		}
+		
+		var newPoint = { x : (p.x + q.x) / 2 , y : (p.y + q.y) / 2 , s : 'line' };
+		
+		if (p.s == 'line')
+		{
+			outline = outline.slice(0, outlineCursor + 1).concat([newPoint]).concat(outline.slice(outlineCursor + 1));
+		}
+		else if (p.s == 'quadratic0')
+		{
+			outline = outline.slice(0, outlineCursor + 1).concat([newPoint]).concat(outline.slice(outlineCursor + 2));
+		}
+		else if (p.s == 'cubic0')
+		{
+			outline = outline.slice(0, outlineCursor + 1).concat([newPoint]).concat(outline.slice(outlineCursor + 3));
+		}
+		else if (p.s == 'close')
+		{
+			outline.push(newPoint);
+		}
+		else
+		{
+			throw new Error();
+		}
+	}
+	else if (op == 'delete')
+	{
+		// this requires us to convert both the trailing and following segments to lines
+		// which means we have to backtrack to find the previous endpoint and slice accordingly
+	}
+	else if (op == 'convertToLine')
+	{
+		if (p.s == 'line' || p.s == 'close' || p.s == 'end')
+		{
+			
+		}
+		else if (p.s == 'quadratic0')
+		{
+			outline = outline.slice(0, outlineCursor + 1).concat(outline.slice(outlineCursor + 2));
+			p.s = 'line';
+		}
+		else if (p.s == 'cubic0')
+		{
+			outline = outline.slice(0, outlineCursor + 1).concat(outline.slice(outlineCursor + 3));
+			p.s = 'line';
+		}
+		else
+		{
+			throw new Error();
+		}
+	}
+	else if (op == 'convertToQuadratic')
+	{
+		var q = null;
+		
+		if (p.s == 'line')
+		{
+			q = outline[outlineCursor + 1];
+		}
+		else if (p.s == 'quadratic0')
+		{
+			q = outline[outlineCursor + 2];
+		}
+		else if (p.s == 'cubic0')
+		{
+			q = outline[outlineCursor + 3];
+		}
+		else if (p.s == 'close')
+		{
+			q = outline[0];
+		}
+		else
+		{
+			throw new Error();
+		}
+		
+		var newPoint = { x : (p.x + q.x) / 2 , y : (p.y + q.y) / 2 , s : 'quadratic1' };
+		
+		if (p.s == 'line')
+		{
+			outline = outline.slice(0, outlineCursor + 1).concat([newPoint]).concat(outline.slice(outlineCursor + 1));
+		}
+		else if (p.s == 'quadratic0')
+		{
+			outline = outline.slice(0, outlineCursor + 1).concat([newPoint]).concat(outline.slice(outlineCursor + 2));
+		}
+		else if (p.s == 'cubic0')
+		{
+			outline = outline.slice(0, outlineCursor + 1).concat([newPoint]).concat(outline.slice(outlineCursor + 3));
+		}
+		else if (p.s == 'close')
+		{
+			outline.push(newPoint);
+		}
+		else
+		{
+			throw new Error();
+		}
+		
+		p.s = 'quadratic0';
+	}
+	else if (op == 'convertToCubic')
+	{
+		var q = null;
+		
+		if (p.s == 'line')
+		{
+			q = outline[outlineCursor + 1];
+		}
+		else if (p.s == 'quadratic0')
+		{
+			q = outline[outlineCursor + 2];
+		}
+		else if (p.s == 'cubic0')
+		{
+			q = outline[outlineCursor + 3];
+		}
+		else if (p.s == 'close')
+		{
+			q = outline[0];
+		}
+		else
+		{
+			throw new Error();
+		}
+		
+		
+		var dx = q.x - p.x;
+		var dy = q.y - p.y;
+		
+		var newPoint1 = { x : p.x + dx / 3 * 1 , y : p.y + dy / 3 * 1 , s : 'cubic1' };
+		var newPoint2 = { x : p.x + dx / 3 * 2 , y : p.y + dy / 3 * 2 , s : 'cubic2' };
+		
+		if (p.s == 'line')
+		{
+			outline = outline.slice(0, outlineCursor + 1).concat([newPoint1, newPoint2]).concat(outline.slice(outlineCursor + 1));
+		}
+		else if (p.s == 'quadratic0')
+		{
+			outline = outline.slice(0, outlineCursor + 1).concat([newPoint1, newPoint2]).concat(outline.slice(outlineCursor + 2));
+		}
+		else if (p.s == 'cubic0')
+		{
+			outline = outline.slice(0, outlineCursor + 1).concat([newPoint1, newPoint2]).concat(outline.slice(outlineCursor + 3));
+		}
+		else if (p.s == 'close')
+		{
+			outline.push(newPoint);
+		}
+		else
+		{
+			throw new Error();
+		}
+		
+		p.s = 'cubic0';
+	}
+	else
+	{
+		throw new Exception();
+	}
+	
+	DrawOutline();
+}
+function SetOutlineHandlers() {
+	
+	var mousedown = false;
+	var dx = 0;
+	var dy = 0;
+	var mx = 0;
+	var my = 0;
+	
+	canvas.focus();
+	
+	canvas.onmouseup = function(e) { mousedown = false; };
+	canvas.onmousedown = function(e) {
+		
+		mousedown = true;
+		
+		var x = e.offsetX;
+		var y = e.offsetY;
+		
+		outlineCursor = null;
+		selectedPoint = null;
+		
+		var breakLoop = false;
+		
+		for (var k = 0; k < outlines.length; k++)
+		{
+			for (var i = 0; i < outlines[k].length; i++)
+			{
+				var p = outlines[k][i];
+				
+				dx = p.x - x;
+				dy = p.y - y;
+				
+				if (-2 <= dx && dx <= 2 && -2 <= dy && dy <= 2)
+				{
+					outline = outlines[k];
+					outlineCursor = i;
+					selectedPoint = outline[i];
+					breakLoop = true;
+					break;
+				}
+			}
+			
+			if (breakLoop) { break; }
+		}
+		
+		DrawOutline();
+	}
+	canvas.onmousemove = function(e) {
+		
+		mx = e.offsetX;
+		my = e.offsetY;
+		
+		if (mousedown && outlineCursor !== null)
+		{
+			outline[outlineCursor].x = e.offsetX + dx;
+			outline[outlineCursor].y = e.offsetY + dy;
+			DrawOutline();
+		}
+	};
+	canvas.onkeydown = function(e) {
+		
+		if (outline.length == 0)
+		{
+			var newPoint = { x : mx , y : my , s : 'end' };
+			outline.push(newPoint);
+		}
+		else
+		{
+			if (e.keyCode == 65) // a = add quadratic curve
+			{
+				var p = outline[outline.length - 1];
+				p.s = 'quadratic0';
+				var newPoint1 = { x : (p.x + mx) / 2 , y : (p.y + my) / 2 , s : 'quadratic1' };
+				var newPoint2 = { x : mx , y : my , s : 'end' };
+				outline.push(newPoint1);
+				outline.push(newPoint2);
+			}
+			else if (e.keyCode == 83) // s = add cubic curve
+			{
+				var p = outline[outline.length - 1];
+				p.s = 'cubic0';
+				var dx = mx - p.x;
+				var dy = my - p.y;
+				var newPoint1 = { x : p.x + dx / 3 * 1 , y : p.y + dy / 3 * 1 , s : 'cubic1' };
+				var newPoint2 = { x : p.x + dx / 3 * 2 , y : p.y + dy / 3 * 2 , s : 'cubic2' };
+				var newPoint3 = { x : mx , y : my , s : 'end' };
+				outline.push(newPoint1);
+				outline.push(newPoint2);
+				outline.push(newPoint3);
+			}
+			else if (e.keyCode == 68) // d = start new path (a hole)
+			{
+				outline = [];
+				outlines.push(outline);
+				var newPoint = { x : mx , y : my , s : 'end' };
+				outline.push(newPoint);
+			}
+		}
+		
+		DrawOutline();
+	}
+}
+
+function DrawOutlinePath(ctx, outline) {
+	
+	ctx.beginPath();
+	ctx.moveTo(outline[0].x, outline[0].y);
+	
+	for (var i = 0; i < outline.length; i++)
+	{
+		var p = outline[i];
+		
+		if (p.s == 'line')
+		{
+			ctx.lineTo(outline[i+1].x, outline[i+1].y);
+		}
+		else if (p.s == 'quadratic0')
+		{
+			ctx.quadraticCurveTo(outline[i+1].x, outline[i+1].y, outline[i+2].x, outline[i+2].y);
+			i += 1;
+		}
+		else if (p.s == 'cubic0')
+		{
+			ctx.bezierCurveTo(outline[i+1].x, outline[i+1].y, outline[i+2].x, outline[i+2].y, outline[i+3].x, outline[i+3].y);
+			i += 2;
+		}
+		else if (p.s == 'close')
+		{
+			ctx.closePath();
+		}
+		else if (p.s == 'end')
+		{
+			ctx.closePath();
+		}
+		else
+		{
+			throw new Error();
+		}
+	}
+}
+
+function SaveOutline() {
+	var downloadLink = document.createElement('a');
+	downloadLink.href = 'data:text/json,' + JSON.stringify(outlines);
+	downloadLink.download = imgname + '.json';
+	document.body.appendChild(downloadLink);
+	downloadLink.click();
+	document.body.removeChild(downloadLink);
+}
+function SaveImage() {
+	var downloadLink = document.createElement('a');
+	downloadLink.href = canvas.toDataURL();
+	downloadLink.download = imgname + '+.png';
+	document.body.appendChild(downloadLink);
+	downloadLink.click();
+	document.body.removeChild(downloadLink);
+}
+function GenerateMask() {
+	
+	ctx.fillStyle = 'rgb(0,0,0)';
+	ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+	
+	for (var k = 0; k < outlines.length; k++)
+	{
+		var outline = outlines[k];
+		
+		if (k == 0)
+		{
+			ctx.fillStyle = 'rgb(255,255,255)'; // first outline is the foreground
+		}
+		else
+		{
+			ctx.fillStyle = 'rgb(0,0,0)'; // subsequent outlines are holes
+		}
+		
+		DrawOutlinePath(ctx, outline);
+		
+		ctx.fill();
+	}
+}
+
+function Load(files) {
+	
+	var title = null;
+	
+	var loadCount = 0;
+	
+	var imgFileReader = new FileReader();
+	
+	imgFileReader.onload = function(event) {
+		
+		var dataUrl = event.target.result;
+		var img = document.createElement('img');
+		img.src = dataUrl;
+		theimg = img;
+		
+		title += ' ' + img.width + 'x' + img.height + ' (' + Math.floor(img.height / img.width * 100, 1) + '%)';
+		document.getElementsByTagName('title')[0].innerText = title;
+		
+		canvas.width = img.width;
+		canvas.height = img.height;
+		ctx = canvas.getContext('2d');
+		ctx.drawImage(theimg, 0, 0);
+		
+		origImageData = CloneImageData(ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height));
+		
+		SetOutlineHandlers();
+		
+		if (++loadCount == 2) { DrawOutline(); }
+	};
+	
+	var jsonFileReader = new FileReader();
+	
+	jsonFileReader.onload = function(event) {
+		
+		var json = event.target.result;
+		outlines = JSON.parse(json);
+		outline = outlines[outlines.length - 1];
+		outlineCursor = null;
+		selectedPoint = null;
+		
+		if (++loadCount == 2) { DrawOutline(); }
+	};
+	
+	for (var i = 0; i < files.length; i++)
+	{
+		var file = files[i];
+		var name = file.name;
+		var ext = name.substr(name.search('\\.'));
+		
+		if (ext == '.jpg' || ext == '.png')
+		{
+			imgFileReader.readAsDataURL(file);
+			imgname = name.substr(0, name.length - 4);
+			title = name;
+		}
+		else if (ext == '.json')
+		{
+			jsonFileReader.readAsText(file);
+		}
+	}
+}
+
+function ColorManip() {
+	
+	var maskCanvas = document.createElement('canvas');
+	maskCanvas.width = canvas.width;
+	maskCanvas.height = canvas.height;
+	
+	var maskCtx = maskCanvas.getContext('2d');
+	maskCtx.fillStyle = 'rgb(0,0,0)';
+	maskCtx.fillRect(0, 0, maskCtx.canvas.width, maskCtx.canvas.height);
+	
+	maskCtx.fillStyle = 'rgb(255,255,255)'; // for now we'll assume that there are no holes - the union of the outlines forms the mask, not the xor
+	
+	for (var k = 0; k < outlines.length; k++)
+	{
+		var outline = outlines[k];
+		DrawOutlinePath(maskCtx, outline);
+		maskCtx.fill();
+	}
+	
+	ctx.putImageData(origImageData, 0, 0); // this is copy-by-value, not copy-by-reference, right?  we're going to be manipulating the imageData and don't want to corrupt origImageData
+	
+	// an optimization: the imageData only needs to cover the active area of the mask - it doesn't need to be the whole canvas
+	// this might be useful once we subject the manipulation to slider controls and thus have to execute and redraw repeatedly as parameters change
+	var maskImageData = maskCtx.getImageData(0, 0, maskCtx.canvas.width, maskCtx.canvas.height);
+	var imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
+	
+	for (var y = 0; y < imageData.height; y++)
+	{
+		for (var x = 0; x < imageData.width; x++)
+		{
+			var index = (y * imageData.width + x) * 4;
+			
+			var m = maskImageData.data[index + 0]; // since we're using grayscale, we only need to read one channel
+			
+			if (m > 0) // for now we will do on-off processing and not yet worry about fuzzy mask edges
+			{
+				var oldColor = {};
+				oldColor.r = imageData.data[index + 0];
+				oldColor.g = imageData.data[index + 1];
+				oldColor.b = imageData.data[index + 2];
+				oldColor.a = imageData.data[index + 3];
+				
+				var newColor = fn(m, oldColor);
+				
+				imageData.data[index + 0] = newColor.r;
+				imageData.data[index + 1] = newColor.g;
+				imageData.data[index + 2] = newColor.b;
+				imageData.data[index + 3] = newColor.a;
+			}
+		}
+	}
+	
+	ctx.putImageData(imageData, 0, 0);
+}
+
+function Darken(maskValue, oldColor) {
+	
+	var maskProportion = maskValue / 255;
+	var multiplier = 1.00 - .80 * maskProportion;
+	
+	var newColor = {};
+	newColor.r = Math.floor(oldColor.r * multiplier, 1);
+	newColor.g = Math.floor(oldColor.g * multiplier, 1);
+	newColor.b = Math.floor(oldColor.b * multiplier, 1);
+	newColor.a = 255;
+	return newColor;
+}
+
+function ChangeReferenceColors() {
+	
+	var imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
+	
+	for (var y = 0; y < imageData.height; y++)
+	{
+		for (var x = 0; x < imageData.width; x++)
+		{
+			var index = (y * imageData.width + x) * 4;
+			
+			var o = {};
+			o.r = imageData.data[index + 0];
+			o.g = imageData.data[index + 1];
+			o.b = imageData.data[index + 2];
+			o.a = imageData.data[index + 3];
+			
+			if (o.r - o.g - o.b > 20)
+			{
+				//newColor = {r:0,g:0,b:0,a:255};
+				
+				var gray = o.r + o.g + o.b / 3;
+				var darker = Math.floor(gray * 0.1, 1);
+				
+				var n = {};
+				n.r = darker;
+				n.g = darker;
+				n.b = darker;
+				n.a = 255;
+			}
+			else
+			{
+				n = o;
+			}
+			
+			imageData.data[index + 0] = n.r;
+			imageData.data[index + 1] = n.g;
+			imageData.data[index + 2] = n.b;
+			imageData.data[index + 3] = n.a;
+		}
+	}
+	
+	ctx.putImageData(imageData, 0, 0);
+}
+
+function SelectColor() { selectColor = !selectColor; if (selectColor) { document.getElementById('selectcolor').style.backgroundColor  = 'rgb(255,0,0)'; } }
+function PixelManip(ctx, fn) {
+	
+	var imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
+	var array = imageData.data;
+	
+	for (var y = 0; y < imageData.height; y++)
+	{
+		for (var x = 0; x < imageData.width; x++)
+		{
+			var index = (y * imageData.width + x) * 4;
+			
+			var color = {}
+			color.r = array[index + 0];
+			color.g = array[index + 1];
+			color.b = array[index + 2];
+			color.a = array[index + 3];
+			
+			var newcolor = fn(x, y, color);
+			
+			array[index + 0] = newcolor.r;
+			array[index + 1] = newcolor.g;
+			array[index + 2] = newcolor.b;
+			array[index + 3] = newcolor.a;
+		}
+	}
+	
+	ctx.putImageData(imageData, 0, 0);
+}
+function CloneImageData(imageData) {
+	
+	var canvas = document.createElement('canvas');
+	var ctx = canvas.getContext('2d');
+	canvas.width = imageData.width;
+	canvas.height = imageData.height;
+	ctx.putImageData(imageData, 0, 0);
+	var clonedImageData = ctx.getImageData(0, 0, imageData.width, imageData.height);
+	return clonedImageData;
+}
+
+</script>
+</body>
+</html>
+
+

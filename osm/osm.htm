@@ -1,0 +1,44 @@
+
+<html>
+<body>
+
+<script>var exports = {};</script>
+<script src="../xml/xml.js"></script>
+<script src="osm.js"></script>
+
+<input type="file" onchange="Load(this.files)" />
+
+<script>
+
+function Load(files) {
+	
+	var fileReader = new FileReader();
+	
+	fileReader.onload = function(event) {
+		
+		var text = event.target.result;
+		var xml = Xml.Parse(text);
+		var osm = Osm.MakeOsm(xml);
+		
+		var names = Osm.Stats(xml);
+		var pre = document.createElement('pre');
+		var ls = [];
+		for (var key in names) { ls.push(key + ': ' + names[key]); }
+		pre.innerText = ls.join('\n');
+		document.body.appendChild(pre);
+		
+		var attrs = Osm.Attrs(osm);
+		var pre = document.createElement('pre');
+		var ls = [];
+		for (var key in attrs) { ls.push(key + ': ' + attrs[key]); }
+		pre.innerText = ls.join('\n');
+		document.body.appendChild(pre);
+	};
+		
+	if (files.length > 0) { fileReader.readAsText(files[0]); }
+}
+
+</script>
+</body>
+</html>
+

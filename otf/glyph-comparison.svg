@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="1200">
+<text x="500" y="50">scale is 2048pt (= 1024pt machine-drawn matching hand-drawn at scale(0.5,-0.5))</text>
+<text x="500" y="550" font-family="Times New Roman" font-size="1024">o</text>
+<g transform="scale(0.5,-0.5)translate(0,-1100)">
+<path d="
+M 512 943
+Q 720 943 846 785
+Q 953 650 953 475
+Q 953 352 894 226
+Q 835 100 731.5 36
+Q 628 -28 501 -28
+Q 294 -28 172 137
+Q 69 276 69 449
+Q 69 575 131.5 699.5
+Q 194 824 296 883.5
+Q 398 943 512 943
+M 481 878
+Q 428 878 374.5 846.5
+Q 321 815 288 736
+Q 255 657 255 533
+Q 255 333 334.5 188
+Q 414 43 544 43
+Q 641 43 704 123
+Q 767 203 767 398
+Q 767 642 662 782
+Q 591 878 481 878
+"></path>
+</g>
+</svg>

@@ -50,18 +50,18 @@ Controls:
     Ctrl+Left               Close descendants
     Shift+Right             Open children
     Shift+Left              Close children
-    Ctrl+Shift+Right        Open children and descendants
-    Ctrl+Shift+Left         Close children and descendants
-    Shift+Alt+Right         Open grandchildren - this conflicts with add first child
-    Shift+Alt+Left          Close grandchildren - this conflicts with add array parent
-    Ctrl+Shift+Alt+Right    Open grandchildren and descendants
-    Ctrl+Shift+Alt+Left     Close grandchildren and descendants
+    Shift+Ctrl+Right        Open children and descendants
+    Shift+Ctrl+Left         Close children and descendants
+    Alt+Shift+Right         Open grandchildren
+    Alt+Shift+Left          Close grandchildren
+    Alt+Shift+Ctrl+Right    Open grandchildren and descendants
+    Alt+Shift+Ctrl+Left     Close grandchildren and descendants
 
     Alt+Up                  Add prev sibling
     Alt+Down                Add next sibling
-    Alt+Left                Add object parent
-    Alt+Shift+Left          Add array parent - this conflicts with close grandchildren (change to Ctrl+Alt+Left)
-    Alt+Right               Add first child - this conflicts with open grandchildren (change to Ctrl+Down)
+    Ctrl+P                  Add object parent (TODO)
+    Ctrl+Shift+P            Add array parent (TODO)
+    Alt+Right               Add first child
     Shift+Alt+Up            Switch with prev sibling
     Shift+Alt+Down          Switch with next sibling
     Delete                  Delete selected
@@ -72,4 +72,6 @@ Controls:
     Ctrl+Shift+Scroll       Scroll by 1000
     Ctrl+Shift+Alt+Scroll   Scroll by 10000
     PageUp/PageDown is equivalent to Scroll
+
+Note that Ctrl+Alt+Arrow changes screen orientation on some machines, so we can't use that combo
 

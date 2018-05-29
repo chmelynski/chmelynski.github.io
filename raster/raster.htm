@@ -1,0 +1,61 @@
+
+<html>
+<head>
+</head>
+<body>
+
+<canvas width="300" height="300" style="border: 1px solid gray"></canvas>
+<img id="img" style="border: 1px solid gray"></img>
+
+<script>var exports = {};</script>
+<script src="raster.js"></script>
+
+<script>
+
+function Uint8ArrayToBase64String(uint8array) {
+	var nMod3 = '';
+	var sB64Enc = '';
+	
+	function uint6ToB64(n) { return n<26?n+65:n<52?n+71:n<62?n-4:n===62?43:n===63?47:65;}
+	
+	for (var nLen = uint8array.length, nUint24 = 0, nIdx = 0; nIdx < nLen; nIdx++)
+	{
+		nMod3 = nIdx % 3;
+		//if (nIdx > 0 && (nIdx * 4 / 3) % 76 === 0) { sB64Enc += "\r\n"; }
+		nUint24 |= uint8array[nIdx] << (16 >>> nMod3 & 24);
+		
+		if (nMod3 === 2 || uint8array.length - nIdx === 1)
+		{
+			var a = uint6ToB64(nUint24 >>> 18 & 63);
+			var b = uint6ToB64(nUint24 >>> 12 & 63);
+			var c = uint6ToB64(nUint24 >>> 06 & 63);
+			var d = uint6ToB64(nUint24 >>> 00 & 63);
+			sB64Enc += String.fromCharCode(a, b, c, d);
+			nUint24 = 0;
+		}
+	}
+	
+	return sB64Enc.replace(/A(?=A$|$)/g, "=");
+}
+
+function Triangle(ctx) {
+	ctx.beginPath();
+	ctx.moveTo(120, 120);
+	ctx.lineTo(160, 140);
+	ctx.lineTo(140, 170);
+	ctx.closePath();
+	ctx.fill();
+}
+
+var ctx = new Raster(300, 300);
+Triangle(ctx);
+
+var ctx2 = document.getElementsByTagName('canvas')[0].getContext('2d');
+Triangle(ctx2);
+
+document.getElementById('img').src = 'data:image/bmp;base64,' + Uint8ArrayToBase64String(ctx.bitmap.pixels);
+
+</script>
+</body>
+</html>
+

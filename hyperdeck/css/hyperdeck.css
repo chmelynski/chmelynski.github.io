@@ -143,3 +143,16 @@ div.file-control button { margin: 0 2px; }
           box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(82, 168, 236, 0.6);  
 }
 
+.CodeMirror-scroll {
+  cursor: text;
+}
+
+.CodeMirror-gutters {
+  cursor: default;
+}
+
+.cm-tab {
+     /* 15 x 19 arrow */
+     background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAATCAIAAADAoMD9AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABNSURBVDhP1Y4xCgAwCAP71D6xf+veNIIQ2sWshkMUTnHgHNjpbrOWlPZeU6NzWwvmJ7kQNsDBIe3Ie+wjVDaOnSopbanE/CSR7aWnDVxoTECDJQGmuAAAAABJRU5ErkJggg==);
+}
+

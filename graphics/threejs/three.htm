@@ -1,0 +1,169 @@
+
+<html>
+<head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/92/three.min.js"></script>
+<script src="CanvasRenderer.js"></script>
+<script src="Projector.js"></script>
+<script src="OrbitControls.js"></script>
+<script src="../textures/image.js"></script>
+<script src="three-assets.js"></script>
+<script src="../dat.gui.js"></script>
+<style> canvas { border : 1px solid gray } </style>
+</head>
+<body>
+
+<script>
+
+var width = 1000;
+var height = 500;
+
+var renderer = new THREE.WebGLRenderer();
+renderer.setSize(width, height);
+renderer.setClearColor(0xffffff);
+document.body.appendChild(renderer.domElement);
+
+var urls = [];
+urls.push('texture.png');
+urls.push('diffuse.png');
+urls.push('bump.png');
+
+//LoadTextures(urls, Draw);
+
+DrawAssets();
+
+function DrawBasic() {
+	
+	var scene = new THREE.Scene();
+	var camera = new THREE.PerspectiveCamera(75, width/height, 0.1, 1000);
+
+	//var renderer = new THREE.CanvasRenderer({context:g}); // we modified CanvasRenderer.js to allow passing in a context
+	//var renderer = new THREE.CanvasRenderer({canvas:page.canvasContext.canvas});
+	//var renderer = new THREE.CanvasRenderer({canvas:document.getElementById('canvas')});
+	var renderer = new THREE.WebGLRenderer();
+	renderer.setSize(1000, 500);
+	renderer.setClearColor(0xffffff);
+	document.body.appendChild(renderer.domElement);
+
+	//var textureCube = THREE.ImageUtils.loadTextureCube( urls );
+	//THREE.ImageUtils.loadTexture(url, mapping, onLoad, onError)
+	//var texture = THREE.ImageUtils.loadTexture('wall01.jpg');
+
+	var textureCanvas = document.createElement('canvas');
+	textureCanvas.width = 256;
+	textureCanvas.height = 256;
+	var ctx = textureCanvas.getContext('2d');
+	ctx.fillStyle = 'rgb(255,255,255)';
+	ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+	ctx.fillStyle = 'rgb(255,0,0)';
+	ctx.fillRect(0, 0, 100, 100);
+	var canvasTexture = new THREE.CanvasTexture(textureCanvas);
+
+	//var geometry = new THREE.BoxGeometry(1, 1, 1);
+	//var geometry = new THREE.PlaneGeometry(3, 2);
+	//var geometry = new THREE.SphereGeometry(3, 20, 20);
+	var geometry = new THREE.TorusGeometry(3, 1, 20, 20);
+	//var material = new THREE.MeshBasicMaterial({color:0x009900});
+	//var material = new THREE.MeshBasicMaterial({color:0x000000,wireframe:true});
+	//var material = new THREE.MeshLambertMaterial({map:textureDict['wall01.jpg']});
+	var material = new THREE.MeshLambertMaterial({map:canvasTexture});
+	var mesh = new THREE.Mesh(geometry, material);
+	scene.add(mesh);
+
+	//var cutout = MakeCutout(5, 10, '110.png', '110t.png');
+	//scene.add(cutout);
+
+	// http://threejs.org/docs/#Reference/Lights/PointLight
+	// PointLight(hex, intensity, distance, decay=1) - distance = decay radius, decay = amount decayed at end
+	var light = new THREE.PointLight(0xffffff, 1, 100);
+	light.position.set(3, 3, 5);
+	scene.add(light);
+
+	camera.position.set(2, 2, 5);
+	camera.lookAt(mesh);
+
+	function Render() { light.position = camera.position; renderer.render(scene, camera); }
+
+	Render();
+
+	// unfortunately, placing the orbit controls disables right click, and thus save as png
+	var controls = new THREE.OrbitControls(camera, renderer.domElement);
+	controls.addEventListener('change', Render);
+	controls.enableDamping = true;
+	controls.dampingFactor = 0.25;
+	controls.enableZoom = true;
+
+	//var render = function () { 
+	//	requestAnimationFrame(render);
+	//	mesh.rotation.x += 0.1;
+	//	mesh.rotation.y += 0.1;
+	//	renderer.render(scene, camera);
+	//};
+	//
+	//render();
+}
+function Draw() {
+	
+	var scene = new THREE.Scene();
+	var camera = new THREE.PerspectiveCamera(45, width/height, 0.1, 1000);
+	
+	var geometry = new THREE.PlaneGeometry(4, 4);
+	
+	var material = WallMaterial(512, 512);
+	
+	var mesh = new THREE.Mesh(geometry, material);
+	scene.add(mesh);
+	
+	scene.add(new THREE.AmbientLight(0xffffff, 0.2));
+	
+	var light = new THREE.PointLight(0xffffff, 1, 100);
+	light.position.set(3, 3, 5);
+	scene.add(light);
+	
+	camera.position.set(2, 2, 5);
+	camera.lookAt(mesh);
+	
+	function Render() {
+		light.position.set(camera.position.x, camera.position.y, camera.position.z);
+		renderer.render(scene, camera);
+	}
+	
+	Render();
+	
+	OrbitControls(camera, renderer.domElement, Render);
+}
+function DrawAssets() {
+	
+	var scene = new THREE.Scene();
+	var camera = new THREE.PerspectiveCamera(45, width/height, 0.1, 10000);
+	
+	var cellX = 200;
+	var cellY = 250;
+	var cellZ = 300;
+	
+	//var mesh = Cell();
+	var mesh = CellHall(5);
+	//mesh.position.set(-cellX/2, -cellY/2, 0);
+	scene.add(mesh);
+	
+	scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+	
+	camera.position.set(100, 200, 500);
+	camera.lookAt(new THREE.Vector3(100, 200, 0));
+	
+	scene.add(new THREE.AxisHelper(500));
+	
+	function Render() {
+		renderer.render(scene, camera);
+	}
+	
+	Render();
+	
+	OrbitControls(camera, renderer.domElement, Render);
+	
+	AddDatGui(mesh, Render);
+}
+
+</script>
+</body>
+</html>
+
