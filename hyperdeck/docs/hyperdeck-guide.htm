@@ -1,0 +1,71 @@
+
+### API
+    Hyperdeck.Get(name, options) => text or data
+    Hyperdeck.Set(name, data, options)
+    Hyperdeck.Run(name)
+
+### Component types
+    data - JSON object
+    js - javascript code
+    md - markdown (converted to HTML and added to output automatically)
+    html - HTML (added to output automatically)
+    css - CSS (added to output automatically)
+    text - plain text
+    image - upload images, get a url to add to output
+    binary - any binary file
+
+### The `image` and `binary` components
+
+The `image` component stores an image, providing a url that can be used in an `<img>` tag, the dimensions, and a preview.  `Hyperdeck.Get('image1')` returns a `HTMLImageElement`.
+
+The `binary` component can store any binary blob, displaying the length in bytes.  `Hyperdeck.Get('binary1')` returns a `Uint8Array`.
+
+### API Summary
+
+    Hyperdeck.Get(name, options) => data or text
+    Hyperdeck.Set(name, dataOrText, options)
+    Hyperdeck.Run(name)
+    
+    options = {format:'json'|'yaml'|'csv'|'tsv'}
+
+#### Hyperdeck.Get
+`Hyperdeck.Get(componentName)` is how you access data in a different component.
+
+So if component `data1` contains the CSV data,
+
+		A,B,C
+		1,2,3
+		4,5,6
+
+then `Hyperdeck.Get('data1')` returns the javascript object `[{A:1,B:2,C:3},{A:4,B:5,C:6}]`.
+
+#### Hyperdeck.Set
+`Hyperdeck.Set(componentName, objectOrText)` sets component data.
+
+#### Hyperdeck.Run
+`Hyperdeck.Run(jsComponentName)` runs the code in a `js` component.
+
+
+### The JS component
+
+* The `js` component has a number of controls that allow you to perform common tasks and customize its behavior.
+
+* At the top of the component control panel is the `Run` button, which packages the code into a `function() { your-code-here }` and calls that function. 
+
+* The `mode` option controls the parameters and behavior of the function and specifies what is done with the return value:
+  - `default` - by default, the code is packaged into a function as is - no arguments, and nothing is done with the return value
+  - `canvas` - in canvas mode, a `<canvas>` element is created and added to the output, and the function takes a `ctx` parameter that refers to the `CanvasRenderingContext2D`
+  - `htmlgen` - in htmlgen mode, the function returns a text string which is then packaged into a `<div>` and added to the output
+
+* Two switches control when the code is run - by default, the code is only run when the `Run` button is clicked.
+  - If the `runOnBlur` option is enabled, the code is run whenever focus leaves the editor - that is, the code runs immediately when you are done editing it.
+  - If the `runOnLoad` option is enabled, the code is run at the beginning when the workbook loads.
+
+* The `display` option can be used to lessen the resource footprint of the component, if editing or display is unnecessary:
+  - `codemirror` - by default, the code is displayed in an editable Codemirror widget
+  - `readonly` - the code is displayed in a read-only `<pre>` tag
+  - `summary` - the code is not displayed at all - rather, statistics regarding size, etc. are displayed
+
+* And finally, there are buttons to `Upload` and `Download` code files.
+
+
