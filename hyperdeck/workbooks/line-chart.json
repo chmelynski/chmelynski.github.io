@@ -1,0 +1,269 @@
+{
+  "metadata": {
+    "version": 1,
+    "view": "all"
+  },
+  "components": [
+    {
+      "type": "data",
+      "name": "data",
+      "visible": true,
+      "data": [
+        [
+          10,
+          20,
+          50,
+          30
+        ],
+        [
+          20,
+          50,
+          80,
+          60
+        ],
+        [
+          30,
+          30,
+          70,
+          90
+        ],
+        [
+          40,
+          50,
+          40,
+          70
+        ],
+        [
+          50,
+          40,
+          20,
+          80
+        ]
+      ],
+      "params": {
+        "format": "headerList",
+        "display": "tsv",
+        "form": "listOfObjects",
+        "headers": [
+          "x",
+          "a",
+          "b",
+          "c"
+        ],
+        "afterChange": "Hyperdeck.Run('draw')"
+      }
+    },
+    {
+      "type": "data",
+      "name": "params",
+      "visible": false,
+      "data": {
+        "title": "Line chart",
+        "canvasWidth": 500,
+        "canvasHeight": 500,
+        "left": 10,
+        "bottom": 10,
+        "width": 400,
+        "height": 300,
+        "xMin": 0,
+        "xMax": 50,
+        "yMin": 0,
+        "yMax": 80,
+        "yKeyList": "a,b,c",
+        "xKey": "x",
+        "marginLf": 50,
+        "marginRt": 50,
+        "marginTp": 50,
+        "marginBt": 50
+      },
+      "params": {
+        "format": "json",
+        "display": "gui",
+        "form": "object",
+        "headers": [
+          "title",
+          "canvasWidth",
+          "canvasHeight",
+          "left",
+          "bottom",
+          "width",
+          "height",
+          "xMin",
+          "xMax",
+          "yMin",
+          "yMax",
+          "yKeyList",
+          "xKey",
+          "marginLf",
+          "marginRt",
+          "marginTp",
+          "marginBt"
+        ],
+        "afterChange": "Hyperdeck.Run('draw')"
+      }
+    },
+    {
+      "type": "data",
+      "name": "colormap",
+      "visible": false,
+      "data": {
+        "a": "red",
+        "b": "green",
+        "c": "blue"
+      },
+      "params": {
+        "format": "json",
+        "display": "yaml",
+        "form": "object",
+        "headers": [
+          "a",
+          "b",
+          "c"
+        ],
+        "afterChange": "Hyperdeck.Run('draw')"
+      }
+    },
+    {
+      "type": "js",
+      "name": "draw",
+      "visible": true,
+      "text": "\nvar ctx = document.createElement('canvas').getContext('2d'); var data = Hyperdeck.Get('data');\nvar params = Hyperdeck.Get('params');\nvar colormap = Hyperdeck.Get('colormap');\n\nctx.canvas.width = params.canvasWidth;\nctx.canvas.height = params.canvasHeight;\n\nvar xPixelWidth = params.width;\nvar yPixelWidth = params.height;\nvar xValueWidth = params.xMax - params.xMin;\nvar yValueWidth = params.yMax - params.yMin;\nvar xScale = xPixelWidth / xValueWidth;\nvar yScale = yPixelWidth / yValueWidth;\n\nctx.font = '24pt Arial';\nctx.textAlign = 'center';\nctx.textBaseline = 'top';\nctx.fillText(params.title, ctx.canvas.width / 2, 20);\n\nvar lf = params.left;\nvar bt = ctx.canvas.height - params.bottom;\n\nvar yKeys = params.yKeyList.split(',');\n\nfor (var k = 0; k < yKeys.length; k++)\n{\n\tvar key = yKeys[k];\n\t\n\tctx.lineWidth = 1;\n\tctx.strokeStyle = colormap[key];\n\t\n\tctx.beginPath();\n\t\n\tfor (var i = 0; i < data.length; i++)\n\t{\n\t\tvar xNum = data[i][params.xKey];\n\t\tvar yNum = data[i][key];\n\t\t\n\t\tif (yNum == null || yNum == '') { continue; } // skip over blank entries\n\t\t\n\t\tvar x = lf+(xNum-params.xMin)*xScale;\n\t\tvar y = bt-(yNum-params.yMin)*yScale;\n\t\t\n\t\t// what if x or y is outside the bounds of the chart?  we could use a clipping path here - but it has to be implemented in PDF too\n\t\t\n\t\tif (i == 0) { ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }\n\t}\n\t\n\tctx.stroke();\n}\n\nfunction DrawAxis(axis, otherAxis) {\n\t\nvar axisParams = Hyperdeck.Get(axis + 'AxisParams');\nvar otherAxisParams = Hyperdeck.Get(otherAxis + 'AxisParams');\n\t\n// eg, the x-axis is typically drawn at y=0\nvar axisValue = axisParams.axisValue ? axisParams.axisValue : Math.max(0, ((axis == 'x') ? params.yMin : params.xMin));\nvar otherAxisValue = otherAxisParams.axisValue;\n\nvar axisPixel = null;\nvar otherAxisPixel = null;\nvar sta = null;\nvar end = null;\nvar fixed = null;\n\t\nvar xAxisPixel = params.canvasHeight - params.marginBt - Math.floor((axisValue - params.yMin) * yScale, 1);\nvar yAxisPixel = params.marginLf + Math.floor((axisValue - params.xMin) * xScale, 1);\n\t\nif (axis == 'x')\n{\n\taxisPixel = xAxisPixel;\n\totherAxisPixel = yAxisPixel;\n\tsta = params.marginLf;\n\tend = params.canvasWidth - params.marginRt;\n}\nelse if (axis == 'y')\n{\n\taxisPixel = yAxisPixel;\n\totherAxisPixel = xAxisPixel;\n\tsta = params.canvasHeight - params.marginBt;\n\tend = params.marginTp;\n}\n\nfixed = axisPixel + 0.5;\n\nctx.lineWidth = 1;\nctx.strokeStyle = axisParams.strokeStyle;\nctx.font = axisParams.tickLabelFont;\nctx.fillStyle = axisParams.tickLabelColor;\n\nvar x1 = ((axis == 'x') ? sta : fixed);\nvar y1 = ((axis == 'x') ? fixed : sta);\nvar x2 = ((axis == 'x') ? end : fixed);\nvar y2 = ((axis == 'x') ? fixed : end);\nctx.beginPath();\nctx.moveTo(x1, y1);\nctx.lineTo(x2, y2);\nctx.stroke();\n\t\nvar tickInterval = axisParams.tickInterval;\nif (tickInterval == 0) { tickInterval = 1; }\nvar tickLength = axisParams.tickLength;\nvar tickLabelOffset = axisParams.tickLabelOffset;\n\t\n// we need to rethink the anchoring here\nvar tickValueCursor = otherAxisValue;\n\nvar maxTickmarks = 100;\nvar tickmarkIndex = 0;\n\nwhile (tickmarkIndex < maxTickmarks)\n{\n\ttickValueCursor += tickInterval;\n\t\n\tvar direction = ((axis == 'x') ? 1 : -1);\n\t\n\t// here we need the other axis pixel\n\tvar tickPixelCursor = Math.floor(otherAxisPixel + direction * (tickValueCursor - axisValue) * ((axis == 'x') ? xScale : yScale), 1) + 0.5;\n\t\n\tif ((axis == 'x') && (tickPixelCursor >= params.canvasWidth - params.marginRt)) { break; }\n\tif ((axis == 'y') && (tickPixelCursor <= params.marginTp)) { break; }\n\t\n\tvar sta = axisPixel - tickLength;\n\tvar end = axisPixel + tickLength + 1;\n\tvar fixed = tickPixelCursor;\n\tvar x1 = ((axis == 'y') ? sta : fixed); // (axis == 'y') indicates a contra stroke\n\tvar y1 = ((axis == 'y') ? fixed : sta);\n\tvar x2 = ((axis == 'y') ? end : fixed);\n\tvar y2 = ((axis == 'y') ? fixed : end);\n\tctx.beginPath();\n\tctx.moveTo(x1, y1);\n\tctx.lineTo(x2, y2);\n\tctx.stroke();\n\t\n\tvar text = sprintf(axisParams.tickLabelFormat, tickValueCursor);\n\t\n\tif (axis == 'x')\n\t{\n\t\tctx.textAlign = 'center';\n\t\tctx.textBaseline = 'top';\n\t\tctx.fillText(text, tickPixelCursor, axisPixel + tickLength + tickLabelOffset);\n\t}\n\telse if (axis == 'y')\n\t{\n\t\tctx.textAlign = 'right';\n\t\tctx.textBaseline = 'middle';\n\t\tctx.fillText(text, axisPixel - tickLength - tickLabelOffset, tickPixelCursor);\n\t}\n\t\n\ttickmarkIndex++;\n}\n}\n\nfunction DrawKey() {\nvar keyParams = Hyperdeck.Get('keyParams');\nvar k = 0;\n\nfor (var key in colormap)\n{\n\tvar lf = keyParams.left;\n\tvar tp = keyParams.top + k * (keyParams.boxSize + keyParams.gap);\n\t\n\tctx.fillStyle = colormap[key];\n\tctx.fillRect(lf, tp, keyParams.boxSize, keyParams.boxSize);\n\tctx.font = keyParams.labelFont;\n\tctx.fillStyle = keyParams.labelColor;\n\tctx.textAlign = 'left';\n\tctx.textBaseline = 'middle';\n\tctx.fillText(key, lf + keyParams.boxSize + keyParams.labelOffset, tp + keyParams.boxSize / 2);\n\tk++;\n}\n}\n\nfunction DrawLabels() {\n\tvar labelParams = Hyperdeck.Get('axisLabels');\n}\n\nDrawAxis('x', 'y');\nDrawAxis('y', 'x');\nDrawKey();\nDrawLabels();\nreturn ctx.canvas;\n",
+      "display": "codemirror",
+      "mode": "canvas",
+      "runOnBlur": false,
+      "runOnLoad": true
+    },
+    {
+      "type": "data",
+      "name": "xAxisParams",
+      "visible": false,
+      "data": {
+        "axisValue": 0,
+        "strokeStyle": "black",
+        "tickInterval": 10,
+        "tickLength": 5,
+        "tickLabelFormat": "%d",
+        "tickLabelFont": "10pt Arial",
+        "tickLabelColor": "black",
+        "tickLabelOffset": 4
+      },
+      "params": {
+        "format": "json",
+        "display": "yaml",
+        "form": "object",
+        "headers": [
+          "axisValue",
+          "strokeStyle",
+          "tickInterval",
+          "tickLength",
+          "tickLabelFormat",
+          "tickLabelFont",
+          "tickLabelColor",
+          "tickLabelOffset"
+        ],
+        "afterChange": "Hyperdeck.Run('draw')"
+      }
+    },
+    {
+      "type": "data",
+      "name": "yAxisParams",
+      "visible": false,
+      "data": {
+        "axisValue": 0,
+        "strokeStyle": "black",
+        "tickInterval": 10,
+        "tickLength": 5,
+        "tickLabelFormat": "%d",
+        "tickLabelFont": "10pt Arial",
+        "tickLabelColor": "black",
+        "tickLabelOffset": 4
+      },
+      "params": {
+        "format": "json",
+        "display": "yaml",
+        "form": "object",
+        "headers": [
+          "axisValue",
+          "strokeStyle",
+          "tickInterval",
+          "tickLength",
+          "tickLabelFormat",
+          "tickLabelFont",
+          "tickLabelColor",
+          "tickLabelOffset"
+        ],
+        "afterChange": "Hyperdeck.Run('draw')"
+      }
+    },
+    {
+      "type": "data",
+      "name": "keyParams",
+      "visible": false,
+      "data": {
+        "left": 440,
+        "top": 200,
+        "boxSize": 10,
+        "gap": 10,
+        "labelOffset": 7,
+        "labelFont": "10pt Arial",
+        "labelColor": "black"
+      },
+      "params": {
+        "format": "json",
+        "display": "gui",
+        "form": "object",
+        "headers": [
+          "left",
+          "top",
+          "boxSize",
+          "gap",
+          "labelOffset",
+          "labelFont",
+          "labelColor"
+        ],
+        "afterChange": "Hyperdeck.Run('draw')"
+      }
+    },
+    {
+      "type": "data",
+      "name": "axisLabels",
+      "visible": false,
+      "data": {
+        "xAxisLabel": "x Axis",
+        "xAxisLabelX": 50,
+        "xAxisLabelY": 50,
+        "xAxisLabelRotation": 0,
+        "yAxisLabel": "y Axis",
+        "yAxisLabelX": 50,
+        "yAxisLabelY": 50,
+        "yAxisLabelRotation": 270
+      },
+      "params": {
+        "format": "json",
+        "display": "yaml",
+        "form": "object",
+        "headers": [
+          "xAxisLabel",
+          "xAxisLabelX",
+          "xAxisLabelY",
+          "xAxisLabelRotation",
+          "yAxisLabel",
+          "yAxisLabelX",
+          "yAxisLabelY",
+          "yAxisLabelRotation"
+        ],
+        "afterChange": ""
+      }
+    },
+    {
+      "type": "md",
+      "name": "md1",
+      "visible": false,
+      "text": "The line chart uses a data component named \"params\" to manage some parameters that govern the layout of the chart.  These parameters are displayed in a dat.gui component, with slider bars for numeric inputs.  You can drag the slider bars to see how changing a parameter affects the presentation of the chart.\n",
+      "display": "codemirror",
+      "mode": "default",
+      "runOnBlur": true,
+      "runOnLoad": true
+    }
+  ]
+}

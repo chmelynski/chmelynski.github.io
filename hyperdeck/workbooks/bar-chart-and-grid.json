@@ -1,0 +1,136 @@
+{
+  "metadata": {
+    "version": 1,
+    "view": "all"
+  },
+  "components": [
+    {
+      "type": "md",
+      "name": "md1",
+      "visible": true,
+      "text": "\n### Example Hyperdeck Document\n\nThis workbook demonstrates a couple of key Hyperdeck features.  First note that we have editable components on the left side of the screen and the document on the right side.  The components store the main constituents of the workbook - code, data, and text.  There are markdown components that hold the document text, a data component that holds JSON data, and a component containing javascript code that draws the chart.",
+      "display": "codemirror",
+      "mode": "default",
+      "runOnBlur": true,
+      "runOnLoad": true
+    },
+    {
+      "type": "data",
+      "name": "data",
+      "visible": true,
+      "data": [
+        [
+          2014,
+          10,
+          20,
+          30
+        ],
+        [
+          2015,
+          40,
+          50,
+          60
+        ],
+        [
+          2016,
+          70,
+          80,
+          90
+        ],
+        [
+          2017,
+          50,
+          50,
+          50
+        ],
+        [
+          2018,
+          50,
+          50,
+          50
+        ]
+      ],
+      "params": {
+        "format": "headerList",
+        "display": "grid",
+        "form": "listOfObjects",
+        "headers": [
+          "label",
+          "A",
+          "B",
+          "C"
+        ],
+        "afterChange": "Hyperdeck.Run('draw')"
+      },
+      "grid": {
+        "filter": "",
+        "sort": "",
+        "multisort": [],
+        "columns": [
+          {
+            "header": "label",
+            "visible": true,
+            "width": 64,
+            "formula": "",
+            "format": null,
+            "style": null
+          },
+          {
+            "header": "A",
+            "visible": true,
+            "width": 64,
+            "formula": "",
+            "format": null,
+            "style": null
+          },
+          {
+            "header": "B",
+            "visible": true,
+            "width": 64,
+            "formula": "",
+            "format": null,
+            "style": null
+          },
+          {
+            "header": "C",
+            "visible": true,
+            "width": 64,
+            "formula": "",
+            "format": null,
+            "style": null
+          }
+        ]
+      }
+    },
+    {
+      "type": "js",
+      "name": "draw",
+      "visible": true,
+      "text": "\nconst ctx = document.createElement('canvas').getContext('2d');\nvar data = Hyperdeck.Get('data');\n\nctx.canvas.width = 500;\nctx.canvas.height = 500;\n\nctx.fillStyle = 'black';\nctx.font = '24pt sans-serif';\nctx.textAlign = 'center';\nctx.fillText('Bar chart', ctx.canvas.width/2, 50);\n\nvar left = 50;\nvar bottom = 400;\nvar x = left;\nvar barWidth = 50;\nvar gap = 20;\nvar scale = 1;\nvar colorMap = {A:'red',B:'green',C:'blue'};\n\nfor (var i = 0; i < data.length; i++)\n{\n\tvar y = bottom;\n\t\n\tctx.fillStyle = 'black';\n\tctx.font = '10pt sans-serif';\n\tctx.textAlign = 'center';\n\tctx.textBaseline = 'top';\n\tctx.fillText(data[i].label, x+barWidth/2, bottom+5);\n\t\n\tvar total = 0;\n\t\n\tfor (var key in colorMap)\n\t{\n\t\tvar value = data[i][key];\n\t\ttotal += value;\n\t\tvar height = scale * value;\n\t\tctx.fillStyle = colorMap[key];\n\t\tctx.fillRect(x, y - height, barWidth, height);\n\t\t\n\t\tctx.fillStyle = 'white';\n\t\tctx.font = '10pt sans-serif';\n\t\tctx.textAlign = 'center';\n\t\tctx.textBaseline = 'middle';\n\t\tctx.fillText(value, x+barWidth/2, y-height/2);\n\t\t\n\t\ty -= height;\n\t}\n\t\n\tctx.fillStyle = 'black';\n\tctx.font = '10pt sans-serif';\n\tctx.textAlign = 'center';\n\tctx.textBaseline = 'bottom';\n\tctx.fillText(total, x+barWidth/2, y-5);\n\t\n\tx += barWidth + gap;\n}\n\nreturn ctx.canvas;\n\n",
+      "display": "codemirror",
+      "mode": "canvas",
+      "runOnBlur": true,
+      "runOnLoad": true
+    },
+    {
+      "type": "md",
+      "name": "explanation",
+      "visible": true,
+      "text": "\nThe component named `data` stores the data underlying the chart, currently displayed in a spreadsheet-style grid.  You can change the `View` setting to change the format of the data display.  Note that the underlying data object (which is a plain old javascript object - any object that can be serialized to JSON) does not change when you change the format.  You can view or edit the data in several different formats.\n\nThe data component also holds a snippet of code that is executed when the data is changed.  We have it set to `Hyperdeck.Run('draw')`, so that any changes we make to the data cause the chart to be redrawn.  Try it!\n\nThe component named `draw` contains the javascript code that draws the chart.  This component is in `canvas` mode, which means that it automatically adds a canvas to the output and defines a `ctx` parameter that refers to the `CanvasRenderingContext2D` - the canvas drawing API.  There are also two checkboxes that control automatic re-running of the code - the `blur` box is checked so that the canvas will be redrawn immediately when the code editor loses focus - this just saves you from having to click `Run` every time.  The `load` box is also checked so that the canvas is drawn when the workbook initially loads.\n\nLooking at the code, the first thing we do is pull the data from the `data` component by calling `Hyperdeck.Get('data')`.  This returns the underlying data object, which is something like `[{label:2014,A:10,B:20,C:30},...]`.  Then the rest of the code uses the implicit `ctx` variable to draw the chart.\n\n",
+      "display": "codemirror",
+      "mode": "default",
+      "runOnBlur": true,
+      "runOnLoad": true
+    },
+    {
+      "type": "css",
+      "name": "css1",
+      "visible": true,
+      "text": "#md1 { text-align: justify; }\n#explanation { text-align: justify; }\n#output canvas { border: 1px solid gray; }",
+      "display": "codemirror",
+      "mode": "default",
+      "runOnBlur": true,
+      "runOnLoad": true
+    }
+  ]
+}
