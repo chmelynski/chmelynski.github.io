@@ -154,5 +154,6 @@ div.file-control button { margin: 0 2px; }
 .cm-tab {
      /* 15 x 19 arrow */
      background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAATCAIAAADAoMD9AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABNSURBVDhP1Y4xCgAwCAP71D6xf+veNIIQ2sWshkMUTnHgHNjpbrOWlPZeU6NzWwvmJ7kQNsDBIe3Ie+wjVDaOnSopbanE/CSR7aWnDVxoTECDJQGmuAAAAABJRU5ErkJggg==);
+     background-position-x: right;
 }
 

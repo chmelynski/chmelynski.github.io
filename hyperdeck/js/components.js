@@ -159,6 +159,32 @@ var RestoreComponent = function() {
 	MakeSortable();
 	lastDeletedObj = null;
 };
+	
+var AddCodemirror = function(comp, textarea, mode) {
+	
+	var options = {
+		smartIndent: true,
+		lineNumbers: true,
+		lineWrapping: true,
+		foldGutter: true,
+		tabSize: 2,
+		indentUnit: 2,
+		indentWithTabs: true,
+		gutters: ["CodeMirror-linenumbers","CodeMirror-foldgutter"],
+		extraKeys: {"Ctrl-Q": function(cm) { cm.foldCode(cm.getCursor()); }},
+		mode: mode
+	};
+	
+	if (Hyperdeck.Preferences && Hyperdeck.Preferences.CodeMirror)
+	{
+		for (var key in Hyperdeck.Preferences.CodeMirror) { options[key] = Hyperdeck.Preferences.CodeMirror[key]; }
+	}
+	
+	comp.codemirror = CodeMirror.fromTextArea(textarea[0], options);
+	comp.codemirror.on('change', function() { comp.markDirty(); });
+	comp.codemirror.on('blur', function() { comp.text = comp.codemirror.getValue(); comp.onblur(); });
+	comp.codemirror.getDoc().setValue(comp.text);
+};
 
 // elementIds was created to support adding of <script> tags in libraries.js, which is on ice right now, so we can leave this be for now
 // we want to make sure that all element ids stay unique
@@ -728,6 +754,7 @@ Hyperdeck.SetPassword = function(pw) {
 };
 Hyperdeck.ShowAll = function() { comps.forEach(function(comp) { Show(comp); }); };
 Hyperdeck.HideAll = function() { comps.forEach(function(comp) { Hide(comp); }); };
+Hyperdeck.AddCodemirror = AddCodemirror;
 Hyperdeck.Main = Main;
 Hyperdeck.AddComponent = AddComponent;
 Hyperdeck.RestoreComponent = RestoreComponent;

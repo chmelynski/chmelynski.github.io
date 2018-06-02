@@ -45,36 +45,7 @@ Diag.prototype.add = function() {
 	
 	var textarea = $('<textarea>').appendTo(comp.editorDiv);
 	
-	var options = {};
-	options.smartIndent = true;
-	options.lineNumbers = true;
-	options.lineWrapping = true;
-	options.foldGutter = true;
-	options.tabSize = 2;
-	options.indentUnit = 2;
-	options.indentWithTabs = true;
-	options.gutters = ["CodeMirror-linenumbers","CodeMirror-foldgutter"];
-	options.extraKeys = {"Ctrl-Q": function(cm) { cm.foldCode(cm.getCursor()); }};
-	
-	if (Hyperdeck.Preferences && Hyperdeck.Preferences.CodeMirror)
-	{
-		for (var key in Hyperdeck.Preferences.CodeMirror) { options[key] = Hyperdeck.Preferences.CodeMirror[key]; }
-	}
-	
-	options.mode = 'javascript';
-	
-	comp.codemirror = CodeMirror.fromTextArea(textarea[0], options);
-	
-	comp.codemirror.on('change', function() {
-		comp.markDirty();
-	});
-	
-	comp.codemirror.on('blur', function() {
-		comp.text = comp.codemirror.getValue();
-		comp.onblur();
-	});
-	
-	comp.codemirror.getDoc().setValue(comp.text);
+	Hyperdeck.AddCodemirror(comp, textarea, 'javascript');
 };
 Diag.prototype.refreshControls = function() {
 	
@@ -116,7 +87,7 @@ Diag.prototype.addOutputElements = function() {
 	comp.ctx = canvas.getContext('2d');
 	comp.diagram = new Diagram(comp.ctx, function(text) { comp.set(text); });
 	
-	document.getElementById('output').appendChild(canvas);
+	$('<div>').attr('id', comp.name).append(canvas).appendTo('#output');
 };
 Diag.prototype.onblur = function() {
 	var comp = this;
@@ -129,7 +100,7 @@ Diag.prototype.afterLoad = function(callback) {
 };
 Diag.prototype.afterAllLoaded = function() {
 	var comp = this;
-	if (comp.runOnLoad) { comp.exec(comp); }
+	comp.exec(comp);
 };
 Diag.prototype.exec = function(thisArg) {
 	
