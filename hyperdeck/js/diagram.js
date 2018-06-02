@@ -116,7 +116,7 @@ Diag.prototype.addOutputElements = function() {
 	comp.ctx = canvas.getContext('2d');
 	comp.diagram = new Diagram(comp.ctx, function(text) { comp.set(text); });
 	
-	document.getElementById('output').appendChild(canvas);
+	$('<div>').attr('id', comp.name).append(canvas).appendTo('#output');
 };
 Diag.prototype.onblur = function() {
 	var comp = this;
@@ -129,7 +129,7 @@ Diag.prototype.afterLoad = function(callback) {
 };
 Diag.prototype.afterAllLoaded = function() {
 	var comp = this;
-	if (comp.runOnLoad) { comp.exec(comp); }
+	comp.exec(comp);
 };
 Diag.prototype.exec = function(thisArg) {
 	
