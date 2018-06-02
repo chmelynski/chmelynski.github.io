@@ -45,36 +45,7 @@ Diag.prototype.add = function() {
 	
 	var textarea = $('<textarea>').appendTo(comp.editorDiv);
 	
-	var options = {};
-	options.smartIndent = true;
-	options.lineNumbers = true;
-	options.lineWrapping = true;
-	options.foldGutter = true;
-	options.tabSize = 2;
-	options.indentUnit = 2;
-	options.indentWithTabs = true;
-	options.gutters = ["CodeMirror-linenumbers","CodeMirror-foldgutter"];
-	options.extraKeys = {"Ctrl-Q": function(cm) { cm.foldCode(cm.getCursor()); }};
-	
-	if (Hyperdeck.Preferences && Hyperdeck.Preferences.CodeMirror)
-	{
-		for (var key in Hyperdeck.Preferences.CodeMirror) { options[key] = Hyperdeck.Preferences.CodeMirror[key]; }
-	}
-	
-	options.mode = 'javascript';
-	
-	comp.codemirror = CodeMirror.fromTextArea(textarea[0], options);
-	
-	comp.codemirror.on('change', function() {
-		comp.markDirty();
-	});
-	
-	comp.codemirror.on('blur', function() {
-		comp.text = comp.codemirror.getValue();
-		comp.onblur();
-	});
-	
-	comp.codemirror.getDoc().setValue(comp.text);
+	Hyperdeck.AddCodemirror(comp, textarea, 'javascript');
 };
 Diag.prototype.refreshControls = function() {
 	
