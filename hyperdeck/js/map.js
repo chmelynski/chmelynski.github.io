@@ -63,7 +63,7 @@ MapComp.prototype.add = function() {
 	
 	comp.refreshControls();
 	
-	AddCodemirror(comp, $('<textarea>').appendTo(comp.editorDiv), 'javascript');
+	Hyperdeck.AddCodemirror(comp, $('<textarea>').appendTo(comp.editorDiv), 'javascript');
 };
 MapComp.prototype.refreshControls = function() {
 	
@@ -95,9 +95,6 @@ MapComp.prototype.addOutputElements = function() {
 	
 	var comp = this;
 	
-	comp.div = document.createElement('div');
-	document.getElementById('output').appendChild(comp.div);
-	
 	var canvas = document.createElement('canvas');
 	canvas.width = comp.params.width;
 	canvas.height = comp.params.height;
@@ -106,7 +103,7 @@ MapComp.prototype.addOutputElements = function() {
 	
 	comp.ctx = canvas.getContext('2d');
 	
-	comp.div.appendChild(canvas);
+	$('<div>').attr('id', comp.name).append(canvas).appendTo('#output');
 	
 	function OnChange() {
 		comp.paramsInput[0].value = Stringify(comp.params);
@@ -194,32 +191,6 @@ MapComp.prototype.refreshAssets = function() {
 };
 
 MapComp.prototype.Run = function() { this.exec(this); };
-
-function AddCodemirror(comp, textarea, mode) {
-	
-	var options = {
-		smartIndent: true,
-		lineNumbers: true,
-		lineWrapping: true,
-		foldGutter: true,
-		tabSize: 2,
-		indentUnit: 2,
-		indentWithTabs: true,
-		gutters: ["CodeMirror-linenumbers","CodeMirror-foldgutter"],
-		extraKeys: {"Ctrl-Q": function(cm) { cm.foldCode(cm.getCursor()); }},
-		mode: mode
-	};
-	
-	if (Hyperdeck.Preferences && Hyperdeck.Preferences.CodeMirror)
-	{
-		for (var key in Hyperdeck.Preferences.CodeMirror) { options[key] = Hyperdeck.Preferences.CodeMirror[key]; }
-	}
-	
-	comp.codemirror = CodeMirror.fromTextArea(textarea[0], options);
-	comp.codemirror.on('change', function() { comp.markDirty(); });
-	comp.codemirror.on('blur', function() { comp.text = comp.codemirror.getValue(); comp.onblur(); });
-	comp.codemirror.getDoc().setValue(comp.text);
-}
 
 function Stringify(params) {
 	return '{ "width": ' + params.width + ', "height": ' + params.height + ', "lat": ' + params.lat.toFixed(3) + ', "lng": ' + params.lng.toFixed(3) + ', "metersPerPixel": ' + params.metersPerPixel.toFixed(0) + ', "rotation": ' + params.rotation.toFixed(3) + ' }';
