@@ -109,7 +109,7 @@ Doc.prototype.exec = function(thisArg) {
     }
   });
 	
-	$('#output').text(PDF.Export([pdf]));
+	$('#output').html('').append($('<pre>').text(PDF.Export([pdf])));
 };
 Doc.prototype.write = function() {
 	
