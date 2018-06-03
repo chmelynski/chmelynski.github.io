@@ -92,8 +92,8 @@ Doc.prototype.exec = function(thisArg) {
         var asset = Hyperdeck.Get(assetCompName).get(key);
         
         // make font object, font data object
-		    PDF.fontNameToIndex[fontName] = nextFontIndex++;
-		    PDF.fontNameToUint8Array[fontName] = asset; // asset needs to be a Uint8Array, not a Font (we need both to both draw and export)
+	PDF.fontNameToIndex[fontName] = nextFontIndex++;
+	PDF.fontNameToUint8Array[fontName] = new Uint8Array(asset);
       }
       else if (parts[0] == '%%Image') // %%Image Im1 assets1/dir/foo.png
       {
