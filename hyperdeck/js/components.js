@@ -735,6 +735,16 @@ function save_as(newname) {
 	return saveAsResult.promise();
 }
 
+function SaveToLocalStorage() {
+	var text = SaveToText(true);
+	localStorage.setItem('workbook', text);
+}
+function LoadFromLocalStorage() {
+	var text = localStorage.getItem('workbook');
+	var json = JSON.parse(text);
+	Hyperdeck.Main(json);
+}
+
 // API
 var Hyperdeck = {};
 var Components = Hyperdeck.Components = {};
@@ -743,6 +753,8 @@ Hyperdeck.Set = function(name, data, options) { var comp = FetchComponent(name);
 Hyperdeck.Run = function(name, thisArg) { var comp = FetchComponent(name); return comp.exec(thisArg); };
 //Hyperdeck.New = function(json) { NewComponent(new Components[json.type]()); };
 //Hyperdeck.Rem = function(name) { DeleteComponent(FetchComponent(name)); };
+Hyperdeck.SaveToLocalStorage = SaveToLocalStorage;
+Hyperdeck.LoadFromLocalStorage = LoadFromLocalStorage;
 Hyperdeck.Import = Import;
 Hyperdeck.Export = Export;
 Hyperdeck.ExportHtml = ExportHtml;
