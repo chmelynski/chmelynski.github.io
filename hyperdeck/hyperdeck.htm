@@ -57,7 +57,7 @@
   <div class="container-fluid"> 
   
     <div class="row" id="documentMenu">
-      <div class="col-sm-4">
+      <div class="col-sm-3">
         <div class="btn-group">
           <button class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <i class="fa fa-cube fa-lg"></i> Add<span class="hidden-xs"> Cell</span> <span class="caret"></span>
@@ -164,7 +164,7 @@
             </ul>
         </div>
       </div>
-      <div class="col-sm-4">
+      <div class="col-sm-3">
         <div class="btn-group btn-group" role="tablist" id="ui-toggle">
           <button class="btn btn-default" id="show-components" title="View Cells">
             <i class="fa fa-cubes fa-lg"></i>
@@ -180,7 +180,19 @@
           </button>
         </div>
       </div>
-      <div class="col-sm-4">
+      <div class="col-sm-3">
+        <div class="btn-group btn-group" role="tablist">
+          <button class="btn btn-default" title="Save to local storage" onclick="Hyperdeck.SaveToLocalStorage()">
+            <i class="fa fa-download fa-lg"></i>
+            <span class="hidden-xs">Save</span>
+          </button>
+          <button class="btn btn-default" title="Load from local storage" onclick="Hyperdeck.LoadFromLocalStorage()">
+            <i class="fa fa-upload fa-lg"></i>
+            <span class="hidden-xs">Load</span>
+          </button>
+        </div>
+      </div>
+      <div class="col-sm-3">
         <div class="btn-group btn-group" role="tablist">
           <button class="btn btn-default" title="Export workbook" onclick="Hyperdeck.Export()">
             <i class="fa fa-download fa-lg"></i>
