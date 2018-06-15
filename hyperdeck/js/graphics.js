@@ -61,7 +61,7 @@ Graphics.prototype.addOutputElements = function() {
 };
 Graphics.prototype.onblur = function() {
 	var comp = this;
-	//comp.exec(comp);
+	comp.exec(comp);
 };
 Graphics.prototype.afterLoad = function(callback) {
 	var comp = this;
