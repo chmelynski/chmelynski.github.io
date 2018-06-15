@@ -76,7 +76,19 @@ Graphics.prototype.afterLoad = function(callback) {
 	{
 		var script = document.createElement('script');
 		document.body.appendChild(script);
-		script.onload = function() { callback(comp); };
+		script.onload = function() {
+			
+			var toload = ['CanvasRenderer.js','Projector.js','OrbitControls.js'];
+			var loaded = 0;
+				      
+			for (var i = 0; i < toload.length; i++)
+			{
+				var script2 = document.createElement('script');
+				document.body.appendChild(script2);
+				script2.onload = function() { loaded++; if (loaded == toload.length) { callback(comp); } };
+				script2.src = '../graphics/threejs/' + toload[i];
+			}
+		};
 		script.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/93/three.min.js';
 	}
 	else
