@@ -1,6 +1,4 @@
 (function() {
-	
-var THREE;
 
 var Graphics = function(json, type, name) {
 	
