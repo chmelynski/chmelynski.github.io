@@ -53,7 +53,7 @@ Graphics.prototype.addOutputElements = function() {
 	var comp = this;
 	
 	var ctx = new THREE.WebGLRenderer();
-	ctx.setSize(comp.width, comp.height);
+	ctx.setSize(comp.params.width, comp.params.height);
 	ctx.setClearColor(0xffffff);
 	ctx.domElement.style.border = '1px solid gray';
 	comp.ctx = ctx;
