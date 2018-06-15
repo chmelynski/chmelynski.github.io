@@ -1,4 +1,6 @@
 (function() {
+	
+var THREE;
 
 var Graphics = function(json, type, name) {
 	
@@ -69,7 +71,19 @@ Graphics.prototype.onblur = function() {
 Graphics.prototype.afterLoad = function(callback) {
 	var comp = this;
 	comp.addOutputElements();
-	callback(comp);
+	
+	if (!THREE)
+	{
+		var script = document.createElement('script');
+		document.body.appendChild(script);
+		script.onload = function() { callback(comp); };
+		script.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/93/three.min.js';
+	}
+	else
+	{
+		callback(comp);
+	}
+	
 };
 Graphics.prototype.afterAllLoaded = function() {
 	var comp = this;
@@ -99,7 +113,7 @@ Graphics.prototype.write = function() {
 
 Graphics.prototype.Run = function() { this.exec(this); };
 
-Hyperdeck.Components.map = Graphics;
+Hyperdeck.Components.graphics = Graphics;
 
 })();
 
