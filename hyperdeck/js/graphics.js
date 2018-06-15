@@ -54,15 +54,12 @@ Graphics.prototype.addOutputElements = function() {
 	
 	var comp = this;
 	
-	var canvas = document.createElement('canvas');
-	canvas.width = comp.params.width;
-	canvas.height = comp.params.height;
-	canvas.style.border = '1px solid gray';
-	canvas.tabIndex = 1;
-	
-	comp.ctx = canvas.getContext('2d');
-	
-	$('<div>').attr('id', comp.name).append(canvas).appendTo('#output');
+	var ctx = new THREE.WebGLRenderer();
+	ctx.setSize(comp.width, comp.height);
+	ctx.setClearColor(0xffffff);
+	ctx.domElement.style.border = '1px solid gray';
+	comp.ctx = ctx;
+	$('<div>').attr('id', comp.name).append(ctx.domElement).appendTo('#output');
 };
 Graphics.prototype.onblur = function() {
 	var comp = this;
@@ -70,7 +67,6 @@ Graphics.prototype.onblur = function() {
 };
 Graphics.prototype.afterLoad = function(callback) {
 	var comp = this;
-	comp.addOutputElements();
 	
 	if (!THREE)
 	{
@@ -85,7 +81,10 @@ Graphics.prototype.afterLoad = function(callback) {
 			{
 				var script2 = document.createElement('script');
 				document.body.appendChild(script2);
-				script2.onload = function() { loaded++; if (loaded == toload.length) { callback(comp); } };
+				script2.onload = function() {
+					loaded++;
+					if (loaded == toload.length) { comp.addOutputElements(); callback(comp); }
+				};
 				script2.src = '../graphics/threejs/' + toload[i];
 			}
 		};
