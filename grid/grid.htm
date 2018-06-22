@@ -373,7 +373,7 @@ function RandomData() {
 	}
 }
 
-var params = {
+var lightparams = {
 	data: [{A:1,B:2,C:3,D:4},{A:5,B:6,C:7,D:8},{A:9,B:10,C:11,D:12}],
 	headers: ['A','B','C','D'],
 	markDirty: function() { },
@@ -385,11 +385,26 @@ var params = {
 		columns: []
 	},
 };
+var heavyparams = {
+	rows: 10,
+	cols: 10,
+	cells: {},
+	markDirty: function() { },
+	runAfterChange: function() { },
+	gridParams: {
+		filter: '',
+		sort: '',
+		multisort: [],
+		columns: []
+	},
+};
 
-RandomData();
+//RandomData();
 
 var div = document.getElementById('container');
-var grid = new Hyperdeck.Grid(params, div);
+//var grid = new Hyperdeck.Grid(lightparams, div, false);
+var grid = new Hyperdeck.Grid(heavyparams, div, true);
+grid.ctx.canvas.focus();
 
 </script>
 </body>

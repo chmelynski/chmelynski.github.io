@@ -1,4 +1,9 @@
 // design notes
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
 // HiddenList<T> is a doubly linked list that allows for hidden rows/cols to be "pinched off" without being discarded outright
 // internal/external cut/copy/paste should respect the filter - it works on visible cells only
 // styles are displayed as a style object, e.g. {"font": "10pt Courier New", bold:true}
@@ -332,9 +337,92 @@ var Hyperdeck;
         };
         return HiddenList;
     }());
+    var Range = (function () {
+        function Range() {
+        }
+        return Range;
+    }());
+    var FormulaRange = (function (_super) {
+        __extends(FormulaRange, _super);
+        function FormulaRange() {
+            _super.apply(this, arguments);
+            this.formula = null;
+            this.fn = null;
+        }
+        return FormulaRange;
+    }(Range));
+    var FormatRange = (function (_super) {
+        __extends(FormatRange, _super);
+        function FormatRange() {
+            _super.apply(this, arguments);
+            this.formatString = null;
+            this.formatObject = null;
+        }
+        return FormatRange;
+    }(Range));
+    var StyleRange = (function (_super) {
+        __extends(StyleRange, _super);
+        function StyleRange() {
+            _super.apply(this, arguments);
+            this.styleFormula = null;
+            this.style = null;
+        }
+        return StyleRange;
+    }(Range));
+    var Cell = (function () {
+        function Cell() {
+            this.grid = null;
+            this.row = null;
+            this.col = null;
+            this.formula = null;
+            this.value = null;
+            this.string = null; // the cached result of applying the formatObject to the value
+            this.formatString = null;
+            this.formatObject = null;
+            this.fn = null;
+            this.unitType = null; // time, length, mass - force, energy, power, etc. - immutable
+            this.unitBase = null; // seconds, meters, feet, pounds, kilograms, joules, watts, etc. - mutable
+            this.selected = false;
+            this.calculated = false;
+            this.visited = false;
+            this.srcs = [];
+            this.dsts = [];
+            this.style = null;
+            this.styleFormula = null;
+        }
+        Cell.prototype.calculate = function () {
+            var cell = this;
+            //if (cell.visited) { throw new Error('circular reference at cell ' + cell.row + ',' + cell.col); }
+            //cell.visited = true;
+            //
+            //// calculate uncalculated srcs first
+            //cell.srcs.forEach(function(src) { if (!src.calculated) { src.calculate(); } });
+            //
+            //var result = cell.fn.call(cell.grid.dataComponent._data, cell.row-1);
+            //cell.value = result;
+            //cell.grid.dataComponent._data[cell.row-1][cell.grid.dataComponent._headers[cell.col-1]] = result;
+            //cell.string = Format(cell.value, cell.formatObject);
+            //
+            //cell.calculated = true;
+            //cell.visited = false;
+        };
+        Cell.prototype.markUncalculated = function () {
+            var cell = this;
+            if (cell.calculated) {
+                cell.calculated = false;
+                cell.dsts.forEach(function (dst) { dst.markUncalculated(); });
+            }
+        };
+        return Cell;
+    }());
     var Grid = (function () {
-        function Grid(dataComponent, div) {
+        function Grid(dataComponent, div, heavy) {
             var grid = this;
+            grid.heavy = heavy;
+            if (grid.heavy) {
+                grid.nRows = dataComponent.rows;
+                grid.nCols = dataComponent.cols;
+            }
             grid.rowHeight = 20;
             grid.rowHeaderWidth = 64;
             grid.defaultCellStroke = 'rgb(208,215,229)'; // rgb(158,182,206)
@@ -360,7 +448,17 @@ var Hyperdeck;
                 gridJson = {};
             }
             if (!gridJson.columns) {
-                gridJson.columns = dataComponent.headers.map(function (header) { return { header: header, visible: true, width: 64, formula: '', format: null, style: null }; });
+                if (grid.heavy) {
+                    gridJson.columns = [];
+                    for (var i = 0; i < dataComponent.cols; i++) {
+                        gridJson.columns.push({ header: NumberToLetter(i), visible: true, width: 64, formula: '', format: null, style: null });
+                    }
+                }
+                else {
+                    gridJson.columns = dataComponent.headers.map(function (header) {
+                        return { header: header, visible: true, width: 64, formula: '', format: null, style: null };
+                    });
+                }
             }
             if (!gridJson.filter) {
                 gridJson.filter = '';
@@ -401,6 +499,21 @@ var Hyperdeck;
             var grid = this;
             grid.rows = new HiddenList();
             grid.cols = new HiddenList();
+            if (grid.heavy) {
+                grid.dataComponent.data = [];
+                grid.dataComponent.headers = [];
+                var obj = {};
+                for (var i = 0; i < grid.dataComponent.cols; i++) {
+                    obj[NumberToLetter(i)] = null;
+                }
+                for (var i = 0; i < grid.dataComponent.rows; i++) {
+                    var clone = Object.assign({}, obj);
+                    grid.dataComponent.data.push(clone);
+                }
+                for (var i = 0; i < grid.dataComponent.cols; i++) {
+                    grid.dataComponent.headers.push(NumberToLetter(i));
+                }
+            }
             for (var i = 0; i < grid.dataComponent.data.length; i++) {
                 grid.rows.add(new Row(i, grid.dataComponent.data[i]), true);
             }
@@ -419,6 +532,26 @@ var Hyperdeck;
                 }
                 grid.cols.add(new Col(grid, colParams, i), colParams.visible);
             }
+            if (grid.heavy) {
+                grid.cells = [];
+                for (var i = 0; i < grid.nRows; i++) {
+                    var row = [];
+                    for (var j = 0; j < grid.nCols; j++) {
+                        var cell = new Cell();
+                        cell.grid = grid;
+                        cell.row = i;
+                        cell.col = j;
+                        cell.style = grid.styles[0];
+                        row.push(cell);
+                    }
+                    grid.cells.push(row);
+                }
+                grid.cells[0][0].string = '';
+                for (var i = 1; i < grid.nRows; i++) {
+                }
+                for (var j = 1; j < grid.nCols; j++) {
+                }
+            }
             grid.selected = null;
             grid.cursor = { row: null, col: null };
             grid.anchor = { row: null, col: null };
@@ -436,6 +569,7 @@ var Hyperdeck;
                 grid.setFilter(grid.filter);
             }
             grid.setMouseHandles();
+            grid.setKeyHandles();
             grid.draw();
         };
         Grid.prototype.write = function () {
@@ -1071,7 +1205,6 @@ var Hyperdeck;
                         grid.cursor.col = target.col;
                         grid.selected = { minCol: null, maxCol: null, minRow: null, maxRow: null };
                         grid.selectCell();
-                        grid.setKeyHandles();
                         var savedScrollTop = document.getElementById('cells-container').scrollTop;
                         grid.ctx.canvas.focus();
                         document.getElementById('cells-container').scrollTop = savedScrollTop;
@@ -2979,4 +3112,61 @@ var Hyperdeck;
         }
         return val;
     };
+    function NumberToLetter(n) {
+        // 0 => "A"
+        // 1 => "B"
+        // 25 => "Z"
+        // 26 => "AA"
+        if (n < 0) {
+            return "";
+        }
+        var k = 1;
+        var m = n + 1;
+        while (true) {
+            var pow = 1;
+            for (var i = 0; i < k; i++) {
+                pow *= 26;
+            }
+            if (m <= pow) {
+                break;
+            }
+            m -= pow;
+            k++;
+        }
+        var reversed = "";
+        for (var i = 0; i < k; i++) {
+            var c = n + 1;
+            var shifter = 1;
+            for (var j = 0; j < k; j++) {
+                c -= shifter;
+                shifter *= 26;
+            }
+            var divisor = 1;
+            for (var j = 0; j < i; j++) {
+                divisor *= 26;
+            }
+            c /= divisor;
+            c %= 26;
+            reversed += String.fromCharCode(65 + c);
+        }
+        var result = "";
+        for (var i = reversed.length - 1; i >= 0; i--) {
+            result += reversed[i];
+        }
+        return result;
+    }
+    function LetterToNumber(s) {
+        // "A" => 0
+        // "B" => 1
+        // "Z" => 25
+        // "AA" => 26
+        var result = 0;
+        var multiplier = 1;
+        for (var i = s.length - 1; i >= 0; i--) {
+            var c = s.charCodeAt(i);
+            result += multiplier * (c - 64);
+            multiplier *= 26;
+        }
+        return result - 1; // -1 makes it 0-indexed
+    }
 })(Hyperdeck || (Hyperdeck = {}));

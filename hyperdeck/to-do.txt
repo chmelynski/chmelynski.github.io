@@ -1,0 +1,32 @@
+
+https://hyperdeck.herokuapp.com/
+
+https://s3.amazonaws.com/hyperdeck-storage/fonts/Helvetica-Bold.otf
+
+
+move standalone functions from pdf.htm to pdf.ts (and then compile to pdf.js)
+get pdf.htm working again
+get image and font to work in document component
+
+
+
+
+# map
+uint32 array - index into arc start
+float32 array - lng,lat
+float32 array - x,y
+
+fetch states for a nice default map?
+or how about a world map with a default orthographic projection, and default code to make it spin
+select box for projection - need to fetch d3 projection code
+
+
+# in general, fetching needed code upon loading of a cell type is a good idea - could load threejs on load of graphics cell
+in afterLoad: if (!THREE) { load script src="three.js" }
+
+
+# diagram
+point queue
+label points by letter
+store letter label in a Point -> label dict, buttons generate function call with those labels as args
+

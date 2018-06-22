@@ -24,6 +24,7 @@ interface Set<T> {
 declare var Set: {
 	new <T>(): Set<T>;
 }
+//interface Object { assign(dst: any, src: any): any; }
 
 var sprintf: (string, any) => string;
 
@@ -34,9 +35,21 @@ interface Point { x: number; y: number; }
 interface HasIndex { index: number; }
 interface SortParams { header: string; ascending: boolean; }
 
+interface Dict<T> {
+	[index: string]: T;
+}
+
 interface Data {
-	data: any;
-	headers: string[];
+	
+	// light
+	data?: any;
+	headers?: string[];
+	
+	// heavy
+	rows?: number;
+	cols?: number;
+	cells?: Dict<any>;
+	
 	markDirty: () => void;
 	runAfterChange: () => void;
 	gridParams?: any;
@@ -504,7 +517,92 @@ class HiddenList<T> {
 	}
 }
 
+
+class Range {
+	
+	minRow: Row;
+	maxRow: Row;
+	minCol: Col;
+	maxCol: Col;
+}
+class FormulaRange extends Range {
+	
+	formula: string = null;
+	fn: (i: number) => any = null;
+}
+class FormatRange extends Range {
+	
+	formatString: string = null;
+	formatObject: any = null;
+}
+class StyleRange extends Range {
+	
+	styleFormula: string = null;
+	style: Style = null;
+}
+
+class Cell {
+	
+	grid: Grid = null;
+	row: number = null;
+	col: number = null;
+	
+	formula: string = null;
+	value: any = null;
+	string: string = null; // the cached result of applying the formatObject to the value
+	
+	formatString: string = null;
+	formatObject: any = null;
+	
+	fn: (i: number) => any = null;
+	
+	unitType: any = null; // time, length, mass - force, energy, power, etc. - immutable
+	unitBase: any = null; // seconds, meters, feet, pounds, kilograms, joules, watts, etc. - mutable
+	
+	selected: boolean = false;
+	calculated: boolean = false;
+	visited: boolean = false;
+	
+	srcs: Cell[] = [];
+	dsts: Cell[] = [];
+	
+	style: Style = null;
+	styleFormula: string = null;
+	
+	constructor() { }
+	calculate(): void {
+		
+		var cell: Cell = this;
+		
+		//if (cell.visited) { throw new Error('circular reference at cell ' + cell.row + ',' + cell.col); }
+		//cell.visited = true;
+		//
+		//// calculate uncalculated srcs first
+		//cell.srcs.forEach(function(src) { if (!src.calculated) { src.calculate(); } });
+		//
+		//var result = cell.fn.call(cell.grid.dataComponent._data, cell.row-1);
+		//cell.value = result;
+		//cell.grid.dataComponent._data[cell.row-1][cell.grid.dataComponent._headers[cell.col-1]] = result;
+		//cell.string = Format(cell.value, cell.formatObject);
+		//
+		//cell.calculated = true;
+		//cell.visited = false;
+	}
+	markUncalculated(): void {
+		
+		var cell: Cell = this;
+		
+		if (cell.calculated)
+		{
+			cell.calculated = false;
+			cell.dsts.forEach(function(dst) { dst.markUncalculated(); });
+		}
+	}
+}
+
 export class Grid {
+	
+	heavy: boolean;
 	
 	params: any;
 	
@@ -526,6 +624,9 @@ export class Grid {
 	alt: boolean;
 	tab: boolean;
 	
+	nRows: number;
+	nCols: number;
+	
 	// these represent the full grid, before filters and scroll windows are applied
 	rows: HiddenList<Row>;
 	cols: HiddenList<Col>;
@@ -546,6 +647,8 @@ export class Grid {
 	tp: number;
 	rt: number;
 	bt: number;
+	
+	cells: Cell[][];
 	
 	//hScrollbar: Scrollbar;
 	//vScrollbar: Scrollbar;
@@ -584,9 +687,17 @@ export class Grid {
 	
 	styles: Style[];
 	
-	constructor(dataComponent: Data, div: HTMLDivElement) {
+	constructor(dataComponent: Data, div: HTMLDivElement, heavy: boolean) {
 		
 		var grid = this;
+		
+		grid.heavy = heavy;
+		
+		if (grid.heavy)
+		{
+			grid.nRows = dataComponent.rows;
+			grid.nCols = dataComponent.cols;
+		}
 		
 		grid.rowHeight = 20;
 		grid.rowHeaderWidth = 64;
@@ -617,7 +728,24 @@ export class Grid {
 		var gridJson = dataComponent.gridParams;
 		
 		if (!gridJson) { gridJson = {}; }
-		if (!gridJson.columns) { gridJson.columns = dataComponent.headers.map(function(header) { return {header:header,visible:true,width:64,formula:'',format:null,style:null}; }); }
+		if (!gridJson.columns)
+		{
+			if (grid.heavy)
+			{
+				gridJson.columns = [];
+				
+				for (var i = 0; i < dataComponent.cols; i++)
+				{
+					gridJson.columns.push({header:NumberToLetter(i),visible:true,width:64,formula:'',format:null,style:null});
+				}
+			}
+			else
+			{
+				gridJson.columns = dataComponent.headers.map(function(header) {
+					return {header:header,visible:true,width:64,formula:'',format:null,style:null};
+				});
+			}
+		}
 		if (!gridJson.filter) { gridJson.filter = ''; }
 		if (!gridJson.sort) { gridJson.sort = ''; }
 		if (!gridJson.multisort) { gridJson.multisort = []; }
@@ -662,13 +790,34 @@ export class Grid {
 		grid.rows = new HiddenList<Row>();
 		grid.cols = new HiddenList<Col>();
 		
+		if (grid.heavy)
+		{
+			grid.dataComponent.data = [];
+			grid.dataComponent.headers = [];
+			
+			var obj = {};
+			
+			for (var i = 0; i < grid.dataComponent.cols; i++)
+			{
+				obj[NumberToLetter(i)] = null;
+			}
+			
+			for (var i = 0; i < grid.dataComponent.rows; i++)
+			{
+				var clone = Object.assign({}, obj);
+				grid.dataComponent.data.push(clone);
+			}
+			
+			for (var i = 0; i < grid.dataComponent.cols; i++) { grid.dataComponent.headers.push(NumberToLetter(i)); }
+		}
+		
 		for (var i = 0; i < grid.dataComponent.data.length; i++) { grid.rows.add(new Row(i, grid.dataComponent.data[i]), true); }
 		
 		// check columnParams against data.headers - add or delete cols as necessary
 		for (var i = 0; i < grid.dataComponent.headers.length; i++)
 		{
 			var header = grid.dataComponent.headers[i];
-			var colParams = null;
+			var colParams: Column = null;
 			
 			for (var k = 0; k < grid.columnParams.length; k++)
 			{
@@ -685,6 +834,62 @@ export class Grid {
 			}
 			
 			grid.cols.add(new Col(grid, colParams, i), colParams.visible);
+		}
+		
+		if (grid.heavy)
+		{
+			grid.cells = [];
+			
+			for (var i = 0; i < grid.nRows; i++)
+			{
+				var row = [];
+				
+				for (var j = 0; j < grid.nCols; j++)
+				{
+					var cell = new Cell();
+					cell.grid = grid;
+					cell.row = i;
+					cell.col = j;
+					cell.style = grid.styles[0];
+					row.push(cell);
+				}
+				
+				grid.cells.push(row);
+			}
+			
+			grid.cells[0][0].string = '';
+			
+			for (var i = 1; i < grid.nRows; i++)
+			{
+				//grid.cells[i][0].string = (i - 1).toString();
+			}
+			
+			for (var j = 1; j < grid.nCols; j++)
+			{
+				//grid.cells[0][j].string = grid.dataComponent._headers[j-1];
+			}
+			
+			//for (var i = 1; i < grid.nRows; i++)
+			//{
+			//	for (var j = 1; j < grid.nCols; j++)
+			//	{
+			//		var data = grid.dataComponent._data[i-1][grid.dataComponent._headers[j-1]];
+			//		
+			//		// this needs to merge with acceptEdit
+			//		if (typeof(data) == 'string' && data.length > 0 && data[0] == '=')
+			//		{
+			//			grid.cells[i][j].formula = data;
+			//		}
+			//		else
+			//		{
+			//			grid.cells[i][j].formula = data.toString();
+			//			grid.cells[i][j].value = data;
+			//			grid.cells[i][j].calculated = true;
+			//		}
+			//		
+			//		grid.cells[i][j].style = grid.styles[0];
+			//	}
+			//}
 		}
 		
 		grid.selected = null;
@@ -705,6 +910,7 @@ export class Grid {
 		if (grid.filter !== null) { grid.setFilter(grid.filter); }
 		
 		grid.setMouseHandles();
+		grid.setKeyHandles();
 		grid.draw();
 	}
 	write(): GridParams {
@@ -1498,7 +1704,6 @@ export class Grid {
 					grid.selected = { minCol: null, maxCol: null, minRow: null, maxRow: null };
 					
 					grid.selectCell();
-					grid.setKeyHandles();
 					var savedScrollTop = document.getElementById('cells-container').scrollTop;
 					grid.ctx.canvas.focus();
 					document.getElementById('cells-container').scrollTop = savedScrollTop;
@@ -3988,6 +4193,65 @@ var ParseStringToObj = function(str: string): any {
 	return val;
 };
 
+function NumberToLetter(n: number): string {
+	
+	// 0 => "A"
+	// 1 => "B"
+	// 25 => "Z"
+	// 26 => "AA"
+	
+	if (n < 0) { return ""; }
+	
+	var k: number = 1;
+	var m: number = n+1;
+	
+	while (true)
+	{
+		var pow: number = 1;
+		for (var i: number = 0; i < k; i++) { pow *= 26; }
+		if (m <= pow) { break; }
+		m -= pow;
+		k++;
+	}
+	
+	var reversed: string = "";
+	
+	for (var i: number = 0; i < k; i++)
+	{
+		var c: number = n+1;
+		var shifter: number = 1;
+		for (var j: number = 0; j < k; j++) { c -= shifter; shifter *= 26; }
+		var divisor: number = 1;
+		for (var j: number = 0; j < i; j++) { divisor *= 26; }
+		c /= divisor;
+		c %= 26;
+		reversed += String.fromCharCode(65 + c)
+	}
+	
+	var result: string = "";
+	for (var i: number = reversed.length - 1; i >= 0; i--) { result += reversed[i]; }
+	
+	return result;
+}
+function LetterToNumber(s: string): number {
+	
+	// "A" => 0
+	// "B" => 1
+	// "Z" => 25
+	// "AA" => 26
+	
+	var result: number = 0;
+	var multiplier: number = 1;
+	
+	for (var i: number = s.length - 1; i >= 0; i--)
+	{
+		var c: number = s.charCodeAt(i);
+		result += multiplier * (c - 64);
+		multiplier *= 26;
+	}
+	
+	return result-1; // -1 makes it 0-indexed
+}
 
 
 // TO DO:
