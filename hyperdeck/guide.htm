@@ -1,0 +1,158 @@
+<html>
+<body>
+
+<div style="width: 50em; margin: 0 auto; font-family: Georgia; text-align: justify;">
+
+<h1 align="center">The Hyperdeck User's Guide</h1>
+
+<ol>
+ <li><a href="#why">Why Hyperdeck?</a></li>
+ <li><a href="#use">How to use Hyperdeck</a><ol>
+  <li><a href="#components-overview">Components overview</a></li>
+  <li><a href="#saving">Saving</a></li>
+  <li><a href="#output">Output</a></li></ol></li>
+ <li><a href="#components">Components</a><ol>
+  <li><a href="#the-javascript-component">Javascript</a></li>
+  <li><a href="#the-data-component">Data</a></li>
+  <li><a href="#the-image-component">Image</a></li>
+  <li><a href="#the-binary-component">Binary</a></li>
+  <li><a href="#the-html-component">HTML</a></li>
+  <li><a href="#the-css-component">CSS</a></li>
+  <li><a href="#the-markdown-component">Markdown</a></li>
+  <li><a href="#the-assets-component">Assets</a></li></ol></li>
+ <li><a href="#api">API</a></li>
+</ol>
+
+<h3 id="why">Why Hyperdeck?</h3>
+<p>Hyperdeck is a notebook programming environment for making documents.</p>
+<p>If I had to do describe it in an X-for-Y way, the most technically accurate would be JSFiddle for LaTeX (although PDF support is not quite here yet).</p>
+<p>Another way to describe it would be Excel/Word/Powerpoint but using web technologies.  Different form, but same goals.</p>
+<p>Of course, Google already has Google Docs - how is this different?  Google Docs is basically Microsoft Office ported to the web - the same interface, but built in HTML/CSS/JS instead.</p>
+<p>Hyperdeck is what you get when you attempt to redesign the canonical office apps to take full advantage of the modern browser.</p>
+<p>First of all, why are spreadsheets, word processors, and presentation editors different apps?  Mostly just path dependence - they started as different apps back in the 70s and 80s, and have stayed that way.</p>
+<p>Certainly Microsoft has made valiant attempts at getting their office apps to play nicely with each other, but ultimately they're fighting against fundamental elements of the design.</p>
+<p><strong>Hyperdeck seeks to unify spreadsheets, word processors, and presentation editors into a single app, built on modern, open, extensible web technologies.</strong></p>
+<p>The same is true for scriptability.  Visual Basic for Applications was not part of the original Excel - it was added on as a sort of separate module in 1990.  It works!  The world still runs on Excel/VBA.  But again, getting the two parts to play well together requires fighting the inherent separateness of the apps.</p>
+<p><strong>Hyperdeck seeks to integrate scriptability as a first-class citizen along with direct and indirect ways of editing documents.</strong></p>
+<p>Microsoft Office has an ecosystem of add-ons.  I don't know how to get one.  Ok, to be fair, I could figure it out.  Still, I'm almost certain that whatever system Office uses is beaten by the humble link.  Javascript is eating the world - for almost anything you can imagine, there is a javascript library available on the web.  Many of these libraries can be installed with a simple link.  VBA has its partisans, but ultimately VBA is the past.  Javascript (and other languages that can be made to run in the browser) is the future.</p>
+<p><strong>Hyperdeck can be extended by any code library that can run in the browser.</strong></p>
+
+<hr>
+<h3 id="use">How to use Hyperdeck</h3>
+
+<p>Hyperdeck is just HTML/CSS/Javascript - it's basically a way to make a front-end wepage, but with built-in facilities for hosting, sharing, organizing, and working with data.</p>
+
+<h4 id="components-overview">Components</h4>
+
+<p>The things on the left side of the screen are components, the basic building block of a Hyperdeck workbook.  Each component contains a piece of code or data.  You add components by choosing a component type from the <code>Add Component</code> button.  Components can be reordered, renamed, maximized/minimized, and deleted using the controls at the top of a component.  Most textual components come with dropdown box to toggle the display - <code>codemirror</code> displays the text in an editable <a href="https://codemirror.net/">Codemirror</a> widget, <code>pre</code> displays the text in a <code>&lt;pre&gt;</code> element, and <code>stats</code> just displays the length of the text.  These controls allow you to manage the resources consumed by large components - <code>stats</code> is lighter than <code>pre</code> is lighter than <code>codemirror</code>.  Most components also come with <code>Upload</code> and <code>Download</code> buttons so you can upload your own files or download the data.</p>
+
+<h4 id="saving">Saving</h4>
+
+<p>A workbook is saved to the server as a JSON file that holds the data contained in each component.  All data within the components will be saved.  But any parts of the output document that are, for instance, generated dynamically by code, are not saved.  You can click the <code>Tools-&gt;Export Workbook</code> button to export the document JSON.</p>
+
+<h4 id="output">Output</h4>
+<p>Code in HTML, CSS, and markdown components get added to the output document on the right hand side of the screen.  The output of each component is displayed on the right-hand side in the same order the component appears in the left-hand side.  Using the handle on the far left of the component header, you can drag components around to reorder them.</p>
+
+<p>You can toggle your view between components-only, split screen, and document-only using the Components/Split/Document button toggle</p>
+
+
+
+
+
+
+
+<h3 id="components">Components</h3>
+
+<h4 id="component-types">Component types</h4>
+<ul>
+<li>js - javascript code</li>
+<li>data - JSON object</li>
+<li>md - markdown (converted to HTML and added to output automatically)</li>
+<li>html - HTML (added to output automatically)</li>
+<li>css - CSS (added to output automatically)</li>
+<li>text - plain text</li>
+<li>image - upload images, get a url to add to output</li>
+<li>binary - any binary file</li>
+</ul>
+
+<h4 id="the-javascript-component">Javascript</h4>
+<p>The <code>js</code> component holds runnable javascript code.</p>
+<p>By default, javascript code is not executed unless you click the <code>Run</code> button.  Click the <code>Run</code> button in the <code>js</code> component named <code>turn-green</code>, to turn this text green.</p>
+<p>You can run <code>js</code> components programmatically by calling <code>Hyperdeck.Run(name)</code>.  So, calling <code>Hyperdeck.Run('turn-green')</code> will run the code in the <code>turn-green</code> component.</p>
+
+* The `js` component has a number of controls that allow you to perform common tasks and customize its behavior.
+
+* At the top of the component control panel is the `Run` button, which packages the code into a `function() { your-code-here }` and calls that function. 
+
+* The `mode` option controls the parameters and behavior of the function and specifies what is done with the return value:
+  - `default` - by default, the code is packaged into a function as is - no arguments, and nothing is done with the return value
+  - `canvas` - in canvas mode, a `&lt;canvas&gt;` element is created and added to the output, and the function takes a `ctx` parameter that refers to the `CanvasRenderingContext2D`
+  - `htmlgen` - in htmlgen mode, the function returns a text string which is then packaged into a `&lt;div&gt;` and added to the output
+
+* Two switches control when the code is run - by default, the code is only run when the `Run` button is clicked.
+  - If the `runOnBlur` option is enabled, the code is run whenever focus leaves the editor - that is, the code runs immediately when you are done editing it.
+  - If the `runOnLoad` option is enabled, the code is run at the beginning when the workbook loads.
+
+* The `display` option can be used to lessen the resource footprint of the component, if editing or display is unnecessary:
+  - `codemirror` - by default, the code is displayed in an editable Codemirror widget
+  - `readonly` - the code is displayed in a read-only `&lt;pre&gt;` tag
+  - `summary` - the code is not displayed at all - rather, statistics regarding size, etc. are displayed
+
+* And finally, there are buttons to `Upload` and `Download` code files.
+
+
+<h4 id="the-data-component">Data</h4>
+<p>The <code>data</code> component holds plain javascript object data - anything that can be represented as JSON.  Check out the <code>data1</code> component at left.  Data can be displayed as JSON, YAML, CSV, TSV, or in a read-only <code>&lt;pre&gt;</code> tag.  The tabular formats, CSV and TSV, can only display data that can be sensibly interpreted as a table - generally a flat list of objects, such as <code>[{A:0,B:0},{A:0,B:0}]</code>.  Data can be accessed by calling <code>Hyperdeck.Get(name)</code>, which returns the javascript object stored within.  If you want to return a text representation of the data, you can add an options argument to specify the format, like <code>Hyperdeck.Get('data1', {format:'yaml'})</code>.  Similarly, you can set data by calling <code>Hyperdeck.Set(name, data, options)</code>.  Again, the <code>data</code> argument is assumed to be a javascript object by default, or text if the format is specified in the options.</p>
+
+<h4 id="the-image-component">Image</h4>
+<p>The `image` component stores an image, providing a url that can be used in an `&lt;img&gt;` tag, the dimensions, and a preview.  `Hyperdeck.Get('image1')` returns a `HTMLImageElement`.</p>
+
+<h4 id="the-binary-component">Binary</h4>
+<p>The `binary` component can store any binary blob, displaying the length in bytes.  `Hyperdeck.Get('binary1')` returns a `Uint8Array`.</p>
+
+<h4 id="the-markdown-component">Markdown</h4>
+<p>Content can also be written as markdown.  Markdown is a lightweight plaintext markup language that gets converted to HTML.  Open one of the <code>md</code> components over at left to see some examples of markdown syntax.</p>
+
+<h4 id="the-css-component">CSS</h4>
+<p>The output of <code>html</code> and <code>md</code> components is put into a <code>&lt;div&gt;</code> that gets id-tagged with the component's name.  This text is in a <code>&lt;div id="css-usage"&gt;</code> tag, and is styled  by the css code in the <code>css1</code> component (currently empty, but you can add style rules and see them take effect).</p>
+
+
+
+
+<hr>
+<h3 id="api">API</h3>
+<pre>
+
+### API Summary
+
+    Hyperdeck.Get(name, options) => data or text
+    Hyperdeck.Set(name, dataOrText, options)
+    Hyperdeck.Run(name)
+    
+    options = {format:'json'|'yaml'|'csv'|'tsv'}
+
+#### Hyperdeck.Get
+`Hyperdeck.Get(componentName)` is how you access data in a different component.
+
+So if component `data1` contains the CSV data,
+
+		A,B,C
+		1,2,3
+		4,5,6
+
+then `Hyperdeck.Get('data1')` returns the javascript object `[{A:1,B:2,C:3},{A:4,B:5,C:6}]`.
+
+#### Hyperdeck.Set
+`Hyperdeck.Set(componentName, objectOrText)` sets component data.
+
+#### Hyperdeck.Run
+`Hyperdeck.Run(jsComponentName)` runs the code in a `js` component.
+
+</pre>
+
+
+</div>
+
+</body>
+</html>
+
