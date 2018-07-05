@@ -12,7 +12,7 @@ var Assets = function(json, type, name) {
 		json.type = type;
 		json.name = name;
 		json.visible = true;
-		json.assets = [];
+		json.assets = [ { url: '', type: '' } ];
 	}
 	
 	this.type = json.type;
@@ -121,7 +121,7 @@ Assets.prototype.afterLoad = function(callback) {
 			rowDiv.remove();
 		});
 		
-		$('<input class="input-sm" style="width:70%;margin:0.2em" value="' + row.url + '"></input>').appendTo(rowDiv).on('change', function() {
+		$('<input class="input-sm" style="width:70%;margin:0.2em" placeholder="http://localhost:1234/foo.jpg" value="' + row.url + '"></input>').appendTo(rowDiv).on('change', function() {
 			comp.markDirty();
 			icon.removeClass('fa-check').removeClass('fa-times').addClass('fa-hourglass').css('color', 'orange');
 			row.url = this.value;

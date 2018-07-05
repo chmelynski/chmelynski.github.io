@@ -56,7 +56,7 @@ Libraries.prototype.afterLoad = function(callback) {
 			rowDiv.remove();
 		});
 		
-		$('<input class="input-sm" style="width:80%;margin:0.2em" value="'+url+'"></input>').appendTo(rowDiv).on('change', function() {
+		$('<input class="input-sm" style="width:80%;margin:0.2em" placeholder="http://localhost:1234/foo.js" value="'+url+'"></input>').appendTo(rowDiv).on('change', function() {
 			comp.markDirty();
 			icon.removeClass('fa-check').removeClass('fa-times').addClass('fa-hourglass').css('color', 'orange');
 			//script.attr('src', url); // this triggers on load
