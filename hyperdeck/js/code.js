@@ -213,7 +213,7 @@ Code.prototype.exec = function(thisArg) {
 	{
 		var html = (comp.type == 'md') ? markdown.toHTML(comp.text) : comp.text;
 		$('#' + comp.name).html(html);
-		//if (MathJax) { MathJax.Hub.Typeset(comp.name); }
+		if (MathJax) { MathJax.Hub.Typeset(comp.name); }
 	}
 	else if (comp.type == 'js')
 	{
