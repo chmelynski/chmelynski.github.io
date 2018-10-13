@@ -10,6 +10,56 @@ type TextBaseline = 'top' | 'middle' | 'center' | 'bottom' | 'alphabetic' | 'han
 interface Color { r?: number; g?: number; b?: number; a?: number; }
 interface Dict<T> { [index: string]: T; }
 
+interface PdfCatalog {
+	Type: "Catalog";
+	Pages: PdfPages;
+}
+interface PdfPages {
+	Type: "Pages";
+	Count: number;
+	Kids: PdfPage[]; // PdfPage & PdfPages?
+}
+interface PdfPage {
+	Type: "Page";
+	Parent: PdfPages;
+	MediaBox: [ number , number , number , number ];
+	Resources: { Font : {} , XObject : {} };
+	Contents: PdfPageContents;
+}
+interface PdfPageContents {
+	Length: number;
+	"[stream]"?: any;
+}
+interface PdfFont {
+	Type: "Font";
+	Subtype: string; // "Type1", "TrueType", "OpenType", others?
+	BaseFont: string;
+	FontDescriptor?: PdfFontDescriptor;
+}
+interface PdfFontDescriptor {
+	Type: "FontDescriptor";
+	FontName: string;
+	FontFile2?: PdfFontStreamDictionary;
+	FontFile3?: any;
+}
+interface PdfFontStreamDictionary {
+	Subtype?: string;
+	Length: number;
+	Length1: number;
+	Filter: string; // "ASCIIHexDecode", others
+	"[stream]"?: any;
+}
+interface PdfImageXObject {
+	Type?: "XObject";
+	Subtype?: "Image";
+	ColorSpace?: "DeviceRGB"; // others are allowed by the spec
+	BitsPerComponent?: number;
+	Width?: number;
+	Height?: number;
+	Length?: number;
+	Filter?: "ASCIIHexDecode"; // others are allowed by the spec
+}
+
 class PDF {
 	
 	// colors
@@ -278,6 +328,76 @@ class PDF {
 	
 	static Export(pdfs: PDF[]): string {
 		
+		function WritePdfDict(obj: any): string {
+			
+			var str = '';
+			str += '<<';
+			str += '\r\n';
+			
+			for (var key in obj)
+			{
+				if (key[0] != '[') // avoid [index], [stream], etc. fields
+				{
+					str += '/' + key + ' ';
+					str += WritePdfObj(obj[key], true);
+					str += '\r\n';
+				}
+			}
+			
+			str += '>>';
+			//str += '\r\n';
+			
+			return str;
+		}
+		function WritePdfList(list: any[]): string {
+			return '[ ' + list.map(function(obj) { return WritePdfObj(obj, true); }).join(' ') + ']';
+		}
+		function WritePdfObj(obj: any, canBeIndirect: boolean): string {
+			
+			var str = null;
+			var type = typeof(obj);
+			
+			if (type == 'object')
+			{
+				if (canBeIndirect && obj['[index]'])
+				{
+					str = obj['[index]'].toString() + ' 0 R';
+				}
+				else
+				{
+					if (obj.concat) // this is how we test for a list
+					{
+						str = WritePdfList(obj);
+					}
+					else
+					{
+						str = WritePdfDict(obj);
+					}
+				}
+			}
+			else if (type == 'number')
+			{
+				str = obj.toString();
+			}
+			else if (type == 'string')
+			{
+				if (obj[0] == '"')
+				{
+					str = '(' + obj.substring(1, obj.length - 1) + ')';
+				}
+				else
+				{
+					str = '/' + obj.toString();
+				}
+			}
+			else
+			{
+				throw new Error('"' + type + '" is not a recogized type');
+			}
+			
+			return str;
+		}
+		
 		var objects = [];
 		
 		var catalog: PdfCatalog = { Type : "Catalog" , Pages : null };
@@ -314,10 +434,25 @@ class PDF {
 			{
 				var fontType = 'OpenType'; // we probably need to store this in the Font component or something - .ttf or .otf
 				
+				function Uint8ArrayToAsciiHexDecode(uint8Array: Uint8Array): string {
+					
+					var ascii = [];
+					
+					for (var i = 0; i < uint8Array.length; i++)
+					{
+						var b = uint8Array[i];
+						var hex = ((b < 0x10) ? '0' : '') + b.toString(16).toUpperCase();
+						ascii.push(hex);
+					}
+					
+					return ascii.join('');
+				}
+				
+				var uint8Array = PDF.fontNameToUint8Array[key]; // file bytes go here
+				var stream = Uint8ArrayToAsciiHexDecode(uint8Array);
+				
 				if (fontType == 'TrueType')
 				{
-					var uint8Array = PDF.fontNameToUint8Array[key]; // file bytes go here
-					var stream = Uint8ArrayToAsciiHexDecode(uint8Array);
 					var fontStreamDictionary: PdfFontStreamDictionary = { Length : stream.length , Filter : "ASCIIHexDecode" , Length1 : uint8Array.length }; // Length1 = length after being decoded
 					fontStreamDictionary["[stream]"] = stream;
 					var fontDescriptor: PdfFontDescriptor = { Type : "FontDescriptor" , FontName : key , FontFile2 : fontStreamDictionary };
@@ -328,8 +463,6 @@ class PDF {
 				}
 				else if (fontType == 'OpenType')
 				{
-					var uint8Array = PDF.fontNameToUint8Array[key]; // file bytes go here
-					var stream = Uint8ArrayToAsciiHexDecode(uint8Array);
 					var fontStreamDictionary: PdfFontStreamDictionary = { Length : stream.length , Filter : "ASCIIHexDecode" , Length1 : uint8Array.length , Subtype : "OpenType" };
 					fontStreamDictionary["[stream]"] = stream;
 					var fontDescriptor: PdfFontDescriptor = { Type : "FontDescriptor" , FontName : key , FontFile3 : fontStreamDictionary };
@@ -806,167 +939,8 @@ class PDF {
 		//this.PushCommand('');
 	}
 }
-interface PdfCatalog {
-	Type: "Catalog";
-	Pages: PdfPages;
-}
-interface PdfPages {
-	Type: "Pages";
-	Count: number;
-	Kids: PdfPage[]; // PdfPage & PdfPages?
-}
-interface PdfPage {
-	Type: "Page";
-	Parent: PdfPages;
-	MediaBox: [ number , number , number , number ];
-	Resources: { Font : {} , XObject : {} };
-	Contents: PdfPageContents;
-}
-interface PdfPageContents {
-	Length: number;
-	"[stream]"?: any;
-}
-interface PdfFont {
-	Type: "Font";
-	Subtype: string; // "Type1", "TrueType", "OpenType", others?
-	BaseFont: string;
-	FontDescriptor?: PdfFontDescriptor;
-}
-interface PdfFontDescriptor {
-	Type: "FontDescriptor";
-	FontName: string;
-	FontFile2?: PdfFontStreamDictionary;
-	FontFile3?: any;
-}
-interface PdfFontStreamDictionary {
-	Subtype?: string;
-	Length: number;
-	Length1: number;
-	Filter: string; // "ASCIIHexDecode", others
-	"[stream]"?: any;
-}
-interface PdfImageXObject {
-	Type?: "XObject";
-	Subtype?: "Image";
-	ColorSpace?: "DeviceRGB"; // others are allowed by the spec
-	BitsPerComponent?: number;
-	Width?: number;
-	Height?: number;
-	Length?: number;
-	Filter?: "ASCIIHexDecode"; // others are allowed by the spec
-}
-function Base64StringToUint8Array(str: string): Uint8Array {
-	
-	function b64ToUint6(n) { return n>64&&n<91?n-65:n>96&&n<123?n-71:n>47&&n<58?n+4:n===43?62:n===47?63:0;}
-	
-	var nBlocksSize = 3;
-	var sB64Enc = str.replace(/[^A-Za-z0-9\+\/]/g, ""); // remove all non-eligible characters from the string
-	var nInLen = sB64Enc.length;
-	var nOutLen = nBlocksSize ? Math.ceil((nInLen * 3 + 1 >> 2) / nBlocksSize) * nBlocksSize : nInLen * 3 + 1 >> 2;
-	var taBytes = new Uint8Array(nOutLen);
-	
-	for (var nMod3, nMod4, nUint24 = 0, nOutIdx = 0, nInIdx = 0; nInIdx < nInLen; nInIdx++)
-	{
-		nMod4 = nInIdx & 3;
-		nUint24 |= b64ToUint6(sB64Enc.charCodeAt(nInIdx)) << 18 - 6 * nMod4;
-		
-		if (nMod4 === 3 || nInLen - nInIdx === 1)
-		{
-			for (nMod3 = 0; nMod3 < 3 && nOutIdx < nOutLen; nMod3++, nOutIdx++)
-			{
-				taBytes[nOutIdx] = nUint24 >>> (16 >>> nMod3 & 24) & 255;
-			}
-			
-			nUint24 = 0;
-		}
-	}
-	
-	return taBytes;
-}
-function WritePdfDict(obj: any): string {
-	var str = '';
-	str += '<<';
-	str += '\r\n';
-	for (var key in obj)
-	{
-		if (key[0] != '[') // avoid [index], [stream], etc. fields
-		{
-			str += '/' + key + ' ';
-			str += WritePdfObj(obj[key], true);
-			str += '\r\n';
-		}
-	}
-	str += '>>';
-	//str += '\r\n';
-	return str;
-}
-function WritePdfList(list: any[]): string {
-	//var str = '';
-	//str += '[ ';
-	//list.forEach(function(obj) { str += WritePdfObj(obj, true); str += ' '; });
-	//str += ']';
-	//return str;
-	
-	var str = '[ ' + list.map(function(obj) { return WritePdfObj(obj, true); }).join(' ') + ']';
-	return str;
-}
-function WritePdfObj(obj: any, canBeIndirect: boolean): string {
-	var s = null;
-	var type = typeof(obj);
-	
-	if (type == 'object')
-	{
-		if (canBeIndirect && obj['[index]'])
-		{
-			s = obj['[index]'].toString() + ' 0 R';
-		}
-		else
-		{
-			if (obj.concat) // this is how we test for a list
-			{
-				s = WritePdfList(obj);
-			}
-			else
-			{
-				s = WritePdfDict(obj);
-			}
-		}
-	}
-	else if (type == 'number')
-	{
-		s = obj.toString();
-	}
-	else if (type == 'string')
-	{
-		if (obj[0] == '"')
-		{
-			s = '(' + obj.substring(1, obj.length - 1) + ')';
-		}
-		else
-		{
-			s = '/' + obj.toString();
-		}
-	}
-	else
-	{
-		throw new Error('"' + type + '" is not a recogized type');
-	}
-	
-	return s;
-}
-function Uint8ArrayToAsciiHexDecode(uint8Array: Uint8Array): string {
-	
-	var ascii = [];
-	
-	for (var i = 0; i < uint8Array.length; i++)
-	{
-		var b = uint8Array[i];
-		var hex = ((b < 0x10) ? '0' : '') + b.toString(16).toUpperCase();
-		ascii.push(hex);
-	}
-	
-	return ascii.join('');
-}
 
 exports.PDF = PDF;
+
+// Alt + 2,1
 

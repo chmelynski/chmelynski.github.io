@@ -1,22 +1,19 @@
 
 <html>
 <head>
-<script>var exports = {};</script>
+<script>var exports = {}; var Hyperdeck = { Fonts: {} };</script>
 <script src="../otf/opentype-0.6.9.js"></script>
+<script src="../otf/SourceSerifPro-Regular.js"></script>
 <script src="pdf.js"></script>
+<script src="../assets.js"></script>
 </head>
 <body>
 
-<table>
-<tr><td>Load Image 1</td><td><input type="file" id="fileChooser1" onchange="Load(this.files, 'image1')" /></td></tr>
-<tr><td>Load Image 2</td><td><input type="file" id="fileChooser2" onchange="Load(this.files, 'image2')" /></td></tr>
-<tr><td>Load Font 1 </td><td><input type="file" id="fileChooser3" onchange="Load(this.files, 'font1')" /></td></tr>
-<tr><td>Load Font 2 </td><td><input type="file" id="fileChooser4" onchange="Load(this.files, 'font2')" /></td></tr>
-</table>
+<input type="file" multiple onchange="LoadAssets(this.files, Onload)" style="margin-bottom:1em">
+<button onclick="Generate()">Generate</button>
+<br>
 
-<button onclick="Generate();" style="position:absolute; left:20px; top:125px;">Generate</button>
-
-<textarea id="input" style="position:absolute; left:20px; top:150px; width:400px; height:400px;">
+<!-- <textarea id="input" style="width:40em; height:40em;">
 
 0 0 0 rg
 0 0 0 RG
@@ -24,6 +21,13 @@
 10 10 m
 100 100 l
 S
+
+</textarea> -->
+
+<textarea id="input" style="width:40em; height:40em;">
+
+ctx.font = '10pt serif';
+ctx.fillText('Hello world', 100, 100);
 
 </textarea>
 
@@ -57,25 +61,34 @@ ET
 
 <script>
 
+var assets = null;
+
+//Hyperdeck.Fonts['serif'] = opentype.parse(Base64StringToUint8Array(Hyperdeck.Fonts['SourceSerifPro-Regular']).buffer);
+Hyperdeck.Fonts['serif'] = Hyperdeck.Fonts['SourceSerifPro-Regular'];
+
 var uploads = {};
 var fonts = {};
 
-function Load(files, id) {
+function Onload(assetmap) {
 	
-	var fileReader = new FileReader();
-	
-	fileReader.onload = function(event) {
+	for (var id in assetmap)
+	{
+		var ext = id.substr(id.lastIndexOf('.'));
+		var asset = assetmap[id];
 		
-		uploads[id] = new Uint8Array(event.target.result);
-		
-		if (id.startsWith('font'))
+		if (ext == 'otf')
 		{
-			var font = opentype.parse(event.target.result); // the argument to opentype.parse MUST be an ArrayBuffer
-			fonts[id] = font;
+			assets[id] = opentype.parse(asset);
 		}
-	};
-	
-	if (files.length > 0) { fileReader.readAsArrayBuffer(files[0]); }
+		else if (ext == 'jpg')
+		{
+			
+		}
+		else
+		{
+			throw new Error('unknown ext: ' + id);
+		}
+	}
 }
 
 function Generate() {
@@ -206,6 +219,34 @@ function Uint8ArrayToBase64String(aBytes) {
 	}
 	
 	return sB64Enc.replace(/A(?=A$|$)/g, "=");
+}
+function Base64StringToUint8Array(str) {
+	
+	function b64ToUint6(n) { return n>64&&n<91?n-65:n>96&&n<123?n-71:n>47&&n<58?n+4:n===43?62:n===47?63:0; }
+
+	var nBlocksSize = 3;
+	var sB64Enc = str.replace(/[^A-Za-z0-9\+\/]/g, ""); // remove all non-eligible characters from the string
+	var nInLen = sB64Enc.length;
+	var nOutLen = nBlocksSize ? Math.ceil((nInLen * 3 + 1 >> 2) / nBlocksSize) * nBlocksSize : nInLen * 3 + 1 >> 2;
+	var taBytes = new Uint8Array(nOutLen);
+	
+	for (var nMod3, nMod4, nUint24 = 0, nOutIdx = 0, nInIdx = 0; nInIdx < nInLen; nInIdx++)
+	{
+		nMod4 = nInIdx & 3;
+		nUint24 |= b64ToUint6(sB64Enc.charCodeAt(nInIdx)) << 18 - 6 * nMod4;
+		
+		if (nMod4 === 3 || nInLen - nInIdx === 1)
+		{
+			for (nMod3 = 0; nMod3 < 3 && nOutIdx < nOutLen; nMod3++, nOutIdx++)
+			{
+				taBytes[nOutIdx] = nUint24 >>> (16 >>> nMod3 & 24) & 255;
+			}
+			
+			nUint24 = 0;
+		}
+	}
+	
+	return taBytes;
 }
 function Uint8ArrayPngToImg(uint8Array) {
 	var img = document.createElement('img');

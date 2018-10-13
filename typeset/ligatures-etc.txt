@@ -1,0 +1,149 @@
+
+
+1. Ligatures should not be used in some situations - like across syllable breaks or endings
+2. PDF files with ligatures should have facilities to make them properly searchable - so that a search for "ffi" will match the ffi ligature
+3. When copying text from a PDF, soft hyphens should be removed, but hard hyphens should remain
+
+
+
+1. https://english.stackexchange.com/questions/50660/when-should-i-not-use-a-ligature-in-english-typesetting
+
+Typesetting that goes beyond the scope of basic MS Word (e.g. LaTeX, or even modern Word versions with a good OpenType font) often uses ligatures for certain glyph combinations, the most common being
+
+f + f = ﬀ
+f + i = ﬁ
+f + l = ﬂ
+f + f + i = ﬃ
+f + f + l = ﬄ
+
+I would assume, however, that there are cases in which a ligature shouldn't be used. Are there any rules or standards telling me when I should use a ligature and when I shouldn't?
+
+
+The ZWNJ is a way to explicitly signal that characters are not to be joined in a ligature
+https://en.wikipedia.org/wiki/Zero-width_non-joiner
+
+
+At the end of this answer is a list of words for which various f-ligatures should not be employed if using them might impair the words' readability. Obviously, I make no claim as to this list's completeness. Comments and suggestions for additions welcome. (For the curious: I've come up with this list in preparation for a LaTeX package I'm creating that will provide a turnkey solution to the need to more-or-less automate the exclusion of some words from LaTeX's ligation algorithms.)
+
+Aside: The "standard five" f-ligatures -- ff, fi, fl, ffi, and ffl -- that are provided by many fonts and the ft ligature provided by some fonts are the main subject of this answer,. That said, there are naturally many other though less commonly available ligated characters -- such as tt, st, and ct -- to which the following discussion applies as well. I.e., I'd argue that even if the wonderfully charming st ligature (drawn with an arc from the top of the s to the top of the t) is available in a given font, one should probably not use it in the word painstaking -- unless one wishes to make the reader think about pain inflicted by staking (a body part?) ...
+
+As I understand it, the principle that suggests not using certain ligatures in certain words is that ligatures should not cross morpheme boundaries. Loosely speaking, morphemes are the smallest semantically meaningful units inside a word, i.e., the particles that carry/convey distinct meaning. Why? If in a given word two (or more) letters that could be ligated actually belong to separate morphemes, one risks decreasing the readability of the word (and of the entire text) by ligating them anyway, because the visual unity created by the ligature may conflict with the characters' separateness in terms of the morphemes they belong to. For instance, one should wish to avoid employing the ft ligature in "rooftop" because the f and t belong to distinct morphemes.
+
+Of course, just how much readability is impaired in practice by a use of ligatures across morpheme boundaries depends both on the morphemes involved and on the way the glyph that contains the ligature is drawn in a given font. Comparing, for instance, the appearance of the words
+
+enter image description here
+
+with the appearance of
+
+enter image description here
+
+I daresay that few people will argue that the readability of the words shown in the upper row is enhanced by the use of the fi and fl ligatures. This is because the two ligatures unnecessarily risk making your readers puzzle -- if only briefly -- what's going on with these baffling fish and fly species. (Incidentally, the "fish"-words are typeset in Baskervald ADF and the "fly"-words are typeset in EB Garamond.) In contrast, I'll opine confidently that even if the ft letter pair in "fifty" does get ligated, no readers will be misled, slowed down, or otherwise inconvenienced by the use of the ligature. (Of course, "fty" is not AFAIK an English language morpheme -- unlike the "fly" and "fish" cases noted earlier.)
+
+Clearly, using ligatures is not (and never has been) an absolute requirement for making a text readable. Otherwise, virtually all documents typeset with general-purpose word processing programs wouldn't be readable, right? Nevertheless, a consistent use of the ligatures provided by a font family does constitute a mark of good typography, in part because avoiding visual interference of glyph pairs (and triples) improves the readability of the words in question. That said, depending on the word and morphemes involved, I'd argue that not all letter combinations that can be ligated should always be ligated, i.e., for some words the use of ligated glyphs instead of the constituent glyphs need not be a good thing (and may even be a bad thing). In particular, if the letters involved in the ligature belong to separate morphemes, the word's overall legibility may be reduced by the use of a ligature because the visual unity created by the ligatures may impair, however fleetingly, the reader's ability to perceive the underlying morphemes.
+
+Be sure to also include the appropriate plural forms of the nouns in this list.
+
+ff to f-f
+
+shelfful bookshelfful mantelshelfful
+
+fi to f-i
+
+elfin
+
+chafing leafing loafing sheafing strafing vouchsafing; beefing reefing, briefing debriefing; coifing fifing jackknifing knifing midwifing waifing wifing; (air-, child-, fire-, flame-, moth-, rust-, sound-, water-, weather-) proofing goofing hoofing (re)roofing spoofing whoofing woofing; (be-, en-, in-) gulfing, golfing gulfing rolfing selfing wolfing; barfing (be-) dwarfing enserfing kerfing scarfing snarfing (wind-) surfing turfing wharfing
+
+deafish dwarfish elfish oafish selfish serfish unselfish wolfish (plus -ness nouns and -ly adverbial forms)
+
+beefier comfier goofier gulfier leafier surfier turfier (plus -iest superlative forms)
+
+beefily goofily, goofiness
+
+fl to f-l
+
+beefless briefless hoofless leafless roofless selfless turfless (plus adverbial and noun forms: -ly -ness, e.g., selflessly)
+
+aloofly briefly chiefly deafly liefly
+
+calflike dwarflike elflike gulflike hooflike leaflike rooflike serflike sheaflike shelflike surflike turflike waiflike wolflike
+
+halflife shelflife, halfline roofline
+
+leaflet leaflets leafleted leafleting leafletting leafletted leafleteer
+
+pdflatex (Ok, you've probably got to be a TeXie in order to "get" this word!)
+
+ffi to ff-i
+
+baffing biffing (out-) bluffing boffing buffing chaffing cheffing chuffing coffing coiffing (hand-, un-) cuffing daffing doffing (en-, in-) feoffing fluffing gaffing gruffing huffing luffing miffing muffing offing piaffing puffing quaffing rebuffing reffing restaffing restuffing riffing (cross-, over-, under-) ruffing sclaffing scoffing scuffing shroffing sluffing sniffing snuffing spiffing (over-, under-) staffing stiffing (over-) stuffing tariffing tiffing waffing whiffing yaffing
+
+draffish giraffish gruffish offish raffish sniffish standoffish stiffish toffish (plus adverbial and noun forms: draffishly giraffishly etc.)
+
+buffier chaffier chuffier cliffier daffier fluffier gruffier huffier iffier miffier puffier scruffier sniffier snuffier spiffier stuffier (plus superlative forms: buffiest, chaffiest, etc.)
+
+daffily fluffily gruffily huffily puffily scruffily sniffily snuffily spiffily stuffily
+
+fluffiness huffiness iffiness puffiness scruffiness sniffiness spiffiness stuffiness
+
+baffies biffies jiffies taffies toffies
+
+waffie
+
+Pfaffian Wolffian Wulffian
+
+ffl to ff-l
+
+bluffly gruffly ruffly snuffly stiffly
+
+cuffless stuffless (and adverbial forms: cufflessly, ...)
+
+scofflaw, cufflink, offline, offload (plus -s, -ed, and -ing affixes)
+
+rufflike clifflike
+
+ffi to f-fi
+
+chaffinch; wolffish
+
+ffl to f-fl
+
+safflower
+
+ft to f-t
+
+chieftain chieftaincy chieftainship
+
+fifteen fifteens fifteenth fifteenths fifth fifthly fifths fifties fiftieth fiftieths fifty fiftyish
+
+halftime halftone
+
+rooftop rooftree
+
+fft to ff-t (not a common ligature, but Minion Pro and EB Garamond do provide it)
+
+offtrack
+
+
+
+
+2. https://tex.stackexchange.com/questions/4397/make-ligatures-in-linux-libertine-copyable-and-searchable
+
+The answer given is some LaTeX directives, doesn't really get into the mechanisms of searchability in a PDF
+
+
+
+
+3. https://tex.stackexchange.com/questions/60682/remove-hyphen-from-word-spanning-two-lines-in-text-copied-from-a-pdf-file
+
+Worst case scenario, the PDF has the hyphens at the end of the line rendered as the same hyphen that sits between words, let's call them 'line break' and 'interword' hyphens for now.
+
+That would mean they are indistinguishable automatically (an interword hyphen might coincide with a line break; impossible to detect). In which case, search & replace (with nothing) to get rid of all of them, then S&R for words that are now known to miss a hyphen. Sorry.
+
+Better case scenario is that the actual characters inside the PDF are different, even though they might look the same. Copying & pasting, depending on your PDF reader, tends to lose that distinction, if it was there in the first place. Same issue makes for 'end of line' (EOL) characters for every visible line in the PDF, rather than one at the end of a paragraph. LaTeX doesn't mind (it looks for empty lines) but your other text editing needs or tooling might.
+
+On the assumption you have been copying&pasting, you might be able to get more results to work with by extracting the text from the PDF automatically. Google for 'PDF to text'; there are a number of options available, from Windows GUI tools, to OS X builtin PDF handling (look into Automator) to command line tooling for UNIX/Linux/Cygwin environments.
+
+The output would be plain text. Some tools perform or allow for some manipulation of the extracted text, preserving only actual line endings rather than merely the ones shown, etc.
+
+For text manipulation perse, the typical command line tools in a UNIX environment would be able to get the bulk of your issues out of the way. That may or may not be useable advice to you, but I would reach for Vim, sed and a sprinkling of regular expressions all wrapped in some Bash.
+

@@ -30,6 +30,8 @@ var pre = document.createElement('pre');
 document.body.appendChild(pre);
 function AfterChange() { pre.innerText = JSON.stringify(obj); }
 
+// Number: obj, field, afterChange, width, height, beforeDecimal, afterDecimal
+
 var text = new Controls.Text(obj, 'text', AfterChange, 100, 30);
 var number0 = new Controls.Number(obj, 'number0', AfterChange, 100, 30, 2, 2);
 var number1 = new Controls.Number(obj, 'number1', AfterChange, 100, 30, 1, 2);

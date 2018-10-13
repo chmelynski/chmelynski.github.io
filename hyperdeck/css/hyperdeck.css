@@ -22,7 +22,7 @@ body.outer { overflow: hidden; }
 html, body { height: 100%; width: 100%; }
 body.framed { overflow: hidden; margin: 1em 0px 0px; padding: 0px; height: 100%; width: 100%; }
 body.framed > .container-fluid { height: 100%; }
-.row.tab-content { height: 90%; }
+.row.tab-content { height: 90%; margin-top: 1em; }
 .navbar-right { margin-top: 1em; }
 
 div.table-wrapper { position: relative; }
@@ -95,6 +95,526 @@ div.file-control button { margin: 0 2px; }
 .gapLeft { margin-left: 1em; }
 
 .reorder-handle { display: inline-block; cursor: move; }
+
+
+
+
+
+
+
+
+
+
+
+div.doc {
+	background-color: white;
+	padding: 1em;
+}
+
+div.doc hr { border-top: 1px solid #888; }
+
+div.pageSizeHeader {
+	font-weight: bold;
+}
+
+div.articleGrid {
+	display: grid;
+	grid-template-rows: 2.5em 2em;
+	grid-template-columns: 3em 5.5em 6em 5.5em 12em 4em;
+	grid-template-areas:
+		"a b c d g h"
+		"a b e f i j";
+	margin-top: 1em;
+	grid-column-gap: 0.5em;
+}
+div.articleGrid div.unitLabel { grid-area: a; margin: auto 0; text-align: right; }
+div.articleGrid div.unitInput { grid-area: b; margin: auto 0; }
+div.articleGrid div.pageWidthLabel { grid-area: c; margin: auto 0; text-align: right; }
+div.articleGrid div.pageWidthInput { grid-area: d; margin: auto 0; }
+div.articleGrid div.pageHeightLabel { grid-area: e; margin: auto 0; text-align: right; }
+div.articleGrid div.pageHeightInput { grid-area: f; margin: auto 0; }
+div.articleGrid div.cubitLabel { grid-area: g; margin: auto 0; text-align: right; }
+div.articleGrid div.cubitInput { grid-area: h; margin: auto 0; }
+div.articleGrid div.pixelLabel { grid-area: i; margin: auto 0; text-align: right; }
+div.articleGrid div.pixelInput { grid-area: j; margin: auto 0; }
+
+div.header {
+	grid-column: 1 / 3;
+	font-weight: bold;
+	text-align: center;
+	line-height: 2em; /* this matches the grid row height, to center the text */
+}
+
+
+
+
+
+
+div.section {
+
+}
+
+span.sectionHeader {
+	font-weight: bold;
+}
+div.sectionGrid {
+	display: grid;
+	grid-template-columns: 9em 4em 6em 6em 6em;
+	grid-template-rows: 5em 2em 2em 3em 2em 2em 2em;
+	grid-column-gap: 0.5em;
+	grid-row-gap: 0.5em;
+	grid-template-areas:
+		"a b b c d"
+		"e e f i j"
+		"g g h k l"
+		"m m m n n"
+		"o o p u u"
+		"q q r u u"
+		"s s t u u";
+}
+
+div.sectionGrid div.selectorLabel { grid-area: a; margin: auto 0.3em; text-align: right; }
+div.sectionGrid div.selectorInput { grid-area: b; margin: auto 0; }
+div.sectionGrid div.orientationLabel { grid-area: c; margin: auto 0; text-align: right; }
+div.sectionGrid div.orientationInput { grid-area: d; margin: auto 0; }
+div.sectionGrid div.columnsLabel { grid-area: e; margin: auto 0; text-align: right; }
+div.sectionGrid div.columnsInput { grid-area: f; margin: auto 0; }
+div.sectionGrid div.interColumnMarginLabel { grid-area: g; margin: auto 0; text-align: right; }
+div.sectionGrid div.interColumnMarginInput { grid-area: h; margin: auto 0; }
+div.sectionGrid div.indentLabel { grid-area: i; margin: auto 0; text-align: right; }
+div.sectionGrid div.indentInput { grid-area: j; margin: auto 0; }
+div.sectionGrid div.pitchLabel { grid-area: k; margin: auto 0; text-align: right; }
+div.sectionGrid div.pitchInput { grid-area: l; margin: auto 0; }
+div.sectionGrid div.optimalSpaceWidthLabel { grid-area: o; margin: auto 0; text-align: right; }
+div.sectionGrid div.optimalSpaceWidthInput { grid-area: p; margin: auto 0; }
+div.sectionGrid div.minimumSpaceWidthLabel { grid-area: q; margin: auto 0; text-align: right; }
+div.sectionGrid div.minimumSpaceWidthInput { grid-area: r; margin: auto 0; }
+div.sectionGrid div.heterogeneousLetterSpacingLabel { grid-area: s; margin: auto 0; text-align: right; }
+div.sectionGrid div.heterogeneousLetterSpacingInput { grid-area: t; margin: auto 0; }
+div.sectionGrid div.marginLabel { grid-area: n; margin: 1.5em auto 0; }
+
+div.sectionMargin {
+	
+	grid-area: u;
+	
+	display: grid;
+	grid-template-columns: repeat(4, 2.5em);
+	grid-template-rows: repeat(3, 2.5em);
+	grid-template-areas:
+		"w a a x"
+		"b b c c"
+		"y d d z";
+	margin: 0 auto;
+}
+div.margin-T { grid-area: a; text-align: center; }
+div.margin-L { grid-area: b; text-align: center; }
+div.margin-R { grid-area: c; text-align: center; }
+div.margin-B { grid-area: d; text-align: center; }
+
+div.sectionGrid div.selectorInput input {
+	width: 8.5em;
+}
+div.sectionGrid div.columnsInput select {
+	width: 4em;
+	border-color: lightgray;
+	text-align: center; /* this has no effect, nor does this style placed on the <option> - how to center select box text? */
+}
+div.sectionGrid div.orientationInput select {
+	border-color: lightgray;
+}
+
+
+
+
+
+
+
+
+
+
+div.content {
+	
+}
+
+span.contentHeader { font-weight: bold; }
+button.contentDelete { float: right; }
+
+div.contentGrid1 {
+	display: grid;
+	grid-template-columns: 10em 10em 6em 6em;
+	grid-template-rows: 2em;
+	grid-template-areas: "a b c d";
+	grid-column-gap: 0.5em; 
+}
+
+div.content div.selectorLabel { grid-area: a; margin: auto 0; text-align: right; }
+div.content div.selectorInput { grid-area: b; margin: auto 0; }
+div.content div.pageIndexLabel { grid-area: c; margin: auto 0; text-align: right; }
+div.content div.pageIndexInput { grid-area: d; margin: auto 0; text-align: center; }
+
+div.content div.selectorInput input { width: 8em; text-align: center; }
+div.content div.pageIndexInput input { width: 4em; text-align: center; }
+
+div.contentGrid2 {
+	display: grid;
+	grid-template-columns: 10em 12em 10em 10em;
+	grid-template-rows: 2em 10em;
+	grid-template-areas:
+		"e f g h"
+		"i j k l";
+	margin-top: 1.5em;
+}
+
+div.content div.coordsLabel { grid-area: e; text-align: center; margin: auto 0; }
+div.content div.anchorLabel { grid-area: f; text-align: center; margin: auto 0; }
+div.content div.alignLabel { grid-area: g; text-align: center; margin: auto 0; }
+div.content div.contentMarginLabel { grid-area: h; text-align: center; margin: auto 0; }
+div.content div.coordsGrid { grid-area: i; }
+div.content div.anchorGrid { grid-area: j; }
+div.content div.alignGrid { grid-area: k; }
+div.content div.contentMarginDiv { grid-area: l; }
+
+div.coordsGrid {
+	display: grid;
+	grid-template-columns: repeat(2, 4em);
+	grid-template-rows: repeat(4, 2em);
+	grid-column-gap: 0.5em;
+	grid-row-gap: 0.5em;
+	padding-left: 0.2em;
+	padding-top: 0.3em;
+}
+div.coordsGrid div {
+	margin: auto 0;
+}
+div.coordsGrid .name {
+	text-align: right;
+}
+
+div.anchorGrid {
+	display: grid;
+	grid-template-columns: repeat(5, 2em);
+	grid-template-rows: repeat(5, 2em);
+	padding-left: 1em;
+}
+div.alignGrid {
+	display: grid;
+	grid-template-columns: repeat(3, 3.25em);
+	grid-template-rows: repeat(3, 3.25em);
+	padding-left: 0.05em;
+	padding-top: 0.1em;
+}
+div.contentMarginDiv {
+	display: grid;
+	grid-template-columns: repeat(4, 2.5em);
+	grid-template-rows: repeat(3, 2.5em);
+	grid-template-areas:
+		"w a a x"
+		"b b c c"
+		"y d d z";
+	padding-top: 1.5em;
+}
+/* margin-T etc can be reused */
+
+
+
+
+
+
+
+
+
+
+
+
+div.grid {
+	display: grid;
+	grid-template-columns: 12em 12em;
+	grid-column-gap: 0.5em;
+	grid-row-gap: 0.5em;
+}
+
+div#article {
+	grid-template-rows: 2em 2em 2em 2em 2em 2em;
+}
+
+div#pageNumbering {
+	margin-top: 2em;
+	grid-template-rows: 2em 2em 2em 2em 2em 2em 2em 2em 2em;
+}
+
+div.grid .name {
+	text-align: right;
+	line-height: 2em; /* this matches the grid row height, to center the text */
+}
+
+div.doc input[type="text"] {
+	border-width: 1px;
+	border-style: solid;
+	border-color: lightgray;
+}
+
+div#article select {
+	width: 4em;
+	border-color: lightgray;
+}
+
+div#pageNumbering select {
+	width: 6em;
+	border-color: lightgray;
+}
+
+input.cubits {
+	text-align: center;
+	width: 4em;
+}
+
+input.center {
+	text-align: center;
+	width: 9em;
+}
+
+
+
+
+div.anchor { border: 1px solid white; }
+div.anchor.selected { border: 1px solid gray; }
+div.anchor:hover { border: 1px solid orange; }
+
+div.align { border: 1px solid white; }
+div.align.selected { border: 1px solid gray; }
+div.align:hover { border: 1px solid orange; }
+
+div.anchor {
+	width: 27px;
+	height: 27px;
+}
+
+div.align {
+	width: 45px;
+	height: 45px;
+}
+
+div.hori { }
+div.vert { }
+div.norm { }
+div.cent { }
+
+div.TL { background: url(TL.png); }
+div.TR { background: url(TR.png); }
+div.BL { background: url(BL.png); }
+div.BR { background: url(BR.png); }
+div.R  { background: url(R.png); }
+div.L  { background: url(L.png); }
+div.T  { background: url(T.png); }
+div.B  { background: url(B.png); }
+div.C  { background: url(C.png); }
+
+div.align.A1 { background: url(A1-45.png); }
+div.align.B1 { background: url(B1-45.png); }
+div.align.C1 { background: url(C1-45.png); }
+div.align.A2 { background: url(A2-45.png); }
+div.align.B2 { background: url(B2-45.png); }
+div.align.C2 { background: url(C2-45.png); }
+div.align.A3 { background: url(A3-45.png); }
+div.align.B3 { background: url(B3-45.png); }
+div.align.C3 { background: url(C3-45.png); }
+
+div.align.A1:hover { background: url(A1-45-box.png); }
+div.align.B1:hover { background: url(B1-45-box.png); }
+div.align.C1:hover { background: url(C1-45-box.png); }
+div.align.A2:hover { background: url(A2-45-box.png); }
+div.align.B2:hover { background: url(B2-45-box.png); }
+div.align.C2:hover { background: url(C2-45-box.png); }
+div.align.A3:hover { background: url(A3-45-box.png); }
+div.align.B3:hover { background: url(B3-45-box.png); }
+div.align.C3:hover { background: url(C3-45-box.png); }
+
+div.align.A1.selected { background: url(A1-45-box.png); }
+div.align.B1.selected { background: url(B1-45-box.png); }
+div.align.C1.selected { background: url(C1-45-box.png); }
+div.align.A2.selected { background: url(A2-45-box.png); }
+div.align.B2.selected { background: url(B2-45-box.png); }
+div.align.C2.selected { background: url(C2-45-box.png); }
+div.align.A3.selected { background: url(A3-45-box.png); }
+div.align.B3.selected { background: url(B3-45-box.png); }
+div.align.C3.selected { background: url(C3-45-box.png); }
+
+
+div.plugin { margin-top: 1em; }
+
+div.subheader { font-weight: bold; }
+
+div.tableGrid {
+	display: grid;
+	grid-template-rows: 2em 2em;
+	grid-template-columns: 10em 12em;
+	grid-column-gap: 0.5em;
+	grid-row-gap: 0.5em;
+}
+div.rowSizesLabel { margin: auto 0; text-align: right; }
+div.rowSizesInput { margin: auto 0; width: 10em; }
+div.colSizesLabel { margin: auto 0; text-align: right; }
+div.colSizesInput { margin: auto 0; width: 10em; }
+
+div.borderStyleLabel { font-weight: bold; margin: 1em 0 1em; }
+div.borderStyleGrid {
+	display: grid;
+	grid-template-columns: 4em 6em 6em 6em 6em 4em 4em;
+	grid-column-gap: 0.5em;
+	grid-row-gap: 0.5em;
+	margin: 0 0 1em;
+}
+div.borderStyleGrid div.typeInput input { margin: auto; width: 4em; text-align: center; }
+div.borderStyleGrid div.indexInput input { margin: auto; width: 6em; text-align: center; }
+div.borderStyleGrid div.postsInput input { margin: auto; width: 6em; text-align: center; }
+div.borderStyleGrid div.styleInput input { margin: auto; width: 6em; text-align: center; }
+div.borderStyleGrid div.colorInput input { margin: auto; width: 6em; text-align: center; }
+div.borderStyleGrid div.widthInput input { margin: auto; width: 4em; text-align: center; }
+
+div.cellStyleLabel { font-weight: bold; margin: 2em 0 1em; }
+div.cellStyleGrid {
+	display: grid;
+	grid-template-columns: 6em 6em 6em 6em 6em 4em;
+	grid-column-gap: 0.5em;
+	grid-row-gap: 0.5em;
+	margin: 0 0 1em;
+}
+div.cellStyleGrid div.rowInput input { margin: auto; width: 6em; text-align: center; }
+div.cellStyleGrid div.colInput input { margin: auto; width: 6em; text-align: center; }
+div.cellStyleGrid div.marginInput input { margin: auto; width: 6em; text-align: center; }
+div.cellStyleGrid div.alignInput input { margin: auto; width: 6em; text-align: center; }
+div.cellStyleGrid div.backgroundColorInput input { margin: auto; width: 6em; text-align: center; }
+
+div.columnHeader { margin: auto; }
+
+
+
+div.listGrid {
+	display: grid;
+	grid-template-columns: 6em 8em 6em 4em 4em;
+	grid-template-rows: 2em 2em;
+	grid-column-gap: 0.5em;
+	grid-row-gap: 0.5em;
+	margin: 1em 0 1em;
+}
+div.listGrid div.symbolInput input { margin: auto; width: 6em; text-align: center; }
+div.listGrid div.styleInput input { margin: auto; width: 8em; text-align: center; }
+div.listGrid div.alignInput input { margin: auto; width: 6em; text-align: center; }
+div.listGrid div.indentInput input { margin: auto; width: 4em; text-align: center; }
+
+
+
+div.diagramGrid {
+	display: grid;
+	grid-template-columns: 10em 4em;
+	grid-template-rows: 2em;
+	grid-column-gap: 0.5em;
+	grid-row-gap: 0.5em;
+	margin: 1em 0 1em;
+}
+div.diagramGrid div.preserveAspectLabel { margin: auto; text-align: right; }
+div.diagramGrid div.preserveAspectInput input { margin-top: 0.5em; }
+
+
+
+div.imageGrid {
+	display: grid;
+	grid-template-columns: 10em 4em;
+	grid-template-rows: 2em;
+	grid-column-gap: 0.5em;
+	grid-row-gap: 0.5em;
+	margin: 1em 0 1em;
+}
+div.imageGrid div.syLabel { margin: auto 0; text-align: right; }
+div.imageGrid div.syInput input { width: 4em; text-align: center; }
+div.imageGrid div.sxLabel { margin: auto 0; text-align: right; }
+div.imageGrid div.sxInput input { width: 4em; text-align: center; }
+div.imageGrid div.swLabel { margin: auto 0; text-align: right; }
+div.imageGrid div.swInput input { width: 4em; text-align: center; }
+div.imageGrid div.shLabel { margin: auto 0; text-align: right; }
+div.imageGrid div.shInput input { width: 4em; text-align: center; }
+div.imageGrid div.preserveAspectLabel { margin: auto 0; text-align: right; }
+div.imageGrid div.preserveAspectInput input { margin-top: 0.5em; }
+
+
+
+
+div.captionGrid {
+	display: grid;
+	grid-template-columns: 10em 4em;
+	grid-template-rows: 2em;
+	grid-column-gap: 0.5em;
+	grid-row-gap: 0.5em;
+	margin: 1em 0 1em;
+}
+div.captionGrid div.wrapTextLabel { margin: auto 0; text-align: right; }
+div.captionGrid div.wrapTextInput input { margin-top: 0.5em; }
+div.captionGrid div.clipOverflowLabel { margin: auto 0; text-align: right; }
+div.captionGrid div.clipOverflowInput input { margin-top: 0.5em; }
+
+
+
+
+div.styles {
+
+}
+
+div.styleHeader { font-weight: bold; }
+
+div.styleGrid div.columnHeader {
+	font-weight: bold;
+	text-align: center;
+}
+
+div.styleGrid {
+	display: grid;
+	grid-template-columns: 8em 8em 4em 8em 4em;
+	grid-template-rows: repeat(1, 2em);
+	grid-column-gap: 1em;
+	grid-row-gap: 0.3em;
+	margin-top: 2em;
+	margin-bottom: 1em;
+}
+
+div.styleGrid div.nameInput input { text-align: center; width: 8em; }
+div.styleGrid div.fontInput input { text-align: center; width: 8em; }
+div.styleGrid div.sizeInput input { }
+div.styleGrid div.colorInput input { text-align: center; width: 8em; }
+
+/*
+div.styleGrid div.nameLabel { grid-area: a; margin: auto 0; text-align: right; }
+div.styleGrid div.nameInput { grid-area: b; margin: auto 0; }
+div.styleGrid div.fontLabel { grid-area: c; margin: auto 0; text-align: right; }
+div.styleGrid div.fontInput { grid-area: d; margin: auto 0; }
+div.styleGrid div.sizeLabel { grid-area: e; margin: auto 0; text-align: right; }
+div.styleGrid div.sizeInput { grid-area: f; margin: auto 0; }
+div.styleGrid div.colorLabel { grid-area: g; margin: auto 0; text-align: right; }
+div.styleGrid div.colorInput { grid-area: h; margin: auto 0; }
+*/
+
+/*
+div.styleGrid {
+	display: grid;
+	grid-template-columns: 3em 10em 3em 10em 3em 6em;
+	grid-template-rows: 4em 2em;
+	grid-template-areas:
+		"a b c d e f"
+		"g h i j k l";
+}
+
+div.styleGrid div.nameLabel { grid-area: c; margin: auto 0; }
+div.styleGrid div.nameInput { grid-area: d; margin: auto 0; }
+div.styleGrid div.fontLabel { grid-area: g; margin: auto 0; }
+div.styleGrid div.fontInput { grid-area: h; margin: auto 0; }
+div.styleGrid div.sizeLabel { grid-area: i; margin: auto 0; }
+div.styleGrid div.sizeInput { grid-area: j; margin: auto 0; }
+div.styleGrid div.colorLabel { grid-area: k; margin: auto 0; }
+div.styleGrid div.colorInput { grid-area: l; margin: auto 0; }
+*/
+
+
+
+
 
 
 

@@ -7,9 +7,11 @@
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css">
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
-	
+  
+  <!--
   <script crossorigin src="https://unpkg.com/react@16/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.production.min.js"></script>
+  -->
   
   <script src="js/lib/codemirror-5.0.js"></script>
   <script src="js/lib/codemirror-5.0-langs.js"></script>
@@ -46,7 +48,54 @@
   <script src="../diagram/diagram.js"></script>
   <script src="../mapping/mapping.js"></script>
   <script src="../mapping/panzoom.js"></script>
-	
+  <script src="../typeset/typeset.js"></script>
+  <script src="../typeset/hypher.js"></script>
+  
+  <script src="../otf/SourceSerifPro-Regular.js"></script>
+  <script>
+		
+		function Base64StringToUint8Array(str) {
+			
+			function b64ToUint6(n) { return n>64&&n<91?n-65:n>96&&n<123?n-71:n>47&&n<58?n+4:n===43?62:n===47?63:0; }
+			
+			const nBlocksSize = 3;
+			const sB64Enc = str.replace(/[^A-Za-z0-9\+\/]/g, ""); // remove all non-eligible characters from the string
+			const nInLen = sB64Enc.length;
+			const nOutLen = nBlocksSize ? Math.ceil((nInLen * 3 + 1 >> 2) / nBlocksSize) * nBlocksSize : nInLen * 3 + 1 >> 2;
+			const taBytes = new Uint8Array(nOutLen);
+			
+			for (let nMod3, nMod4, nUint24 = 0, nOutIdx = 0, nInIdx = 0; nInIdx < nInLen; nInIdx++)
+			{
+				nMod4 = nInIdx & 3;
+				nUint24 |= b64ToUint6(sB64Enc.charCodeAt(nInIdx)) << 18 - 6 * nMod4;
+				
+				if (nMod4 === 3 || nInLen - nInIdx === 1)
+				{
+					for (nMod3 = 0; nMod3 < 3 && nOutIdx < nOutLen; nMod3++, nOutIdx++)
+					{
+						taBytes[nOutIdx] = nUint24 >>> (16 >>> nMod3 & 24) & 255;
+					}
+					
+					nUint24 = 0;
+				}
+			}
+			
+			return taBytes;
+		}
+		
+		for (let name in Hyperdeck.Fonts)
+		{
+			const b64 = Hyperdeck.Fonts[name];
+			const uint8 = Base64StringToUint8Array(b64);
+			Hyperdeck.Fonts[name] = {
+				//b64: b64,
+				uint8: uint8,
+				font: opentype.parse(uint8.buffer)
+			};
+		}
+		
+  </script>
+  
   <!-- <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS_HTML'></script> -->
   
   <!-- http://docs.mathjax.org/en/latest/options/hub.html -->
@@ -66,110 +115,33 @@
           <button class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <i class="fa fa-cube fa-lg"></i> Add<span class="hidden-xs"> Cell</span> <span class="caret"></span>
           </button>
-            <ul class="dropdown-menu">
-              <li>
-                <a onclick="Hyperdeck.AddComponent('data');">
-                  Data
-                </a>
-              </li>
-              <li>
-                <a onclick="Hyperdeck.AddComponent('js');">
-                  Javascript
-                </a>
-              </li>
-              <li>
-                <a onclick="Hyperdeck.AddComponent('md');">
-                  Markdown
-                </a>
-              </li>
-              <li>
-                <a onclick="Hyperdeck.AddComponent('html');">
-                  HTML
-                </a>
-              </li>
-              <li>
-                <a onclick="Hyperdeck.AddComponent('css');">
-                  CSS
-                </a>
-              </li>
-              <li>
-                <a onclick="Hyperdeck.AddComponent('txt');">
-                  Plain text
-                </a>
-              </li>
-              <li>
-                <a onclick="Hyperdeck.AddComponent('image');">
-                  Image
-                </a>
-              </li>
-              <li>
-                <a onclick="Hyperdeck.AddComponent('assets');">
-                  Assets
-                </a>
-              </li>
-	      <li>
-                <a onclick="Hyperdeck.AddComponent('document');">
-                  Document
-                </a>
-              </li>
-              <li>
-                <a onclick="Hyperdeck.AddComponent('diagram');">
-                  Diagram
-                </a>
-              </li>
-              <li>
-                <a onclick="Hyperdeck.AddComponent('map');">
-                  Map
-                </a>
-              </li>
-	      <li>
-                <a onclick="Hyperdeck.AddComponent('graphics');">
-                  Graphics
-                </a>
-              </li>
-              <li>
-                <a onclick="Hyperdeck.AddComponent('binary');">
-                  Binary file
-                </a>
-              </li>
-              <li>
-                <a onclick="Hyperdeck.AddComponent('libraries');">
-                  External libraries
-                </a>
-              </li>
-              <li>
-                <a onclick="Hyperdeck.AddComponent('repl');">
-                  Javascript REPL
-                </a>
-              </li>
-              <li>
-                <a onclick="Hyperdeck.AddComponent('snips');">
-                  Javascript snippets
-                </a>
-              </li>
-            </ul>
+          <ul class="dropdown-menu">
+            <li><a onclick="Hyperdeck.AddComponent('data')">Data</a></li>
+            <li><a onclick="Hyperdeck.AddComponent('js')">Javascript</a></li>
+            <li><a onclick="Hyperdeck.AddComponent('md')">Markdown</a></li>
+            <li><a onclick="Hyperdeck.AddComponent('html')">HTML</a></li>
+            <li><a onclick="Hyperdeck.AddComponent('css')">CSS</a></li>
+            <li><a onclick="Hyperdeck.AddComponent('txt')">Plain text</a></li>
+            <li><a onclick="Hyperdeck.AddComponent('image')">Image</a></li>
+            <li><a onclick="Hyperdeck.AddComponent('assets')">Assets</a></li>
+            <li><a onclick="Hyperdeck.AddComponent('document')">Document</a></li>
+            <li><a onclick="Hyperdeck.AddComponent('diagram')">Diagram</a></li>
+            <li><a onclick="Hyperdeck.AddComponent('map')">Map</a></li>
+            <li><a onclick="Hyperdeck.AddComponent('graphics')">Graphics</a></li>
+            <li><a onclick="Hyperdeck.AddComponent('binary')">Binary file</a></li>
+            <li><a onclick="Hyperdeck.AddComponent('libraries')">External libraries</a></li>
+            <li><a onclick="Hyperdeck.AddComponent('repl')">Javascript REPL</a></li>
+            <li><a onclick="Hyperdeck.AddComponent('snips')">Javascript snippets</a></li>
+          </ul>
         </div>
         <div class="btn-group">
           <button class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <i class="fa fa-wrench fa-lg"></i> Tools <span class="caret"></span>
           </button>
             <ul class="dropdown-menu">
-              <li>
-                <a onclick="Hyperdeck.ExportHtml()">
-                  Export document as HTML
-                </a>
-              </li>
-              <li>
-                <a onclick="Hyperdeck.ShowAll()">
-                  Show all cells
-                </a>
-              </li>
-              <li>
-                <a onclick="Hyperdeck.HideAll()">
-                  Hide all cells
-                </a>
-              </li>
-              
+              <li><a onclick="Hyperdeck.ExportHtml()">Export document as HTML</a></li>
+              <li><a onclick="Hyperdeck.ShowAll()">Show all cells</a></li>
+              <li><a onclick="Hyperdeck.HideAll()">Hide all cells</a></li>
             </ul>
         </div>
       </div>
@@ -220,7 +192,8 @@
         <div role="tabpanel" class="active" id="cells"></div>
       </div>
       <div class="col-sm-6" id="output-container">
-        <div role="tabpanel" class="active" id="output"></div>
+        <div role="tabpanel" id="output" class="active"></div>
+        <div role="tabpanel" id="document" style="display:none"></div>
       </div>
     </div>
     

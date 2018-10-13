@@ -748,7 +748,7 @@ function LoadFromLocalStorage() {
 }
 
 // API
-var Hyperdeck = {};
+var Hyperdeck = { Fonts: {} };
 var Components = Hyperdeck.Components = {};
 Hyperdeck.Get = function(name, options) { var comp = FetchComponent(name); return comp.get(options); };
 Hyperdeck.Set = function(name, data, options) { var comp = FetchComponent(name); comp.set(data, options); };

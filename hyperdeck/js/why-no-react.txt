@@ -1,0 +1,30 @@
+
+my typical use case:
+
+1. start with a pojo
+2. create classes from that pojo
+3. render those classes
+4. edit the inputs, which edits the underlying pojo
+5. that pojo is consumed by another part of the program
+
+this is more of a two way data binding usage, whereas react is built for one way
+
+react stumbles on #5 - react assumes that editable state stays internal to that component
+it requires a hack to get that state visible to other parts of the program
+
+normally, the parent class calls React.createElement(Child, json) - but this doesn't return the child instance, it returns some opaque wrapper that doesn't expose the actual instance
+to get around this, we can attach the parent instance to props and pass it to the child - props.parent = parent
+and then in the child constructor, we can set props.parent.child = child
+but this is obviously a hack
+
+a secondary concern is the conversion of props to state as it is passed down the class hierarchy
+in react, props are passed down and immutable, and state is internal and mutable
+but we want to both pass the pojo down and then to mutate it
+so that means we have to pass the pojo as props, but then assign the fields to state: this.state = {...props}
+
+my hunch is that react does not contemplate a front-end only workflow
+editable state in a form is meant to be passed to the server, not consumed on the front end
+react is primarily a framework for parametrized display - props are the data to be displayed, state provides handles to fiddle with the display
+
+redux might change the story a bit
+
