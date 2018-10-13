@@ -2912,4 +2912,61 @@ var Eyeshade;
     var trueRegex = new RegExp('^true$', 'i');
     var falseRegex = new RegExp('^false$', 'i');
     // require ISO 8601 dates - this regex reads yyyy-mm-ddThh:mm:ss.fffZ, with each component after yyyy-mm being optional
-    // no
+    // note this means that yyyy alone will be interpreted as an int, not a date
+    var dateRegex = new RegExp('[0-9]{4}-[0-9]{2}(-[0-9]{2}(T[0-9]{2}(:[0-9]{2}(:[0-9]{2}(.[0-9]+)?)?)?(Z|([+-][0-9]{1-2}:[0-9]{2})))?)?');
+    var WriteObjToString = function (obj) {
+        // this is currently called only when writing to json/yaml, which requires that we return 'null'
+        // but if we start calling this function from the csv/tsv writer, we'll need to return ''
+        if (obj === null) {
+            return 'null';
+        }
+        var type = Object.prototype.toString.call(obj);
+        if (type == '[object String]' || type == '[object Date]') {
+            return '"' + obj.toString() + '"';
+        }
+        else {
+            return obj.toString();
+        }
+    };
+    var ParseStringToObj = function (str) {
+        if (str === null || str === undefined) {
+            return null;
+        }
+        if (str.length == 0) {
+            return '';
+        } // the numberRegex accepts the empty string because all the parts are optional
+        var val = null;
+        if (numberRegex.test(str) && digitRegex.test(str)) {
+            var divisor = 1;
+            str = str.trim();
+            if (str.indexOf('%') >= 0) {
+                divisor = 100;
+                str = str.replace('%', '');
+            }
+            str = str.replace(',', '');
+            if (str.indexOf('.') >= 0) {
+                val = parseFloat(str);
+            }
+            else {
+                val = parseInt(str);
+            }
+            val /= divisor;
+        }
+        else if (dateRegex.test(str)) {
+            val = new Date(str);
+            if (val.toJSON() == null) {
+                val = str;
+            } // revert if the date is invalid
+        }
+        else if (trueRegex.test(str)) {
+            val = true;
+        }
+        else if (falseRegex.test(str)) {
+            val = false;
+        }
+        else {
+            val = str;
+        }
+        return val;
+    };
+})(Eyeshade || (Eyeshade = {}));

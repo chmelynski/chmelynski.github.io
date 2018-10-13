@@ -2977,4 +2977,196 @@ var Hyperdeck;
                     throw ('[sprintf] mixing positional and named placeholders is not (yet) supported');
                 }
                 parsetree.push(match);
-    
+            }
+            else {
+                throw ('[sprintf] huh?');
+            }
+            fmt = fmt.substring(match[0].length);
+        }
+        return parsetree;
+    }
+    function ApplyFormat(tree, argv) {
+        function Typeof(x) { return Object.prototype.toString.call(x).slice(8, -1).toLowerCase(); }
+        function Repeat(str, n) { var l = []; for (var i = 0; i < n; i++) {
+            l.push(str);
+        } return l.join(''); }
+        var cursor = 1;
+        var output = [];
+        for (var i = 0; i < tree.length; i++) {
+            var match = tree[i]; // convenience purposes only
+            var type = Typeof(match);
+            if (type === 'string') {
+                output.push(match);
+            }
+            else if (type === 'array') {
+                var format = new FormatObj(match);
+                var arg = argv[cursor++];
+                if (/[^s]/.test(format.type) && (Typeof(arg) != 'number')) {
+                    throw (sprintf('[sprintf] expecting number but found %s', Typeof(arg)));
+                }
+                var str = null;
+                switch (format.type) {
+                    case 'b':
+                        str = arg.toString(2);
+                        break;
+                    case 'o':
+                        str = arg.toString(8);
+                        break;
+                    case 'x':
+                        str = arg.toString(16);
+                        break;
+                    case 'X':
+                        str = arg.toString(16).toUpperCase();
+                        break;
+                    case 'd':
+                        str = parseInt(arg, 10).toString();
+                        break;
+                    case 'u':
+                        str = Math.abs(arg).toString();
+                        break;
+                    case 'c':
+                        str = String.fromCharCode(arg);
+                        break;
+                    case 'e':
+                        str = format.places ? arg.toExponential(format.places) : arg.toExponential();
+                        break;
+                    case 'f':
+                        str = format.places ? parseFloat(arg).toFixed(format.places) : parseFloat(arg).toString();
+                        break;
+                    case 's':
+                        str = ((arg = String(arg)) && format.places ? arg.substring(0, format.places) : arg);
+                        break;
+                }
+                // + sign for positive numbers
+                str = (/[def]/.test(format.type) && format.plus && arg >= 0 ? '+' + str : str); // perhaps add a space if arg == 0
+                // padding
+                var c = format.padChar ? format.padChar == '0' ? '0' : format.padChar.charAt(1) : ' ';
+                var n = format.padLength - str.length;
+                var pad = format.padLength ? Repeat(c, n) : '';
+                // left or right padding
+                var result = format.rightPad ? str + pad : pad + str;
+                output.push(result);
+            }
+        }
+        return output.join('');
+    }
+    var numberRegex = new RegExp('^\\s*[+-]?([0-9]{1,3}((,[0-9]{3})*|([0-9]{3})*))?(\\.[0-9]+)?%?\\s*$');
+    var digitRegex = new RegExp('[0-9]');
+    var trueRegex = new RegExp('^true$', 'i');
+    var falseRegex = new RegExp('^false$', 'i');
+    // require ISO 8601 dates - this regex reads yyyy-mm-ddThh:mm:ss.fffZ, with each component after yyyy-mm being optional
+    // note this means that yyyy alone will be interpreted as an int, not a date
+    var dateRegex = new RegExp('[0-9]{4}-[0-9]{2}(-[0-9]{2}(T[0-9]{2}(:[0-9]{2}(:[0-9]{2}(.[0-9]+)?)?)?(Z|([+-][0-9]{1-2}:[0-9]{2})))?)?');
+    var WriteObjToString = function (obj) {
+        // this is currently called only when writing to json/yaml, which requires that we return 'null'
+        // but if we start calling this function from the csv/tsv writer, we'll need to return ''
+        if (obj === null) {
+            return 'null';
+        }
+        var type = Object.prototype.toString.call(obj);
+        if (type == '[object String]' || type == '[object Date]') {
+            return '"' + obj.toString() + '"';
+        }
+        else {
+            return obj.toString();
+        }
+    };
+    var ParseStringToObj = function (str) {
+        if (str === null || str === undefined) {
+            return null;
+        }
+        if (str.length == 0) {
+            return '';
+        } // the numberRegex accepts the empty string because all the parts are optional
+        var val = null;
+        if (numberRegex.test(str) && digitRegex.test(str)) {
+            var divisor = 1;
+            str = str.trim();
+            if (str.indexOf('%') >= 0) {
+                divisor = 100;
+                str = str.replace('%', '');
+            }
+            str = str.replace(',', '');
+            if (str.indexOf('.') >= 0) {
+                val = parseFloat(str);
+            }
+            else {
+                val = parseInt(str);
+            }
+            val /= divisor;
+        }
+        else if (dateRegex.test(str)) {
+            val = new Date(str);
+            if (val.toJSON() == null) {
+                val = str;
+            } // revert if the date is invalid
+        }
+        else if (trueRegex.test(str)) {
+            val = true;
+        }
+        else if (falseRegex.test(str)) {
+            val = false;
+        }
+        else {
+            val = str;
+        }
+        return val;
+    };
+    function NumberToLetter(n) {
+        // 0 => "A"
+        // 1 => "B"
+        // 25 => "Z"
+        // 26 => "AA"
+        if (n < 0) {
+            return "";
+        }
+        var k = 1;
+        var m = n + 1;
+        while (true) {
+            var pow = 1;
+            for (var i = 0; i < k; i++) {
+                pow *= 26;
+            }
+            if (m <= pow) {
+                break;
+            }
+            m -= pow;
+            k++;
+        }
+        var reversed = "";
+        for (var i = 0; i < k; i++) {
+            var c = n + 1;
+            var shifter = 1;
+            for (var j = 0; j < k; j++) {
+                c -= shifter;
+                shifter *= 26;
+            }
+            var divisor = 1;
+            for (var j = 0; j < i; j++) {
+                divisor *= 26;
+            }
+            c /= divisor;
+            c %= 26;
+            reversed += String.fromCharCode(65 + c);
+        }
+        var result = "";
+        for (var i = reversed.length - 1; i >= 0; i--) {
+            result += reversed[i];
+        }
+        return result;
+    }
+    function LetterToNumber(s) {
+        // "A" => 0
+        // "B" => 1
+        // "Z" => 25
+        // "AA" => 26
+        var result = 0;
+        var multiplier = 1;
+        for (var i = s.length - 1; i >= 0; i--) {
+            var c = s.charCodeAt(i);
+            result += multiplier * (c - 64);
+            multiplier *= 26;
+        }
+        return result - 1; // -1 makes it 0-indexed
+    }
+})(Hyperdeck || (Hyperdeck = {}));
