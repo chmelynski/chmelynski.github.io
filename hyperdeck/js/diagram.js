@@ -136,47 +136,6 @@ Diag.prototype.set = function(text, options) {
 
 Diag.prototype.Run = function() { this.exec(this); };
 
-var LinkedList = function() {
-	this.data = null;
-	this.prev = this;
-	this.next = this;
-};
-LinkedList.prototype.add = function(data) {
-	
-	// this must be called on the sentinel
-	
-	var elt = new LinkedList();
-	elt.data = data;
-	elt.next = this;
-	elt.prev = this.prev;
-	
-	if (this.next === this) { this.next = elt; } else { this.prev.next = elt; }
-	this.prev = elt;
-	
-	return elt;
-};
-LinkedList.prototype.remove = function() {
-	
-	// this cannot be called on the sentinel
-	this.prev.next = this.next;
-	this.next.prev = this.prev;
-};
-LinkedList.prototype.enumerate = function() {
-	
-	// this must be called on the sentinel
-	
-	var list = [];
-	var elt = this.next;
-	
-	while (elt !== this)
-	{
-		list.push(elt.data);
-		elt = elt.next;
-	}
-	
-	return list;
-};
-
 Hyperdeck.Components.diagram = Diag;
 
 })();
