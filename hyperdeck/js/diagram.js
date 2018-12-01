@@ -91,7 +91,7 @@ Diag.prototype.addOutputElements = function() {
 };
 Diag.prototype.onblur = function() {
 	var comp = this;
-	//comp.exec(comp);
+	comp.diagram.receiveText(comp.text);
 };
 Diag.prototype.afterLoad = function(callback) {
 	var comp = this;
