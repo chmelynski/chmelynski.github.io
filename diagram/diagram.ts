@@ -296,11 +296,16 @@ export class Diagram {
 		
 		const code = this.chunks.map(x => x[0]).join('');
 		
-		this.fn = new Function('ctx, _p', code);
+		const headers = [
+			"ctx.fillStyle = 'white';",
+			"ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);"
+		];
+		
+		this.fn = new Function('ctx, _p', headers.join('\n') + code);
 	}
 	changePointCoords(): void {
 		this.points.forEach(function (p: Point): void {
-			p.chunk[0] = '{ x: ' + p.x.toString() + ', y: ' + p.y.toString() + '}';
+			p.chunk[0] = '{ x: ' + p.x.toString() + ', y: ' + p.y.toString() + ' }';
 		});
 	}
 	

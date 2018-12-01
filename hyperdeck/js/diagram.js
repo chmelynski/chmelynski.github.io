@@ -100,15 +100,14 @@ Diag.prototype.afterLoad = function(callback) {
 };
 Diag.prototype.afterAllLoaded = function() {
 	var comp = this;
-	comp.exec(comp);
+	comp.diagram.receiveText(comp.text, comp.codemirror.lastLine());
 };
 Diag.prototype.exec = function(thisArg) {
 	
 	var comp = this;
 	
-	comp.diagram.receiveText(comp.text, comp.codemirror.lastLine());
-	//var fn = new Function('ctx', comp.text);
-	//fn.call(thisArg, comp.ctx);
+	// this could be hidden with a new Diagram function - the key is to send the ctx as thisArg
+	comp.diagram.fn.call(thisArg, thisArg, comp.diagram.points); // thisArg is also sent as the 'ctx' arg
 };
 Diag.prototype.write = function() {
 	
