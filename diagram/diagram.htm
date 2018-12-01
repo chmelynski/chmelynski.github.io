@@ -1,7 +1,7 @@
 
 <html>
 <head>
-<link rel="stylesheet" href="../hyperdeck/css/codemirror-5.0.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.0.0/codemirror.min.css" />
 <style>
 .CodeMirror { border: 1px solid gray; cursor: text; height: 550px; }
 #container { display: grid; grid-template-columns: 1fr 1fr; }
@@ -10,12 +10,11 @@
 <script>var exports = {};</script>
 
 <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
-<script src="../hyperdeck/js/lib/codemirror-5.0.js"></script>
-<script src="../hyperdeck/js/lib/codemirror-5.0-langs.js"></script>
-
-<script src="../assets.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.0.0/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.0.0/mode/javascript/javascript.min.js"></script>
 
 <script src="diagram.js"></script>
+<script src="diagram-helpers.js"></script>
 
 </head>
 <body>
@@ -27,33 +26,108 @@
 <input id="width" type="text" value="1000" size="5">
 <input id="height" type="text" value="500" size="5">
 
-<button onclick="diagram.insert('B(ctx);')">[B]egin Path</button>
-<button onclick="diagram.insert('M(ctx, p.get());')">[M]ove</button>
-<button onclick="diagram.insert('L(ctx, p.get());')">[L]ine</button>
-<button onclick="diagram.insert('Q(ctx, p.get(), p.get());')">[Q]uadratic</button>
-<button onclick="diagram.insert('C(ctx, p.get(), p.get(), p.get());')">[C]ubic</button>
-<button onclick="diagram.insert('ctx.closePath();')">[Z]Close Path</button>
-<button onclick="diagram.insert('S(ctx);')">[S]troke</button>
-<button onclick="diagram.insert('F(ctx);')">[F]ill</button>
 <button onclick="Download(diagram.exportPath())">Export Path</button>
-
+ 
 <div id="codemirror" tabIndex="1" style="margin: 1em; display: none;"></div>
 <div id="diagramContainer" style="margin: 1em;"><canvas id="diagram" tabIndex="2" style="border: 1px solid gray;"></canvas></div>
 
 <script>
 
-var code = ``;
-
-/*
+const initialCode = `
 ctx.canvas.width = document.getElementById('width').value;
 ctx.canvas.height = document.getElementById('height').value;
 
 ctx.fillStyle = 'white';
 ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-*/
 
-var assets = null;
+const a = { x: 10, y: 10 };
+ctx.strokeRect(a.x + 0.5, a.y + 0.5, 100, 100);
+`;
+
+let assets = null;
 function OnLoad(assetmap) { assets = assetmap; }
+
+function LoadAssets(files, callback) {
+	
+	var toload = files.length;
+	var loaded = 0;
+	
+	var assets = new Map();
+	
+	for (var i = 0; i < files.length; i++)
+	{
+		(function(thefile) {
+		
+			var filename = thefile.name;
+			
+			var fileReader = new FileReader();
+			
+			var ext = filename.substr(filename.lastIndexOf('.'));
+			
+			fileReader.onload = function(event) {
+				
+				var result = event.target.result;
+				
+				if (ext == '.jpg' || ext == '.jpeg' || ext == '.bmp' || ext == '.png' || ext == '.gif')
+				{
+					var img = document.createElement('img')
+					img.src = result; // 'data:image/' + ext.substr(1) + ';base64,' + 
+					assets.set(filename, img);
+				}
+				else if (ext == '.otf' || ext == '.ttf')
+				{
+					var font = opentype.parse(result);
+					assets.set(filename, font);
+				}
+				else if (ext == '.osm')
+				{
+					var xml = Xml.Parse(result);
+					var osm = Osm.MakeOsm(xml);
+					// need smarter bounds - tag osm.bounds with like 5% and 95% point extent, plus a buffer?
+					//osm.bounds.pseudomaxLat = ??
+					assets.set(filename, osm);
+				}
+				else if (ext == '.topopack' || ext == '.geopack' || ext == '.arcpack')
+				{
+					assets.set(filename, result);
+				}
+				else if (ext == '.tsv' || ext == '.csv')
+				{
+					
+				}
+				else if (ext == '.json' || ext == '.topojson' || ext == '.geojson')
+				{
+					assets.set(filename, JSON.parse(result));
+				}
+				else if (ext == '.txt' || ext == '.js' || ext == '.path')
+				{
+					assets.set(filename, result);
+				}
+				else
+				{
+					throw new Error();
+				}
+				
+				loaded++;
+				if (toload == loaded) { callback(assets); }
+			};
+			
+			if (ext == '.jpg' || ext == '.jpeg' || ext == '.bmp' || ext == '.png' || ext == '.gif')
+			{
+				fileReader.readAsDataURL(thefile);
+			}
+			else if (ext == '.txt' || ext == '.js' || ext == '.json' || ext == '.tsv' || ext == '.csv' || ext == '.path' || ext == '.osm' || ext == '.topojson' || ext == '.geojson')
+			{
+				fileReader.readAsText(thefile);
+			}
+			else
+			{
+				fileReader.readAsArrayBuffer(thefile);
+			}
+			
+		})(files[i]);
+	}
+}
 
 function Download(path) {
 	
@@ -112,26 +186,18 @@ function InitCodemirror(div) {
 
 document.getElementById('showpoints').onchange = function() {
 	diagram.showPoints = this.checked;
-	diagram.points.freeze();
 	diagram.draw();
-	diagram.points.unfreeze();
 };
 
-function MakeVanilla() {
-	
-	var text = codemirror.getValue();
-	
-	// p.add(123, 456)
-	// L(ctx, p.get())
-	// =>
-	// ctx.lineTo(123, 456)
-	
-	codemirror.setValue(text);
-}
 
 function SetCodemirrorText(code) { codemirror.getDoc().setValue(code); }
+const ctx = document.getElementById('diagram').getContext('2d');
+const codemirror = InitCodemirror(document.getElementById('codemirror'));
+const diagram = new Hyperdeck.Diagram(ctx, SetCodemirrorText);
+diagram.receiveText(initialCode);
 
-var canvasActive = true;
+
+let canvasActive = true;
 function SwitchTabs() {
 	
 	if (canvasActive)
@@ -151,12 +217,7 @@ function SwitchTabs() {
 	}
 }
 
-var ctx = document.getElementById('diagram').getContext('2d');
-var codemirror = InitCodemirror(document.getElementById('codemirror'));
-var diagram = new Diagram(ctx, SetCodemirrorText);
-diagram.receiveText(code, codemirror.lastLine());
 document.getElementById('diagram').focus();
-
 document.getElementById('diagram').addEventListener('keydown', function(e) { if (e.keyCode == 27) { SwitchTabs(); } });
 document.getElementById('codemirror').addEventListener('keydown', function(e) { if (e.keyCode == 27) { SwitchTabs(); } });
 
