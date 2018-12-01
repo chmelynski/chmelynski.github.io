@@ -85,7 +85,7 @@ Diag.prototype.addOutputElements = function() {
 	canvas.tabIndex = 1;
 	
 	comp.ctx = canvas.getContext('2d');
-	comp.diagram = new Diagram(comp.ctx, function(text) { comp.set(text); });
+	comp.diagram = new Hyperdeck.Diagram(comp.ctx, function(text) { comp.set(text); });
 	
 	$('<div>').attr('id', comp.name).append(canvas).appendTo('#output');
 };
