@@ -14,7 +14,7 @@ How these goals are tied together: Diagram scans the code for object literals th
 
 The Diagram constructor takes two arguments: a CanvasRenderingContext2D, and an afterChange hook that is called with the new code text that is generated after points are dragged.
 
-    const diagram = Hyperdeck.Diagram(ctx, afterChange(code))
+    diagram = Hyperdeck.Diagram(ctx, afterChange(code))
   
 Then the diagram instance must be initialized with the code text:
 
