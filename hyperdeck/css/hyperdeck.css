@@ -464,12 +464,11 @@ div.borderStyleGrid {
 	grid-row-gap: 0.5em;
 	margin: 0 0 1em;
 }
-div.borderStyleGrid div.typeInput input { margin: auto; width: 4em; text-align: center; }
-div.borderStyleGrid div.indexInput input { margin: auto; width: 6em; text-align: center; }
-div.borderStyleGrid div.postsInput input { margin: auto; width: 6em; text-align: center; }
+div.borderStyleGrid div.rangeInput input { margin: auto; width: 6em; text-align: center; }
+div.borderStyleGrid div.sidesInput input { margin: auto; width: 6em; text-align: center; }
+div.borderStyleGrid div.widthInput input { margin: auto; width: 4em; text-align: center; }
 div.borderStyleGrid div.styleInput input { margin: auto; width: 6em; text-align: center; }
 div.borderStyleGrid div.colorInput input { margin: auto; width: 6em; text-align: center; }
-div.borderStyleGrid div.widthInput input { margin: auto; width: 4em; text-align: center; }
 
 div.cellStyleLabel { font-weight: bold; margin: 2em 0 1em; }
 div.cellStyleGrid {
@@ -479,9 +478,8 @@ div.cellStyleGrid {
 	grid-row-gap: 0.5em;
 	margin: 0 0 1em;
 }
-div.cellStyleGrid div.rowInput input { margin: auto; width: 6em; text-align: center; }
-div.cellStyleGrid div.colInput input { margin: auto; width: 6em; text-align: center; }
-div.cellStyleGrid div.marginInput input { margin: auto; width: 6em; text-align: center; }
+div.cellStyleGrid div.rangeInput input { margin: auto; width: 6em; text-align: center; }
+div.cellStyleGrid div.marginInput input { margin: auto; width: 8em; text-align: center; }
 div.cellStyleGrid div.alignInput input { margin: auto; width: 6em; text-align: center; }
 div.cellStyleGrid div.backgroundColorInput input { margin: auto; width: 6em; text-align: center; }
 
