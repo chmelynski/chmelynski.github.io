@@ -459,7 +459,7 @@ div.colSizesInput { margin: auto 0; width: 10em; }
 div.borderStyleLabel { font-weight: bold; margin: 1em 0 1em; }
 div.borderStyleGrid {
 	display: grid;
-	grid-template-columns: 4em 6em 6em 6em 6em 4em 4em;
+	grid-template-columns: 6em 6em 4em 6em 6em 4em;
 	grid-column-gap: 0.5em;
 	grid-row-gap: 0.5em;
 	margin: 0 0 1em;
@@ -473,7 +473,7 @@ div.borderStyleGrid div.colorInput input { margin: auto; width: 6em; text-align:
 div.cellStyleLabel { font-weight: bold; margin: 2em 0 1em; }
 div.cellStyleGrid {
 	display: grid;
-	grid-template-columns: 6em 6em 6em 6em 6em 4em;
+	grid-template-columns: 6em 8em 6em 6em 4em;
 	grid-column-gap: 0.5em;
 	grid-row-gap: 0.5em;
 	margin: 0 0 1em;
