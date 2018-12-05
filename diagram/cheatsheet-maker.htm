@@ -1,0 +1,159 @@
+
+<html>
+<body>
+
+<textarea style="width: 600px; height: 500px;">
+
+// directives are persistent
+# 100,200,size=10,dy=15,color=black,font=Courier New
+foo
+bar
+baz
+
+// dy[0]=20 refers to the first dy gap, bold[0][:] specifies bold style for headers
+# 200,200,dx=30,bold[0][:]
+h1	h2
+a	b
+c	d
+
+// x means to repeat x-coord from previous directive
+# x,300
+foo
+bar
+
+// first two fields are functions
+# x+50,400
+foo
+bar
+
+// titled table - the title can be centered, bolded, etc.
+# 400,100,titled
+Title
+a	b
+c	d
+
+</textarea>
+
+<canvas width="500" height="500" style="border: 1px solid gray"></canvas>
+
+<script>
+
+const ctx = document.getElementsByTagName('canvas')[0].getContext('2d');
+
+function Draw() {
+    
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    
+    const lines = document.getElementsByTagName('textarea')[0].value.split('\n').map(x => x.trim()).filter(x => x.length > 0);
+
+    let x = 0;
+    let y = 0;
+    let tx = 0;
+    let ty = 0;
+
+    const d = {
+        dx: 0,
+        dy: 0,
+        font: 'Courier New',
+        size: 10,
+        align: 'center',
+        baseline: 'middle',
+        color: 'black'
+    };
+
+    ctx.font = d.size + 'pt ' + d.font;
+
+    for (let i = 0; i < lines.length; i++)
+    {
+        const line = lines[i];
+        
+        if (line.startsWith('#'))
+        {
+            const parts = line.substr(1).trim().split(',').map(x => x.trim());
+            
+            const fnx = new Function('x', 'return ' + parts[0]);
+            const fny = new Function('y', 'return ' + parts[1]);
+            
+            x = fnx(x);
+            y = fny(y);
+            tx = x;
+            ty = y;
+            
+            for (let j = 2; j < parts.length; j++)
+            {
+                const part = parts[j];
+                
+                if (part.indexOf('=') >= 0)
+                {
+                    const [lhs, rhs] = part.split('=');
+                    d[lhs] = rhs;
+                    
+                    if (lhs == 'size' || lhs == 'font')
+                    {
+                        ctx.font = d.size + 'pt ' + d.font;
+                    }
+                    else if (lhs == 'align')
+                    {
+                        ctx.textAlign = d.align;
+                    }
+                    else if (lhs == 'baseline')
+                    {
+                        ctx.textBaseline = d.baseline;
+                    }
+                    else if (lhs == 'color')
+                    {
+                        ctx.fillStyle = d.color;
+                    }
+                    else if (lhs == 'dx')
+                    {
+                        d.dx = parseFloat(d.dx);
+                    }
+                    else if (lhs == 'dy')
+                    {
+                        d.dy = parseFloat(d.dy);
+                    }
+                }
+                else if (part.startsWith('bold'))
+                {
+                
+                }
+                else if (part == 'titled')
+                {
+                
+                }
+                else
+                {
+                
+                }
+            }
+        }
+        else if (line.startsWith('//'))
+        {
+        
+        }
+        else
+        {
+            const words = line.split('\t'); // or split on '  ', or fixed-width fields
+            
+            tx = x;
+            
+            for (let j = 0; j < words.length; j++)
+            {
+                const word = words[j];
+                ctx.fillText(word, tx, ty);
+                tx += d.dx;
+            }
+            
+            ty += d.dy;
+        }
+    }
+}
+
+document.getElementsByTagName('textarea')[0].onchange = function() { Draw(); };
+
+Draw();
+
+</script>
+</body>
+</html>
+
