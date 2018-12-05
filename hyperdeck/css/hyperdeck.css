@@ -303,6 +303,13 @@ div.alignGrid {
 	padding-left: 0.05em;
 	padding-top: 0.1em;
 }
+div.textAlignGrid {
+	display: grid;
+	grid-template-columns: repeat(3, 3em);
+	grid-template-rows: repeat(3, 3em);
+	padding-left: 0.05em;
+	padding-top: 0.1em;
+}
 div.contentMarginDiv {
 	display: grid;
 	grid-template-columns: repeat(4, 2.5em);
@@ -384,6 +391,11 @@ div.align { border: 1px solid white; }
 div.align.selected { border: 1px solid gray; }
 div.align:hover { border: 1px solid orange; }
 
+div.textAlign { border: 1px solid white; }
+div.textAlign.selected { border: 1px solid gray; }
+div.textAlign:hover { border: 1px solid orange; }
+
+
 div.anchor {
 	width: 27px;
 	height: 27px;
@@ -392,6 +404,11 @@ div.anchor {
 div.align {
 	width: 45px;
 	height: 45px;
+}
+
+div.textAlign {
+	width: 21px;
+	height: 21px;
 }
 
 div.hori { }
@@ -418,6 +435,16 @@ div.align.C2 { background: url(C2-45.png); }
 div.align.A3 { background: url(A3-45.png); }
 div.align.B3 { background: url(B3-45.png); }
 div.align.C3 { background: url(C3-45.png); }
+
+div.textAlign.A1 { background: url(text-A1.png); }
+div.textAlign.B1 { background: url(text-B1.png); }
+div.textAlign.C1 { background: url(text-C1.png); }
+div.textAlign.A2 { background: url(text-A2.png); }
+div.textAlign.B2 { background: url(text-B2.png); }
+div.textAlign.C2 { background: url(text-C2.png); }
+div.textAlign.A3 { background: url(text-A3.png); }
+div.textAlign.B3 { background: url(text-B3.png); }
+div.textAlign.C3 { background: url(text-C3.png); }
 
 div.align.A1:hover { background: url(A1-45-box.png); }
 div.align.B1:hover { background: url(B1-45-box.png); }
