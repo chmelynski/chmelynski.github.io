@@ -11,6 +11,21 @@ How these goals are tied together: Diagram scans the code for object literals su
 
 The tricky part is that we don't want to re-compile the code on every frame of the drag, which means that the code has to be transformed to reference point objects, whose coordinates are changed by the drag. The code itself and the compiled function can then remain constant through the drag. To do this, we replace { x: 0, y: 0 } with _p[i] before compiling the code. The points are stored and send to the compiled function as _p.
 
+
+TO DO:
+
+diagram
+-------
+wrap the drawing of the selection box in a save and restore
+
+diagram component
+-----------------
+the show points button interacts weirdly with the focus - the canvas only redraws when it receives focus? something.
+automatically prepend a fillRect white line to the user code, to clear the canvas 
+does it pass the Diag component or ctx to the user code?
+
+
+
 */
 
 interface Point {
