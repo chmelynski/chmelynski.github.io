@@ -19,16 +19,14 @@ add style array, read style array and set ctx.font, implement ctx.font
 we should have an inline class that acts like content but for inline text - footnotes, citations, inline math, etc.
 
 
-list and table height are dependent variables, dependent on the number of elements and the line pitch / row heights
-so those inputs should probably be read-only
-also when the HTML is edited, that will cascade to the height - basically you have to re-bind when the HTML changes
 
 
 rational asymptotic cutoffs for too-large/too-small fonts/pitch/etc
 
 
-
-add type select box to Content - read from Hyperdeck.ContentPlugins
+make AddContent into a type select box - read from Hyperdeck.ContentPlugins
+we can no longer infer type on binding - for one, we have Diagram Contents binding to Diagram components, not to HTML elements
+and inferring type is generally ambiguous
 
 change some text inputs to select boxes
  style.font - read from Hyperdeck.Fonts
@@ -39,7 +37,6 @@ change text input to multibutton
  list.align
 
 implement aspect ratio preservation - diagram, image
-set table width/height automatically when row/colSizes edited (and i guess border width too?)
 
 move spacing variables to Article, defined in units of em (and make that clear in the interface)
 Optimal space width
@@ -49,6 +46,72 @@ Heterogenous letter spacing
 pitch and indent should probably also be defined in ems
 
 font size probably should be in points - does the rest of the world use points?
+
+list
+----
+set height automatically - re-bind on HTML edit
+
+
+table
+-----
+implement rowSpan/colSpan
+set table width/height automatically when row/colSizes edited - this requires binding though, which may not be tenable
+it might be best to keep the table content and HTML separate rather than binding them
+it is difficult to maintain a bind - you have to re-bind whenever the HTML is edited, for example
+which is possible, just kind of wasteful
+
+
+graphical editing of common content variables
+---------------------------------------------
+we can hide the (bulky) common content interface, and replace it with an edit button
+this should be done a la maximize/minimize
+when editing graphically, draw red guidlines from the origin to the active handle, draw blue active/passive handles, a gray content box whose edges are active for changing width/height, and a green margin box
+
+
+
+
+
+the text reader should ignore ul and table, but it seems like that's not happening
+
+
+
+a caption is just a one-cell table - if you want a caption with a border or background color, just make it a one-cell table
+a list is just a one-column table, with different indents
+
+
+
+
+rename table margin to padding
+
+list pitch should be a multiplier on the "natural" line height
+list style should not exist - style is specified by classes and spans, like for base text, table, and caption
+list align, for whole list, just A2-B2-C2 - vertical align can just be fixed at center (or top, whatever works)
+list indent only makes sense when left-aligned
+list symbol can be 1a, 1.1., etc. - combinations
+
+components should have a z-index (0 is the level of the base text)
+
+
+
+
+
+outline
+-------
+
+symbol style align margin includeinTOC
+needs initial values
+
+should be able to layout HTML with no content at all, just using defaults
+
+base text will have to be typeset paragraph by paragraph, after any header
+
+treat divs with text same as paragraphs
+
+style fields can include size and bold/italic, and can reference either fonts or classes
+16pt bold regular
+16pt bold Arial
+16pt bold - this references (default) by default
+
 
 */
 
@@ -583,19 +646,6 @@ class Article {
 			styles: article.styles.write()
 		};
 	}
-	edit(e) {
-		const article = this;
-		
-		const target = e.target;
-		const value = target.type === 'checkbox' ? target.checked : target.value;
-		const name = target.name;
-		
-		article.setState({ [name]: value });
-	}
-	addSection() {
-		const article = this;
-		article.setState(prevState => ({ sections: prevState.sections.concat(new Section()) }));
-	}
 	render(parentDiv) {
 		
 		const doc = this;
@@ -705,72 +755,6 @@ class Article {
 		
 		$('<hr>').appendTo(div);
 	}
-	renderReact() {
-		//return React.createElement("div",{"class":"doc"},React.createElement("div",{"class":"grid",id:"article"},React.createElement("div",{"class":"header"},"Page size and resolution"),React.createElement("div",{className:"name"},"Unit:"),React.createElement("div",null,React.createElement("select",{name:"unit",value:this.state.unit,onChange:this.edit},React.createElement("option",null,"in"),React.createElement("option",null,"cm"),React.createElement("option",null,"mm"),React.createElement("option",null,"pt"))),React.createElement("div",{className:"name"},"Cubits per ",this.state.unit),React.createElement("div",null,React.createElement("input",{type:"text",className:"cubits",name:"cubitsPerUnit",value:this.state.cubitsPerUnit,onChange:this.edit})),React.createElement("div",{className:"name"},"Pixels per ",this.state.unit),React.createElement("div",null,React.createElement("input",{type:"text",className:"cubits",name:"pixelsPerUnit",value:this.state.pixelsPerUnit,onChange:this.edit})),React.createElement("div",{className:"name"},"Page width"),React.createElement("div",null,React.createElement("input",{type:"text",className:"cubits",name:"pageWidth",value:this.state.pageWidth,onChange:this.edit})),React.createElement("div",{className:"name"},"Page height"),React.createElement("div",null,React.createElement("input",{type:"text",className:"cubits",name:"pageHeight",value:this.state.pageHeight,onChange:this.edit}))),React.createElement("div",{"class":"grid",id:"pageNumbering"},React.createElement("div",{"class":"header"},"Page numbering"),React.createElement("div",{className:"name"},"Number pages"),React.createElement("div",null,React.createElement("input",{type:"checkbox",name:"doPageNumbering",value:this.state.doPageNumbering,onChange:this.edit})),React.createElement("div",{className:"name"},"First page"),React.createElement("div",null,React.createElement("input",{type:"checkbox",name:"firstPage",value:this.state.firstPage,onChange:this.edit})),React.createElement("div",{className:"name"},"Horizontal align"),React.createElement("div",null,React.createElement("select",{name:"pageNumberHoriAlign",value:this.state.pageNumberHoriAlign,onChange:this.edit},React.createElement("option",null,"left"),React.createElement("option",null,"center"),React.createElement("option",null,"right"),React.createElement("option",null,"L-R-L"),React.createElement("option",null,"R-L-R"))),React.createElement("div",{className:"name"},"Vertical align"),React.createElement("div",null,React.createElement("select",{name:"pageNumberVertAlign",value:this.state.pageNumberVertAlign,onChange:this.edit},React.createElement("option",null,"top"),React.createElement("option",null,"center"),React.createElement("option",null,"bottom"))),React.createElement("div",{className:"name"},"Horizontal offset"),React.createElement("div",null,React.createElement("input",{type:"text",className:"cubits",name:"pageNumberHoriOffset",value:this.state.pageNumberHoriOffset,onChange:this.edit})),React.createElement("div",{className:"name"},"Vertical offset"),React.createElement("div",null,React.createElement("input",{type:"text",className:"cubits",name:"pageNumberVertOffset",value:this.state.pageNumberVertOffset,onChange:this.edit})),React.createElement("div",{className:"name"},"Font"),React.createElement("div",null,React.createElement("input",{type:"text",className:"center",name:"pageNumberFont",value:this.state.pageNumberFont,onChange:this.edit})),React.createElement("div",{className:"name"},"Fill"),React.createElement("div",null,React.createElement("input",{type:"text",className:"center",name:"pageNumberFill",value:this.state.pageNumberFill,onChange:this.edit}))),React.createElement("button",{"class":"btn btn-default btn-sm margin02em",onClick:this.addSection},React.createElement("i",{"class":"fa fa-plus"})," Add Section"));
-		/*
-		<div class="doc">
-			
-			<div class="grid" id="article">
-				<div class="header">Page size and resolution</div>
-				<div className="name">Unit:</div>
-				<div>
-					<select name="unit" value={this.state.unit} onChange={this.edit}>
-						<option>in</option>
-						<option>cm</option>
-						<option>mm</option>
-						<option>pt</option>
-					</select>
-				</div>
-				<div className="name">Cubits per {this.state.unit}</div>
-				<div><input type="text" className="cubits" name="cubitsPerUnit" value={this.state.cubitsPerUnit} onChange={this.edit}></input></div>
-				<div className="name">Pixels per {this.state.unit}</div>
-				<div><input type="text" className="cubits" name="pixelsPerUnit" value={this.state.pixelsPerUnit} onChange={this.edit}></input></div>
-				<div className="name">Page width</div>
-				<div><input type="text" className="cubits" name="pageWidth" value={this.state.pageWidth} onChange={this.edit}></input></div>
-				<div className="name">Page height</div>
-				<div><input type="text" className="cubits" name="pageHeight" value={this.state.pageHeight} onChange={this.edit}></input></div>
-			</div>
-			
-			<div class="grid" id="pageNumbering">
-				<div class="header">Page numbering</div>
-				<div className="name">Number pages</div>
-				<div><input type="checkbox" name="doPageNumbering" value={this.state.doPageNumbering} onChange={this.edit}></input></div>
-				<div className="name">First page</div>
-				<div><input type="checkbox" name="firstPage" value={this.state.firstPage} onChange={this.edit}></input></div>
-				<div className="name">Horizontal align</div>
-				<div>
-					<select name="pageNumberHoriAlign" value={this.state.pageNumberHoriAlign} onChange={this.edit}>
-						<option>left</option>
-						<option>center</option>
-						<option>right</option>
-						<option>L-R-L</option>
-						<option>R-L-R</option>
-					</select>
-				</div>
-				<div className="name">Vertical align</div>
-				<div>
-					<select name="pageNumberVertAlign" value={this.state.pageNumberVertAlign} onChange={this.edit}>
-						<option>top</option>
-						<option>center</option>
-						<option>bottom</option>
-					</select>
-				</div>
-				<div className="name">Horizontal offset</div>
-				<div><input type="text" className="cubits" name="pageNumberHoriOffset" value={this.state.pageNumberHoriOffset} onChange={this.edit}></input></div>
-				<div className="name">Vertical offset</div>
-				<div><input type="text" className="cubits" name="pageNumberVertOffset" value={this.state.pageNumberVertOffset}
-				onChange={this.edit}></input></div>
-				<div className="name">Font</div>
-				<div><input type="text" className="center" name="pageNumberFont" value={this.state.pageNumberFont} onChange={this.edit}></input></div>
-				<div className="name">Fill</div>
-				<div><input type="text" className="center" name="pageNumberFill" value={this.state.pageNumberFill} onChange={this.edit}></input></div>
-			</div>
-			
-			<button class="btn btn-default btn-sm margin02em" onClick={this.addSection}><i class="fa fa-plus"></i> Add Section</button>
-			
-		</div>
-		*/
-	}
 }
 class Section extends Base {
 	
@@ -860,67 +844,8 @@ class Section extends Base {
 			contents: section.contents.enumerate().map(x => x.write())
 		};
 	}
-	edit(e) {
-		
-		const target = e.target;
-		const value = target.type === 'checkbox' ? target.checked : target.value;
-		const name = target.name;
-		
-		this.setState({ [name]: value });
-	}
 	remove() {
 		this.div.remove();
-	}
-	addContent() {
-		this.setState({ contents: this.state.contents.concat(new Content()) });
-	}
-	renderReact() {
-		
-		/*
-		<div class="section"></div>
-		<button style="float:right" class="btn btn-default btn-sm" onClick="this.remove"><i class="fa fa-trash-o"></i> Delete</button>
-		<div class="header">Section</div>
-		<div class=""><span>Selector: </span><input type="text" placeholder="html1, md2" name="selector" value="this.state.selector" onChange="this.edit"></div>
-		<div class="">
-			<span>Orientation: </span>
-			<select name="orientation" value="this.state.orientation" onChange="this.edit">
-				<option>portrait</option>
-				<option>landscape</option>
-			</select>
-		</div>
-		<div class="">
-			<span>Inter-column margin: </span>
-			<select name="columns" value="this.state.columns" onChange="this.edit">
-				<option>1</option>
-				<option>2</option>
-				<option>3</option>
-				<option>4</option>
-			</select>
-		</div>
-		<div class=""><span>Number of columns: </span><input type="text" class="cubits" name="interColumnMargin" value="this.state.interColumnMargin" onChange="this.edit"></div>
-		<div class=""><span>Indentation: </span><input type="text" class="cubits" name="indent" value="this.state.indent" onChange="this.edit"></input></div>
-		<div class=""><span>Line height: </span><input type="text" class="cubits" name="lineHeight" value="this.state.lineHeight" onChange="this.edit"></input></div>
-		
-		<div class=""><span>Page margins: </span></div>
-		<div class="margin-inputs">
-			<div class="margin-row">
-				<input type="text" class="margin-T cubits" name="marginTop" value="this.state.marginTop" onChange="this.edit">
-			</div>
-			<div class="margin-row">
-				<input type="text" class="margin-L cubits" name="marginLeft" value="this.state.marginLeft" onChange="this.edit">
-				<input type="text" class="margin-R cubits" name="marginRight" value="this.state.marginRight" onChange="this.edit">
-			</div>
-			<div class="margin-row">
-				<input type="text" class="margin-B cubits" name="marginBottom" value="this.state.marginBottom" onChange="this.edit">
-			</div>
-		</div>
-		
-		<div class="contentsDiv">
-			{this.state.contents.map(content => <Content state={content}>)}
-		</div>
-		
-		<button style="margin:0.2em" class="btn btn-default btn-sm" onClick="this.addContent"><i class="fa fa-plus"></i> Add Content</button>
-		*/
 	}
 	render(parentDiv) {
 		
@@ -1002,35 +927,31 @@ class Section extends Base {
 			elt = elt.next;
 		}
 		
-		$('<button style="margin:0.2em" class="btn btn-default btn-sm"><i class="fa fa-plus"></i> Add Content</button>').on('click', function() {
-			const content = new Content();
-			content.elt = section.contents.add(content);
-			content.render(contentsDiv);
-		}).appendTo(div);
+		const ul = $('<div class="btn-group"><button class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="fa fa-plus"></i> Add Content <span class="caret"></span></button><ul class="dropdown-menu"></ul></div>').appendTo(div).children(1);
+		
+		for (let type in Hyperdeck.ContentPlugins)
+		{
+			const clas = Hyperdeck.ContentPlugins[type];
+			$('<li><a>' + clas.name + '</a></li>').appendTo(ul).children(0).on('click', function() {
+				const content = new Content();
+				content.type = type;
+				content.elt = section.contents.add(content);
+				content.render(contentsDiv);
+				
+				content.plugin = new Hyperdeck.ContentPlugins[content.type](content, null);
+				content.plugin.render(content.pluginDiv);
+			});
+		}
+		
+		//$('<button style="margin:0.2em" class="btn btn-default btn-sm"><i class="fa fa-plus"></i> Add Content</button>').on('click', function() {
+		//	const content = new Content();
+		//	content.elt = section.contents.add(content);
+		//	content.render(contentsDiv); }).appendTo(div);
 		
 		$('<hr />').appendTo(div);
 	}
 }
 class Content extends Base {
-	
-	//ctx: CanvasRenderingContext2D = null;
-	//box: Box = null;
-	//
-	//type: string = null; // image, drawing, caption
-	//
-	//pageIndex: number;
-	//
-	//anchor: Anchor;
-	//x: number;
-	//y: number;
-	//align: Align;
-	//width: number;
-	//height: number;
-	//
-	//marginTop: number;
-	//marginLeft: number;
-	//marginRight: number;
-	//marginBottom: number;
 	
 	constructor(json) {
 		
@@ -1114,151 +1035,14 @@ class Content extends Base {
 	draw(page) {
 		
 		const content = this;
-		
 		const ctx = page.ctx;
-		ctx.fillStyle = 'gray';
-		ctx.fillRect(content.box.lf, content.box.tp, content.width, content.height);
+		
+		content.plugin.draw(ctx);
 	}
 	remove() {
 		const content = this;
 		content.elt.remove();
 		content.div.remove();
-	}
-	renderReact() {
-		
-		/*
-		
-		<button style="float:right" class="btn btn-default btn-sm" onClick="this.remove"><i class="fa fa-trash-o"></i> Delete</button>
-		
-		<div class="header">Content</div>
-		
-		<div class=""><span>Selector: </span><input name="selector" type="text" value={this.selector} placeholder="id" onChange="edit"></div>
-		<div class=""><span>Page index: </span><input type="text" value={this.pageIndex}></div>
-		
-		<div class="">
-			<table class="align-grid five-by-five">
-				<tr>
-					<td><div data="A1" class="anchor norm TL"></div></td>
-					<td><div data="B1" class="anchor norm TR"></div></td>
-					<td><div data="C1" class="anchor vert T "></div></td>
-					<td><div data="D1" class="anchor norm TL"></div></td>
-					<td><div data="E1" class="anchor norm TR"></div></td>
-				</tr>
-				<tr>
-					<td><div data="A2" class="anchor norm BL"></div></td>
-					<td><div data="B2" class="anchor norm BR"></div></td>
-					<td><div data="C2" class="anchor vert B "></div></td>
-					<td><div data="D2" class="anchor norm BL"></div></td>
-					<td><div data="E2" class="anchor norm BR"></div></td>
-				</tr>
-				<tr>
-					<td><div data="A3" class="anchor hori L "></div></td>
-					<td><div data="B3" class="anchor hori R "></div></td>
-					<td><div data="C3" class="anchor cent C "></div></td>
-					<td><div data="D3" class="anchor hori L "></div></td>
-					<td><div data="E3" class="anchor hori R "></div></td>
-				</tr>
-				<tr>
-					<td><div data="A4" class="anchor norm TL"></div></td>
-					<td><div data="B4" class="anchor norm TR"></div></td>
-					<td><div data="C4" class="anchor vert T "></div></td>
-					<td><div data="D4" class="anchor norm TL"></div></td>
-					<td><div data="E4" class="anchor norm TR"></div></td>
-				</tr>
-				<tr>
-					<td><div data="A5" class="anchor norm BL"></div></td>
-					<td><div data="B5" class="anchor norm BR"></div></td>
-					<td><div data="C5" class="anchor vert B "></div></td>
-					<td><div data="D5" class="anchor norm BL"></div></td>
-					<td><div data="E5" class="anchor norm BR"></div></td>
-				</tr>
-			</table>
-		</div>
-		
-		<div class="">
-			<table class="align-grid three-by-three">
-				<tr>
-					<td><div data="TL" class="align norm TL-45"></div></td>
-					<td><div data="TC" class="align norm TC-45"></div></td>
-					<td><div data="TR" class="align norm TR-45"></div></td>
-				</tr>
-				<tr>
-					<td><div data="CL" class="align norm CL-45"></div></td>
-					<td><div data="CC" class="align norm CC-45"></div></td>
-					<td><div data="CR" class="align norm CR-45"></div></td>
-				</tr>
-				<tr>
-					<td><div data="BL" class="align norm BL-45"></div></td>
-					<td><div data="BC" class="align norm BC-45"></div></td>
-					<td><div data="BR" class="align norm BR-45"></div></td>
-				</tr>
-			</table>
-		</div>
-		
-		<div class=""><span>x: </span><input type="text" name="x" value={this.x} onChange="this.edit"></div>
-		<div class=""><span>y: </span><input type="text" name="y" value={this.y} onChange="this.edit"></div>
-		<div class=""><span>width: </span><input type="text" name="width" value={this.width} onChange="this.edit"></div>
-		<div class=""><span>height: </span><input type="text" name="height" value={this.height} onChange="this.edit"></div>
-		
-		<span>margins:</span>
-		<div class="margin-inputs">
-			<div class="margin-row">
-				<input type="text" class="margin-T cubits">
-			</div>
-			<div class="margin-row">
-				<input type="text" class="margin-L cubits">
-				<input type="text" class="margin-R cubits">
-			</div>
-			<div class="margin-row">
-				<input type="text" class="margin-B cubits">
-			</div>
-		</div>
-		
-		*/
-		
-		
-	}
-	bind() {
-		
-		const content = this;
-		
-		if (content.selector == '') { content.plugin = null; content.pluginDiv.html(''); return; }
-		
-		const selection = $('#' + content.selector);
-		
-		if (elt.length == 0) { content.plugin = null; content.pluginDiv.html(''); return; }
-		
-		const elt = selection[0];
-		
-		if (elt.tagName == 'DIV')
-		{
-			content.type = 'caption';
-		}
-		else if (elt.tagName == 'IMG')
-		{
-			content.type = 'image';
-		}
-		else if (elt.tagName == 'CANVAS')
-		{
-			content.type = 'diagram';
-		}
-		else if (elt.tagName == 'TABLE')
-		{
-			content.type = 'table';
-		}
-		else if (elt.tagName == 'UL' || elt.tagName == 'OL')
-		{
-			content.type = 'list';
-		}
-		
-		content.underlying = elt;
-		
-		content.plugin = new Hyperdeck.ContentPlugins[content.type](content, null);
-		
-		// infer the page index and coords?
-		
-		content.pluginDiv.html('');
-		content.plugin.render(content.pluginDiv);
 	}
 	render(parentDiv) {
 		
@@ -1266,7 +1050,7 @@ class Content extends Base {
 		
 		const div = content.div = $('<div class="content">').appendTo(parentDiv);
 		
-		$('<div><span class="contentHeader">Content</span><button class="btn btn-default btn-sm contentDelete"><i class="fa fa-trash-o"></i> Delete</button></div>').appendTo(div).children(1).on('click', function() {
+		$('<div><span class="contentHeader">' + content.type[0].toUpperCase() + content.type.substr(1) + '</span><button class="btn btn-default btn-sm contentDelete"><i class="fa fa-trash-o"></i> Delete</button></div>').appendTo(div).children(1).on('click', function() {
 			content.elt.remove();
 			content.div.remove();
 		});
@@ -1276,7 +1060,6 @@ class Content extends Base {
 		$('<div class="selectorLabel">Selector</div>').appendTo(contentGrid1);
 		$('<div class="selectorInput"><input type="text" placeholder="id"></input></div>').appendTo(contentGrid1).children(0).attr('value', content.selector).on('change', function() {
 			content.selector = this.value;
-			content.bind();
 		});
 		
 		$('<div class="pageIndexLabel">Page index</div>').appendTo(contentGrid1);
@@ -1607,44 +1390,69 @@ class Caption {
 	constructor(content, json) {
 		
 		const defaults = {
-			wrapText: true,
-			clipOverflow: true
+			align: 'B2'
 		};
 		
 		if (!json) { json = defaults; } else { json = $.extend(true, {}, defaults, json); }
 		
-		this.wrapText = json.wrapText;
-		this.clipOverflow = json.clipOverflow;
+		this.align = json.align;
 		
 		this.content = content;
 	}
 	write() {
 		
 		return {
-			wrapText: this.wrapText,
-			clipOverflow: this.clipOverflow
+			align: this.align
 		};
 	}
 	render(div) {
 		
 		const caption = this;
 		
-		$('<div class="subheader">Caption</div>').appendTo(div);
+		//$('<div class="subheader">Caption</div>').appendTo(div);
 		
-		const grid = $('<div class="captionGrid">').appendTo(div);
+		//const grid = $('<div class="captionGrid">').appendTo(div);
 		
-		$('<div class="wrapTextLabel">Wrap text</div>').appendTo(grid);
-		$('<div class="wrapTextInput"><input type="checkbox"' + (caption.wrapText ? ' checked' : '') + '></input></div>').appendTo(grid).children(0).on('change', function() {
-			caption.wrapText = this.checked;
-		});
-		
-		$('<div class="clipOverflowLabel">Clip overflow</div>').appendTo(grid);
-		$('<div class="clipOverflowInput"><input type="checkbox"' + (caption.clipOverflow ? ' checked' : '') + '></div>').appendTo(grid).children(0).on('change', function() {
-			caption.clipOverflow = this.checked;
+		$('<div class="name">Text alignment</div>').appendTo(div);
+		const alignGrid = $('<div class="textAlignGrid"></div>').appendTo(div);
+		$('<div data="A1" class="textAlign A1"></div>').appendTo(alignGrid);
+		$('<div data="B1" class="textAlign B1"></div>').appendTo(alignGrid);
+		$('<div data="C1" class="textAlign C1"></div>').appendTo(alignGrid);
+		$('<div data="A2" class="textAlign A2"></div>').appendTo(alignGrid);
+		$('<div data="B2" class="textAlign B2"></div>').appendTo(alignGrid);
+		$('<div data="C2" class="textAlign C2"></div>').appendTo(alignGrid);
+		$('<div data="A3" class="textAlign A3"></div>').appendTo(alignGrid);
+		$('<div data="B3" class="textAlign B3"></div>').appendTo(alignGrid);
+		$('<div data="C3" class="textAlign C3"></div>').appendTo(alignGrid);
+
+		alignGrid.find('[data="' + caption.align + '"]').addClass('selected');
+		alignGrid.find('.textAlign').on('click', function() {
+			alignGrid.find('.selected').removeClass('selected');
+			$(this).addClass('selected');
+			caption.align = $(this).attr('data');
 		});
 	}
 	draw(ctx) {
 		
+		const text = document.getElementById(this.content.selector).innerText;
+		
+		ctx.save();
+		
+		// wrap text
+		
+		ctx.font = '12pt Arial';
+		ctx.fillStyle = 'black';
+		ApplyTextAlign(ctx, this.align);
+		const [x, y] = ApplyCoordAlign(this.align, {top:0,left:0,right:0,bottom:0}, this.content.box.lf, this.content.box.tp, this.content.box.wd, this.content.box.hg);
+		
+		// clip overflow
+		ctx.beginPath();
+		ctx.rect(this.content.box.lf, this.content.box.tp, this.content.box.wd, this.content.box.hg);
+		ctx.clip();
+		
+		ctx.fillText(text, x, y);
+		
+		ctx.restore();
 	}
 }
 class Image {
@@ -1714,7 +1522,9 @@ class Image {
 		});
 	}
 	draw(ctx) {
-		//page.ctx.drawImage(this.imageElement, this.box.lf, this.box.tp, this.box.wd, this.box.hg);
+		
+		const img = document.getElementById(this.content.selector);
+		ctx.drawImage(img, this.content.box.lf, this.content.box.tp, this.content.box.wd, this.content.box.hg);
 	}
 }
 class Diagram {
@@ -1751,8 +1561,18 @@ class Diagram {
 		});
 	}
 	draw(ctx) {
-		// scale, translate, clip?
+		
+		ctx.save();
+		ctx.transform(1, 0, 0, 1, this.content.box.lf, this.content.box.tp);
+		
+		ctx.beginPath();
+		ctx.rect(0, 0, this.content.box.wd, this.content.box.hg);
+		ctx.clip();
+		
+		Hyperdeck.Run(this.content.selector, ctx); // we probably should pass this, and use this.ctx in the fn body
 		//this.fn.call(ctx, ctx);
+		
+		ctx.restore();
 	}
 }
 class Table {
@@ -1764,53 +1584,35 @@ class Table {
 			colSizes: '',
 			borderStyles: [
 				{
-					type: 'row',
-					index: ':',
-					posts: ':',
+					range: ':',
+					sides: 'All', // All Top Left Right Bottom Inside Outside (how to allow combinations like Top/Bottom?)
+					width: 1,
 					style: 'solid',
-					color: 'black',
-					width: 1
-				},
-				{
-					type: 'col',
-					index: ':',
-					posts: ':',
-					style: 'solid',
-					color: 'black',
-					width: 1
-				},
+					color: 'black'
+				}
 			],
 			cellStyles: [
 				{
-					row: ':',
-					col: ':',
-					margin: '0 0 0 0',
+					range: ':',
+					margin: '0 0 0 0', // TLRB, TB RL, T RL B, T L R B
 					align: 'B2',
 					backgroundColor: 'white'
 				}
-			] // { row: 1:3,5, col, margin: 0 20 20 0, align: A1-C3, backgroundColor }
+			]
 		};
 		
 		
-		// a little syntax goes a long way in reducing the complexity of table controlsl
-		// we use the slice operator to select ranges of borders or cells, using colon and comma - 1:3,5   2:-2
-		// we use ... and * to define repeating row/col sizes
+		// a little syntax goes a long way in reducing the complexity of table controls
+		// we use Excel-style range selectors - 1:1 = first row, A:A = first col, C-1:C-1 = last col
+		// can use R1C1 style, which allows for use of negative numbers, like in Python slices
+		// R-1:R-1 = select whole last row
+		// bare colon means the whole table
 		
 		// rowSizes and colSizes syntax:
+		// we use ... and * to define repeating row/col sizes
+		// 50 - one number means constant size
 		// 50 30 ... 50 - the ellipses means repeat - we can only have one ellipses in the list though - two would be ambiguous
 		// 50 30*10 50 - we can use the * operator to repeat values
-		
-		// borderStyle selectors:
-		// the selector for the starred border is { type: row, index: 0, posts: 0:1 }
-		// can use slice syntax
-		
-		//    0     1     2
-		// 0  +*****+-----+
-		//    |     |     |
-		// 1  +-----+-----+
-		
-		// cellStyle selectors
-		// just use slice for row/col
 		
 		
 		if (!json) { json = defaults; } else { json = $.extend(true, {}, defaults, json); }
@@ -1846,41 +1648,42 @@ class Table {
 		$('<div class="rowSizesLabel">Row heights</div>').appendTo(grid);
 		$('<div class="rowSizesInput"><input type="text" placeholder="50 20 ... 50"></input></div>').appendTo(grid).children(0).attr('value', table.rowSizes).on('change', function() {
 			table.rowSizes = this.value;
+			try { table.parseSizes(this.value, 0); } catch(e) { alert('Invalid size formula'); }
 		});
 		
 		$('<div class="colSizesLabel">Column widths</div>').appendTo(grid);
 		$('<div class="colSizesInput"><input type="text" placeholder="50 20*10 50"></input></div>').appendTo(grid).children(0).attr('value', table.colSizes).on('change', function() {
 			table.colSizes = this.value;
+			try { table.parseSizes(this.value, 0); } catch(e) { alert('Invalid size formula'); }
 		});
 		
 		$('<div class="borderStyleLabel">Border styles</div>').appendTo(div);
 		const borderStyleGrid = $('<div class="borderStyleGrid"></div>').appendTo(div);
 		
-		$('<div class="columnHeader">Type</div>').appendTo(borderStyleGrid);
-		$('<div class="columnHeader">Index</div>').appendTo(borderStyleGrid);
-		$('<div class="columnHeader">Posts</div>').appendTo(borderStyleGrid);
+		$('<div class="columnHeader">Range</div>').appendTo(borderStyleGrid);
+		$('<div class="columnHeader">Sides</div>').appendTo(borderStyleGrid);
+		$('<div class="columnHeader">Width</div>').appendTo(borderStyleGrid);
 		$('<div class="columnHeader">Style</div>').appendTo(borderStyleGrid);
 		$('<div class="columnHeader">Color</div>').appendTo(borderStyleGrid);
-		$('<div class="columnHeader">Width</div>').appendTo(borderStyleGrid);
 		$('<div></div>').appendTo(borderStyleGrid);
 		
 		let n = 1;
 		
 		function AddBorderStyleRow(theelt, row) {
 			
-			const typeDiv = $('<div class="typeInput"><input type="text"></input></div>').appendTo(borderStyleGrid);
-			typeDiv.children(0).attr('value', row.type).on('change', function() {
-				row.type = this.value;
+			const rangeDiv = $('<div class="rangeInput"><input type="text" placeholder="A1:B2"></input></div>').appendTo(borderStyleGrid);
+			rangeDiv.children(0).attr('value', row.range).on('change', function() {
+				row.range = this.value;
 			});
 			
-			const indexDiv = $('<div class="indexInput"><input type="text" placeholder="1:3,5"></input></div>').appendTo(borderStyleGrid);
-			indexDiv.children(0).attr('value', row.index).on('change', function() {
-				row.index = this.value;
+			const sidesDiv = $('<div class="sidesInput"><input type="text" placeholder="All,Top,Inside"></input></div>').appendTo(borderStyleGrid);
+			sidesDiv.children(0).attr('value', row.sides).on('change', function() {
+				row.sides = this.value;
 			});
 			
-			const postsDiv = $('<div class="postsInput"><input type="text" placeholder="2:-2"></input></div>').appendTo(borderStyleGrid);
-			postsDiv.children(0).attr('value', row.posts).on('change', function() {
-				row.posts = this.value;
+			const widthDiv = $('<div class="widthInput"><input type="text"></input></div>').appendTo(borderStyleGrid);
+			widthDiv.children(0).attr('value', row.width).on('change', function() {
+				row.width = parseFloat(this.value);
 			});
 			
 			const styleDiv = $('<div class="styleInput"><input type="text"></input></div>').appendTo(borderStyleGrid);
@@ -1893,20 +1696,14 @@ class Table {
 				row.color = this.value;
 			});
 			
-			const widthDiv = $('<div class="widthInput"><input type="text"></input></div>').appendTo(borderStyleGrid);
-			widthDiv.children(0).attr('value', row.width).on('change', function() {
-				row.width = parseFloat(this.value);
-			});
-			
 			const deleteDiv = $('<div class="deleteButton"><button class="btn btn-default btn-xs"><i class="fa fa-trash"></i> Delete</button></div>').appendTo(borderStyleGrid);
 			deleteDiv.children(0).on('click', function() {
 				
-				typeDiv.remove();
-				indexDiv.remove();
-				postsDiv.remove();
+				rangeDiv.remove();
+				sidesDiv.remove();
+				widthDiv.remove();
 				styleDiv.remove();
 				colorDiv.remove();
-				widthDiv.remove();
 				deleteDiv.remove();
 				
 				theelt.remove();
@@ -1928,9 +1725,8 @@ class Table {
 		
 		$('<button class="btn btn-default btn-xs"><i class="fa fa-plus"></i> Add Row</button>').appendTo(div).on('click', function() {
 			const row = {
-				type: '',
-				index: '',
-				posts: '',
+				range: '',
+				sides: '',
 				style: '',
 				color: '',
 				width: ''
@@ -1945,8 +1741,7 @@ class Table {
 		$('<div class="cellStyleLabel">Cell styles</div>').appendTo(div);
 		const cellStyleGrid = $('<div class="cellStyleGrid"></div>').appendTo(div);
 		
-		$('<div class="columnHeader">Rows</div>').appendTo(cellStyleGrid);
-		$('<div class="columnHeader">Cols</div>').appendTo(cellStyleGrid);
+		$('<div class="columnHeader">Range</div>').appendTo(cellStyleGrid);
 		$('<div class="columnHeader">Margin</div>').appendTo(cellStyleGrid);
 		$('<div class="columnHeader">Align</div>').appendTo(cellStyleGrid);
 		$('<div class="columnHeader">Color</div>').appendTo(cellStyleGrid);
@@ -1956,27 +1751,22 @@ class Table {
 		
 		function AddCellStyleRow(theelt, row) {
 			
-			const rowDiv = $('<div class="rowInput"><input type="text"></input></div>').appendTo(cellStyleGrid);
-			rowDiv.children(0).attr('value', row.row).on('change', function() {
-				row.row = this.value;
+			const rangeDiv = $('<div class="rangeInput"><input type="text" placeholder="A1:B2"></input></div>').appendTo(cellStyleGrid);
+			rangeDiv.children(0).attr('value', row.range).on('change', function() {
+				row.range = this.value;
 			});
 			
-			const colDiv = $('<div class="colInput"><input type="text"></input></div>').appendTo(cellStyleGrid);
-			colDiv.children(0).attr('value', row.col).on('change', function() {
-				row.col = this.value;
-			});
-			
-			const marginDiv = $('<div class="marginInput"><input type="text"></input></div>').appendTo(cellStyleGrid);
+			const marginDiv = $('<div class="marginInput"><input type="text" placeholder="0 0 0 0"></input></div>').appendTo(cellStyleGrid);
 			marginDiv.children(0).attr('value', row.margin).on('change', function() {
 				row.margin = this.value;
 			});
 			
-			const alignDiv = $('<div class="alignInput"><input type="text"></input></div>').appendTo(cellStyleGrid);
+			const alignDiv = $('<div class="alignInput"><input type="text" placeholder="B2"></input></div>').appendTo(cellStyleGrid);
 			alignDiv.children(0).attr('value', row.align).on('change', function() {
 				row.align = this.value;
 			});
 			
-			const backgroundColorDiv = $('<div class="backgroundColorInput"><input type="text"></input></div>').appendTo(cellStyleGrid);
+			const backgroundColorDiv = $('<div class="backgroundColorInput"><input type="text" placeholder="white"></input></div>').appendTo(cellStyleGrid);
 			backgroundColorDiv.children(0).attr('value', row.backgroundColor).on('change', function() {
 				row.backgroundColor = this.value;
 			});
@@ -1984,8 +1774,7 @@ class Table {
 			const deleteDiv = $('<div class="deleteButton"><button class="btn btn-default btn-xs"><i class="fa fa-trash"></i> Delete</button></div>').appendTo(cellStyleGrid);
 			deleteDiv.children(0).on('click', function() {
 				
-				rowDiv.remove();
-				colDiv.remove();
+				rangeDiv.remove();
 				marginDiv.remove();
 				alignDiv.remove();
 				backgroundColorDiv.remove();
@@ -2010,8 +1799,7 @@ class Table {
 		
 		$('<button class="btn btn-default btn-xs"><i class="fa fa-plus"></i> Add Row</button>').appendTo(div).on('click', function() {
 			const row = {
-				row: '',
-				col: '',
+				range: '',
 				margin: '',
 				align: '',
 				backgroundColor: ''
@@ -2022,8 +1810,600 @@ class Table {
 			//cellStyleGrid.css('grid-template-rows', 'repeat(' + n + ', 2em)');
 		});
 	}
+	parseSizes(text, n) {
+		
+		// number or * or ...
+		
+		const regex = /(\d+|\*|\.\.\.)/g;
+		
+		const parts = [];
+		
+		let part = regex.exec(text)
+		while (part !== null)
+		{
+			parts.push(part);
+			part = regex.exec(text);
+		}
+		
+		let lastValue = null;
+		let mult = false;
+		let ellipsisValue = null;
+		const beforeEllipsis = [];
+		const afterEllipsis = [];
+		let focus = beforeEllipsis;
+		for (let i = 0; i < parts.length; i++)
+		{
+			part = parts[i];
+			
+			if (part === '*')
+			{
+				mult = true;
+			}
+			else if (part === '...')
+			{
+				ellipsisValue = lastValue;
+				focus = afterEllipsis;
+			}
+			else
+			{
+				const value = parseInt(part);
+				
+				if (mult)
+				{
+					if (lastValue === null) { throw new Error(); }
+					
+					for (let k = 0; k < value; k++)
+					{
+						focus.push(lastValue);
+					}
+				}
+				else
+				{
+					lastValue = parseInt(part);
+					focus.push(lastValue);
+				}
+				
+				mult = false;
+			}
+		}
+		
+		const sizes = [];
+		
+		for (let i = 0; i < beforeEllipsis.length; i++) { sizes.push(beforeEllipsis[i]); }
+		
+		// n = 0 is used to signal the test parse performed on edit, to display an error (at that point, we don't know what n would be)
+		if (ellipsisValue !== null)
+		{
+			if (n > 0)
+			{
+				for (let i = 0; i < n - beforeEllipsis.length - afterEllipsis.length; i++) { sizes.push(ellipsisValue); }
+			}
+		}
+		
+		for (let i = 0; i < afterEllipsis.length; i++) { sizes.push(afterEllipsis[i]); }
+		
+		const remainder = n - sizes.length;
+		
+		for (let i = 0; i < remainder; i++) { sizes.push(lastValue); }
+		
+		return sizes;
+	}
+	parseRange(text, nRows, nCols) {
+		
+		let minRow = null;
+		let maxRow = null;
+		let minCol = null;
+		let maxCol = null;
+		
+		text = text.trim();
+		
+		if (text == ':')
+		{
+			minRow = 0;
+			maxRow = nRows - 1;
+			minCol = 0;
+			maxCol = nCols - 1;
+		}
+		else if (text.indexOf(':') >= 0)
+		{
+			const parts = text.split(':').map(x => x.trim());
+			
+			let [row1,col1] = this.parseCellRef(parts[0], nRows, nCols);
+			let [row2,col2] = this.parseCellRef(parts[1], nRows, nCols);
+			
+			// A:A
+			if (row1 === null || row2 === null)
+			{
+				if (row1 === null && row2 === null)
+				{
+					row1 = 0;
+					row2 = nRows - 1;
+				}
+				else
+				{
+					throw new Error('Invalid cell reference: ' + text);
+				}
+			}
+			
+			// 1:1
+			if (col1 === null || col2 === null)
+			{
+				if (col1 === null && col2 === null)
+				{
+					col1 = 0;
+					col2 = nCols - 1;
+				}
+				else
+				{
+					throw new Error('Invalid cell reference: ' + text);
+				}
+			}
+			
+			minRow = Math.min(row1, row2);
+			maxRow = Math.max(row1, row2);
+			minCol = Math.min(col1, col2);
+			maxCol = Math.max(col1, col2);
+		}
+		else
+		{
+			const [row,col] = this.parseCellRef(text, nRows, nCols);
+			if (row === null || col === null) { throw new Error('Invalid cell reference: ' + text); }
+			minRow = row;
+			maxRow = row;
+			minCol = col;
+			maxCol = col;
+		}
+		
+		return {minRow,maxRow,minCol,maxCol};
+	}
+	parseCellRef(text, nRows, nCols) {
+		
+		// 0-indexed
+		let row = null;
+		let col = null;
+		
+		const colRegex = /-?[A-Za-z]+/g;
+		const rowRegex = /-?[0-9]+/g;
+		
+		const colMatch = colRegex.exec(text);
+		const rowMatch = rowRegex.exec(text, colRegex.lastIndex);
+		
+		if (colMatch !== null)
+		{
+			if (colMatch[0][0] == '-')
+			{
+				const n = this.parseColRef(colMatch[0].substr(1));
+				col = nCols - n - 1;
+			}
+			else
+			{
+				const n = this.parseColRef(colMatch[0]);
+				col = n;
+			}
+		}
+		
+		if (rowMatch !== null)
+		{
+			if (rowMatch[0][0] == '-')
+			{
+				const n = this.parseRowRef(rowMatch[0].substr(1));
+				row = nRows - n - 1;
+			}
+			else
+			{
+				const n = this.parseRowRef(rowMatch[0]);
+				row = n;
+			}
+		}
+		
+		return [row,col];
+	}
+	parseColRef(text) {
+		return Table.LetterToNumber(text);
+	}
+	parseRowRef(text) {
+		return parseInt(text) - 1;
+	}
+	static NumberToLetter(n) {
+		
+		// 0 => "A"
+		// 1 => "B"
+		// 25 => "Z"
+		// 26 => "AA"
+		
+		if (n < 0) { return ""; }
+		
+		var k = 1;
+		var m = n+1;
+		
+		while (true)
+		{
+			var pow = 1;
+			for (var i = 0; i < k; i++) { pow *= 26; }
+			if (m <= pow) { break; }
+			m -= pow;
+			k++;
+		}
+		
+		var reversed = "";
+		
+		for (var i = 0; i < k; i++)
+		{
+			var c = n+1;
+			var shifter = 1;
+			for (var j = 0; j < k; j++) { c -= shifter; shifter *= 26; }
+			var divisor = 1;
+			for (var j = 0; j < i; j++) { divisor *= 26; }
+			c /= divisor;
+			c %= 26;
+			reversed += String.fromCharCode(65 + c)
+		}
+		
+		var result = "";
+		for (var i = reversed.length - 1; i >= 0; i--) { result += reversed[i]; }
+		
+		return result;
+	}
+	static LetterToNumber(s) {
+		
+		// "A" => 0
+		// "B" => 1
+		// "Z" => 25
+		// "AA" => 26
+		
+		var result = 0;
+		var multiplier = 1;
+		
+		for (var i = s.length - 1; i >= 0; i--)
+		{
+			var c = s.charCodeAt(i);
+			result += multiplier * (c - 64);
+			multiplier *= 26;
+		}
+		
+		return result-1; // -1 makes it 0-indexed
+	}
+	parseBorderStyles(nRows, nCols) {
+		
+		const defaultStyle = { width: 1, style: [1], color: 'black' };
+		
+		const rowStyles = Array.from({length: nRows + 1}, (v, i) => Array.from({length: nCols}, (v, i) => defaultStyle));
+		const colStyles = Array.from({length: nCols + 1}, (v, i) => Array.from({length: nRows}, (v, i) => defaultStyle));
+		
+		const dashMap = {
+			solid: [1],
+			dashed: [3,3], // but what is the reference unit? we have to pick a cubit size that makes sense
+			dotted: [1,1]
+		};
+		
+		const borderStyles = this.borderStyles.enumerate();
+		
+		for (let k = 0; k < borderStyles.length; k++)
+		{
+			const style = borderStyles[k];
+			const range = this.parseRange(style.range, nRows, nCols);
+			const sides = style.sides;
+			
+			const dashStr = style.style.trim();
+			let dash = [1];
+			if (dashStr[0] == '[')
+			{
+				dash = dashStr.substr(1, dashStr.length - 2).split(',').map(x => parseFloat(x.trim()))
+			}
+			else if (dashMap[style.style])
+			{
+				dash = dashMap[style.style];
+			}
+			
+			const newStyle = {
+				width: style.width,
+				style: dash,
+				color: style.color
+			};
+			
+			if (sides == 'All')
+			{
+				for (let i = range.minRow; i <= range.maxRow; i++)
+				{
+					for (let j = range.minCol; j <= range.maxCol; j++)
+					{
+						rowStyles[i+0][j] = newStyle;
+						rowStyles[i+1][j] = newStyle;
+						colStyles[j+0][i] = newStyle;
+						colStyles[j+1][i] = newStyle;
+					}
+				}
+			}
+			
+			if (sides == 'Top' || sides == 'Outside')
+			{
+				for (let j = range.minCol; j <= range.maxCol; j++)
+				{
+					rowStyles[range.minRow][j] = newStyle;
+				}
+			}
+			
+			if (sides == 'Left' || sides == 'Outside')
+			{
+				for (let i = range.minRow; i <= range.maxRow; i++)
+				{
+					colStyles[range.minCol][i] = newStyle;
+				}
+			}
+			
+			if (sides == 'Right' || sides == 'Outside')
+			{
+				for (let i = range.minRow; i <= range.maxRow; i++)
+				{
+					colStyles[range.maxCol+1][i] = newStyle;
+				}
+			}
+			
+			if (sides == 'Bottom' || sides == 'Outside')
+			{
+				for (let j = range.minCol; j <= range.maxCol; j++)
+				{
+					rowStyles[range.maxRow+1][j] = newStyle;
+				}
+			}
+			
+			if (sides == 'Inside')
+			{
+				for (let i = range.minRow; i <= range.maxRow; i++)
+				{
+					for (let j = range.minCol; j <= range.maxCol; j++)
+					{
+						if (i > range.minRow) { rowStyles[i+0][j] = newStyle; }
+						if (i < range.maxRow) { rowStyles[i+1][j] = newStyle; }
+						if (j > range.minCol) { colStyles[j+0][i] = newStyle; }
+						if (j < range.maxCol) { colStyles[j+1][i] = newStyle; }
+					}
+				}
+			}
+		}
+		
+		return [rowStyles, colStyles];
+	}
+	parseCellStyles(nRows, nCols) {
+		
+		const defaultStyle = { margins: { top: 0, left: 0, right: 0, bottom: 0 }, align: 'B2', backgroundColor: 'white' };
+		
+		const matrix = Array.from({length: nRows}, (v, i) => Array.from({length: nCols}, (v, i) => defaultStyle));
+		
+		const cellStyles = this.cellStyles.enumerate();
+		
+		for (let k = 0; k < cellStyles.length; k++)
+		{
+			const style = cellStyles[k];
+			const range = this.parseRange(style.range, nRows, nCols);
+			
+			const parts = style.margin.split(' ').map(x => parseFloat(x));
+			
+			if (parts.length == 1)
+			{
+				style.margins = { top: parts[0], left: parts[0], right: parts[0], bottom: parts[0] };
+			}
+			else if (parts.length == 2)
+			{
+				style.margins = { top: parts[0], left: parts[1], right: parts[1], bottom: parts[0] };
+			}
+			else if (parts.length == 3)
+			{
+				style.margins = { top: parts[0], left: parts[1], right: parts[2], bottom: parts[0] };
+			}
+			else if (parts.length == 4)
+			{
+				style.margins = { top: parts[0], left: parts[1], right: parts[2], bottom: parts[3] };
+			}
+			
+			for (let i = range.minRow; i <= range.maxRow; i++)
+			{
+				for (let j = range.minCol; j <= range.maxCol; j++)
+				{
+					matrix[i][j] = style;
+				}
+			}
+		}
+		
+		return matrix;
+	}
 	draw(ctx) {
 		
+		ctx.save();
+		
+		const tableElt = document.getElementById(this.content.selector);
+		const obj = { head: null, foot: null, trs: [] };
+		ParseTableRec(tableElt, obj, null);
+		
+		function ParseTableRec(elt, obj, tr) {
+			
+			const name = elt.tagName.toLowerCase();
+			
+			if (name == 'table')
+			{
+				
+			}
+			else if (name == 'tr')
+			{
+				tr = [];
+				obj.trs.push(tr);
+			}
+			else if (name == 'td')
+			{
+				tr.push(elt.innerText); // ParseHtml
+			}
+			else if (name == 'thead')
+			{
+				obj.head = elt.innerText; // ParseHtml
+			}
+			else if (name == 'tbody')
+			{
+				
+			}
+			else if (name == 'tfoot')
+			{
+				obj.foot = elt.innerText; // ParseHtml
+			}
+			
+			for (let i = 0; i < elt.children.length; i++)
+			{
+				const c = elt.children[i];
+				ParseTableRec(c, obj, tr);
+			}
+		}
+		
+		const nRows = obj.trs.length;
+		const nCols = Math.max(...obj.trs.map(tr => tr.length));
+		
+		const rowSizes = this.parseSizes(this.rowSizes, nRows);
+		const colSizes = this.parseSizes(this.colSizes, nCols);
+		
+		const width = colSizes.reduce(function(a, b) { return a + b; }, 0);
+		const height = rowSizes.reduce(function(a, b) { return a + b; }, 0);
+		
+		// set box width/height here? we can't do it on edit of sizes input because we don't know n
+		
+		
+		// table header and footer go into the margins - the content area is for the table itself
+		
+		const textMargin = 4;
+		
+		if (obj.head)
+		{
+			ctx.font = '12pt Arial';
+			ctx.fillStyle = 'black';
+			ctx.textAlign = 'left';
+			ctx.textBaseline = 'bottom';
+			ctx.fillText(obj.head, this.content.box.lf, this.content.box.tp - textMargin);
+		}
+		
+		if (obj.foot)
+		{
+			ctx.font = '12pt Arial';
+			ctx.fillStyle = 'black';
+			ctx.textAlign = 'left';
+			ctx.textBaseline = 'top';
+			ctx.fillText(obj.foot, this.content.box.lf, this.content.box.tp + this.content.box.hg + textMargin);
+		}
+		
+		// draw table
+		const lf = this.content.box.lf;
+		const tp = this.content.box.tp;
+		const rt = lf + width;
+		const bt = tp + height;
+		
+		let x = null;
+		let y = null;
+		let x1 = null;
+		let x2 = null;
+		let y1 = null;
+		let y2 = null;
+		let style = null;
+		
+		// draw cells
+		const cellStyles = this.parseCellStyles(nRows, nCols);
+		
+		y = tp;
+		for (let i = 0; i < nRows; i++)
+		{
+			x = lf;
+			
+			for (let j = 0; j < nCols; j++)
+			{
+				const tr = obj.trs[i];
+				const text = j < tr.length ? tr[j] : '';
+				const style = cellStyles[i][j];
+				
+				ApplyTextAlign(ctx, style.align);
+				const [ax, ay] = ApplyCoordAlign(style.align, style.margins, x, y, colSizes[j], rowSizes[i]);
+				
+				ctx.fillStyle = style.backgroundColor;
+				ctx.fillRect(x, y, colSizes[j], rowSizes[i]);
+				
+				ctx.fillStyle = 'black'; // grab text style
+				ctx.fillText(text, ax, ay);
+				
+				x += colSizes[j];
+			}
+			
+			y += rowSizes[i];
+		}
+		
+		
+		// draw borders
+		const [rowStyles, colStyles] = this.parseBorderStyles(nRows, nCols);
+		
+		// this requires tables to have a bit of margin, since the borders will overlap the content box by a little bit
+		ctx.lineCap = 'square';
+		
+		// row (horizontal) borders
+		y = tp;
+		for (let i = 0; i <= nRows; i++)
+		{
+			x1 = lf;
+			x2 = lf;
+			let lastStyle = rowStyles[i][0];
+			
+			for (let j = 0; j <= nCols; j++)
+			{
+				style = rowStyles[i][j]; // when j == nCols, style will be undefined and the border will be drawn
+				
+				// string together streaks of styles and draw one line (to get correct line dash)
+				if (style !== lastStyle)
+				{
+					ctx.lineWidth = lastStyle.width;
+					ctx.strokeStyle = lastStyle.color;
+					ctx.setLineDash(lastStyle.style);
+					
+					ctx.beginPath();
+					ctx.moveTo(x1, y);
+					ctx.lineTo(x2, y);
+					ctx.stroke();
+					
+					x1 = x2;
+				}
+				
+				x2 += colSizes[j];
+				lastStyle = style;
+			}
+			
+			y += rowSizes[i];
+		}
+		
+		// col (vertical) borders
+		x = lf;
+		for (let j = 0; j <= nCols; j++)
+		{
+			y1 = tp;
+			y2 = tp;
+			let lastStyle = colStyles[j][0];
+			
+			for (let i = 0; i <= nRows; i++)
+			{
+				style = colStyles[j][i]; // when i == nRows, style will be undefined and the border will be drawn
+				
+				if (style !== lastStyle)
+				{
+					ctx.lineWidth = lastStyle.width;
+					ctx.strokeStyle = lastStyle.color;
+					ctx.setLineDash(lastStyle.style);
+					
+					ctx.beginPath();
+					ctx.moveTo(x, y1);
+					ctx.lineTo(x, y2);
+					ctx.stroke();
+					
+					y1 = y2;
+				}
+				
+				y2 += rowSizes[i];
+				lastStyle = style;
+			}
+			
+			x += colSizes[j];
+		}
+		
+		ctx.restore();
 	}
 }
 class List {
@@ -2126,6 +2506,39 @@ class List {
 	}
 	draw(ctx) {
 		
+		const listElt = document.getElementById(this.content.selector);
+		const lines = []; // { name: listElt.tagName.toLowerCase(), indent: 0, text: '' }
+		GetListRec(listElt, 0);
+		
+		// list = { name: "ul", children: [ { name: "li", text: "" } ] }
+		function GetListRec(parentElt, indent) {
+			
+			for (let i = 0; i < parentElt.children.length; i++)
+			{
+				const child = parentElt.children[i];
+				
+				if (child.tagName == 'LI')
+				{
+					lines.push({ name: 'li', text: child.innerText, indent: indent });
+				}
+				else if (child.tagName == 'OL' || child.tagName == 'UL')
+				{
+					GetListRec(child, indent + 1);
+				}
+				else
+				{
+					// do we include text children of ul's?
+				}
+			}
+		}
+		
+		for (let i = 0; i < lines.length; i++)
+		{
+			const indent = lines[i].indent;
+			const text = lines[i].text;
+			
+			ctx.fillText(text, this.content.box.lf + indent * 30, this.content.box.tp + i * 20);
+		}
 	}
 }
 
@@ -2973,6 +3386,68 @@ function Find(array, field, value) {
 	}
 	
 	return null;
+}
+
+function ApplyTextAlign(ctx, cellref) {
+	
+	if (cellref[0] == 'A')
+	{
+		ctx.textAlign = 'left';
+	}
+	else if (cellref[0] == 'B')
+	{
+		ctx.textAlign = 'center';
+	}
+	else if (cellref[0] == 'C')
+	{
+		ctx.textAlign = 'right';
+	}
+	
+	if (cellref[1] == '1')
+	{
+		ctx.textBaseline = 'top';
+	}
+	else if (cellref[1] == '2')
+	{
+		ctx.textBaseline = 'middle';
+	}
+	else if (cellref[1] == '3')
+	{
+		ctx.textBaseline = 'bottom';
+	}
+}
+function ApplyCoordAlign(cellref, margins, left, top, width, height) {
+	
+	let ax = null;
+	let ay = null;
+	
+	if (cellref[0] == 'A')
+	{
+		ax = left + margins.left;
+	}
+	else if (cellref[0] == 'B')
+	{
+		ax = left + width / 2;
+	}
+	else if (cellref[0] == 'C')
+	{
+		ax = left + width - margins.right;
+	}
+	
+	if (cellref[1] == '1')
+	{
+		ay = top + margins.top;
+	}
+	else if (cellref[1] == '2')
+	{
+		ay = top + height / 2;
+	}
+	else if (cellref[1] == '3')
+	{
+		ay = top + height - margin.bottom;
+	}
+	
+	return [ax,ay];
 }
 
 class LinkedList {
