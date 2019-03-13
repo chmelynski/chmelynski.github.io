@@ -1,64 +1,55 @@
 var Hyperdeck;
 (function (Hyperdeck) {
-    var Diagram = (function () {
-        function Diagram(ctx, afterChange) {
-            //text: string = null;
-            this.regex = /\{(\s*\S+\s*:\s*\d+\s*,?)+\s*\}/g; // object literals whose fields are all integers - { x: 0, y: 0 }
+    class Diagram {
+        constructor(ctx, afterChange, options) {
+            this.regex = /\{(\s*[A-Za-z_$][A-Za-z0-9_$]*\s*:\s*\d+\s*,?)+\s*\}/g; // object literals whose fields are all integers - { x: 0, y: 0 }
             this.selectionBox = null;
             this.pointRadius = 3;
             this.showPoints = true;
-            var diagram = this;
             this.ctx = ctx;
-            this.afterChange = afterChange;
             this.ctx.canvas.style.cursor = 'default';
+            this.afterChange = afterChange;
             this.setHandlers();
+            if (options) {
+                Object.assign(this, options);
+            }
         }
-        Diagram.prototype.setHandlers = function () {
-            var diagram = this;
-            var r = diagram.pointRadius;
-            var rr = r * r;
-            var savedX = null;
-            var savedY = null;
+        setHandlers() {
+            const diagram = this;
+            const r = diagram.pointRadius;
+            const rr = r * r;
+            let savedX = null;
+            let savedY = null;
             diagram.ctx.canvas.onmousemove = function (e) { savedX = e.offsetX; savedY = e.offsetY; };
             diagram.ctx.canvas.onmousedown = function (e) {
-                //var points = diagram.points.enumerate();
-                //diagram.points.freeze(); // disables add
-                var points = diagram.points;
+                const points = diagram.points;
                 function AfterSelect() {
-                    for (var i = 0; i < points.length; i++) {
-                        points[i].selected = false;
+                    for (const p of points) {
+                        p.selected = false;
                     }
-                    for (var i = 0; i < diagram.selected.length; i++) {
-                        diagram.selected[i].selected = true;
+                    for (const p of diagram.selected) {
+                        p.selected = true;
                     }
                 }
-                var ax = e.offsetX;
-                var ay = e.offsetY;
+                let ax = e.offsetX;
+                let ay = e.offsetY;
                 if (diagram.selectionBox !== null) {
                     // check for hit on selection box, if so, move in bulk
                     if (diagram.selectionBox.left < ax && diagram.selectionBox.top < ay && ax < (diagram.selectionBox.left + diagram.selectionBox.width) && ay < (diagram.selectionBox.top + diagram.selectionBox.height)) {
-                        //var a = diagram.Inverse({ x: ax, y: ay });
                         diagram.ctx.canvas.onmousemove = function (e) {
-                            var mx = e.offsetX;
-                            var my = e.offsetY;
-                            // snap to the major grid
-                            //var m = diagram.Inverse({ x: mx, y: my });
-                            //var di = m.i - a.i;
-                            //var dj = m.j - a.j;
-                            var dx = mx - ax;
-                            var dy = my - ay;
+                            const mx = e.offsetX;
+                            const my = e.offsetY;
+                            const dx = mx - ax;
+                            const dy = my - ay;
                             diagram.selectionBox.top += dy;
                             diagram.selectionBox.left += dx;
-                            for (var i = 0; i < diagram.selected.length; i++) {
-                                var p = diagram.selected[i];
+                            for (const p of diagram.selected) {
                                 p.x += dx;
                                 p.y += dy;
                             }
                             diagram.draw();
                             ax = mx;
                             ay = my;
-                            //a.i = m.i;
-                            //a.j = m.j;
                         };
                         diagram.ctx.canvas.onmouseup = function (e) {
                             diagram.changePointCoords();
@@ -75,17 +66,16 @@ var Hyperdeck;
                     }
                 }
                 // check for hit on an individual point
-                var axMin = ax - r;
-                var axMax = ax + r;
-                var ayMin = ay - r;
-                var ayMax = ay + r;
-                var hit = null;
-                for (var i = 0; i < points.length; i++) {
-                    var p = points[i];
+                const axMin = ax - r;
+                const axMax = ax + r;
+                const ayMin = ay - r;
+                const ayMax = ay + r;
+                let hit = null;
+                for (const p of points) {
                     if (axMax < p.x || axMin > p.x || ayMax < p.y || ayMin > p.y) {
                         continue;
                     }
-                    var dd = (p.x - ax) * (p.x - ax) + (p.y - ay) * (p.y - ay);
+                    const dd = (p.x - ax) * (p.x - ax) + (p.y - ay) * (p.y - ay);
                     if (dd < rr) {
                         hit = p;
                         break;
@@ -96,21 +86,11 @@ var Hyperdeck;
                     diagram.selected = [hit];
                     AfterSelect();
                     diagram.draw();
-                    var correctionX = ax - p.x;
-                    var correctionY = ay - p.y;
+                    const correctionX = ax - hit.x;
+                    const correctionY = ay - hit.y;
                     diagram.ctx.canvas.onmousemove = function (e) {
-                        var mx = e.offsetX;
-                        var my = e.offsetY;
-                        // snap to the major grid
-                        //var {i, j} = diagram.Inverse({ x: mx, y: my });
-                        //
-                        //hit.i = i;
-                        //hit.j = j;
-                        //
-                        //if (hit.i < 0) { hit.i = 0; }
-                        //if (hit.j < 0) { hit.j = 0; }
-                        //if (hit.i > diagram.iMax) { hit.i = diagram.iMax; }
-                        //if (hit.j > diagram.jMax) { hit.j = diagram.jMax; }
+                        const mx = e.offsetX;
+                        const my = e.offsetY;
                         hit.x = mx + correctionX;
                         hit.y = my + correctionY;
                         diagram.draw();
@@ -129,17 +109,16 @@ var Hyperdeck;
                 AfterSelect();
                 diagram.draw();
                 diagram.ctx.canvas.onmousemove = function (e) {
-                    var mx = e.offsetX;
-                    var my = e.offsetY;
-                    var tp = diagram.selectionBox.top = Math.min(ay, my);
-                    var lf = diagram.selectionBox.left = Math.min(ax, mx);
-                    var wd = diagram.selectionBox.width = Math.max(ax, mx) - Math.min(ax, mx);
-                    var hg = diagram.selectionBox.height = Math.max(ay, my) - Math.min(ay, my);
-                    var rt = lf + wd;
-                    var bt = tp + hg;
+                    const mx = e.offsetX;
+                    const my = e.offsetY;
+                    const tp = diagram.selectionBox.top = Math.min(ay, my);
+                    const lf = diagram.selectionBox.left = Math.min(ax, mx);
+                    const wd = diagram.selectionBox.width = Math.max(ax, mx) - Math.min(ax, mx);
+                    const hg = diagram.selectionBox.height = Math.max(ay, my) - Math.min(ay, my);
+                    const rt = lf + wd;
+                    const bt = tp + hg;
                     diagram.selected = [];
-                    for (var i = 0; i < points.length; i++) {
-                        var p = points[i];
+                    for (const p of points) {
                         if (lf < p.x && p.x < rt && tp < p.y && p.y < bt) {
                             diagram.selected.push(p);
                         }
@@ -155,70 +134,118 @@ var Hyperdeck;
                         AfterSelect();
                         diagram.draw();
                     }
-                    //diagram.points.unfreeze();
                     diagram.ctx.canvas.onmousemove = function (e) { savedX = e.offsetX; savedY = e.offsetY; };
                     diagram.ctx.canvas.onmouseup = null;
                 };
             };
-        };
-        Diagram.prototype.sendText = function () {
+        }
+        sendText() {
             // send text back to the codemirror
-            this.changePointCoords();
-            this.code = this.chunks.map(function (x) { return x[0]; }).join('');
-            //this.compile(); // do we need this?
+            this.changePointCoords(); // write the new literal objects to the chunks
+            this.code = this.chunks.map(x => x[0]).join('');
             this.afterChange(this.code);
-        };
-        Diagram.prototype.receiveText = function (code) {
+        }
+        receiveText(code) {
             // receive text from the codemirror
             this.code = code;
             this.findPoints(); // sets this.points and this.chunks
-            this.compile();
+            this.compile(); // textually replace point literals with references to _p[i], the point objects, whose values will change with events
             this.selectionBox = null; // arguably better to null the box on canvas blur
             this.draw();
-        };
-        Diagram.prototype.compile = function () {
-            for (var i = 0; i < this.points.length; i++) {
-                this.points[i].chunk[0] = '_p[' + i.toString() + ']';
-            }
-            var code = this.chunks.map(function (x) { return x[0]; }).join('');
-            this.fn = new Function('ctx, _p', code);
-        };
-        Diagram.prototype.changePointCoords = function () {
-            this.points.forEach(function (p) {
-                p.chunk[0] = '{ x: ' + p.x.toString() + ', y: ' + p.y.toString() + '}';
-            });
-        };
-        Diagram.prototype.findPoints = function () {
+        }
+        // override these functions to work with something other than javascript code
+        findPoints() {
             // we partition the text into chunks - points write to their chunk as the point moves
             this.chunks = [];
             this.points = [];
-            var prev = 0;
-            var match = this.regex.exec(this.code);
+            let prev = 0;
+            let match = this.regex.exec(this.code);
             while (match !== null) {
+                // we box the chunk so both this.chunks and point.chunk can reference the box
                 this.chunks.push([this.code.substring(prev, match.index)]);
                 prev = match.index + match[0].length;
-                var chunk = [match[0]]; // we box the chunk so both chunks and the point can reference the box
-                this.chunks.push(chunk);
-                var p = {
+                const objLiteral = match[0];
+                const p = {
                     x: null,
                     y: null,
-                    chunk: chunk
+                    z: null,
+                    xChunk: null,
+                    yChunk: null,
+                    zChunk: null,
+                    selected: false
                 };
-                var parts = match[0].replace('{', '').replace('}', '').split(',');
-                for (var i = 0; i < parts.length; i++) {
-                    var part = parts[i];
-                    var _a = part.split(':').map(function (x) { return x.trim(); }), key = _a[0], val = _a[1];
-                    p[key] = parseInt(val);
+                //const parts = objLiteral.replace('{', '').replace('}', '').split(',');
+                //const [key, val] = part.split(':').map(x => x.trim());
+                const keyvalRegex = /([A-Za-z_$][A-Za-z0-9_$]*)(\s*:\s*)(\d+)/g;
+                let keyvalMatch = keyvalRegex.exec(objLiteral);
+                let objPrev = 0;
+                while (keyvalMatch !== null) {
+                    this.chunks.push([objLiteral.substring(objPrev, keyvalMatch.index)]);
+                    objPrev = keyvalMatch.index + keyvalMatch[0].length;
+                    const key = keyvalMatch[1];
+                    const mid = keyvalMatch[2];
+                    const val = keyvalMatch[3];
+                    this.chunks.push([key]);
+                    this.chunks.push([mid]);
+                    const chunk = [val];
+                    this.chunks.push(chunk);
+                    const value = parseInt(val);
+                    if (key === 'x') {
+                        p.x = value;
+                        p.xChunk = chunk;
+                    }
+                    else if (key === 'y') {
+                        p.y = value;
+                        p.yChunk = chunk;
+                    }
+                    else if (key === 'z') {
+                        p.z = value;
+                        p.zChunk = chunk;
+                    }
+                    keyvalMatch = keyvalRegex.exec(objLiteral);
                 }
+                this.chunks.push([objLiteral.substr(objPrev)]);
                 this.points.push(p);
                 match = this.regex.exec(this.code);
             }
             this.chunks.push([this.code.substr(prev)]);
-        };
-        Diagram.prototype.exportPath = function () {
-            var _this = this;
-            var ctx = new PathGen();
-            var centeredPoints = this.points.map(function (p) { return ({ x: p.x - _this.ctx.canvas.width / 2, y: p.y - _this.ctx.canvas.height / 2 }); });
+        }
+        compile() {
+            for (let i = 0; i < this.points.length; i++) {
+                const p = this.points[i];
+                if (p.xChunk) {
+                    p.xChunk[0] = '_p[' + i.toString() + '].x';
+                }
+                if (p.yChunk) {
+                    p.yChunk[0] = '_p[' + i.toString() + '].y';
+                }
+                if (p.zChunk) {
+                    p.zChunk[0] = '_p[' + i.toString() + '].z';
+                }
+            }
+            const code = this.chunks.map(x => x[0]).join('');
+            const headers = [
+                "ctx.fillStyle = 'white';",
+                "ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);"
+            ];
+            this.fn = new Function('ctx, _p', headers.join('\n') + code);
+        }
+        changePointCoords() {
+            for (const p of this.points) {
+                if (p.xChunk) {
+                    p.xChunk[0] = p.x.toString();
+                }
+                if (p.yChunk) {
+                    p.yChunk[0] = p.y.toString();
+                }
+                if (p.zChunk) {
+                    p.zChunk[0] = p.z.toString();
+                }
+            }
+        }
+        exportPath() {
+            const ctx = new PathGen();
+            const centeredPoints = this.points.map(p => ({ x: p.x - this.ctx.canvas.width / 2, y: p.y - this.ctx.canvas.height / 2 }));
             try {
                 this.fn(ctx, centeredPoints);
             }
@@ -226,38 +253,42 @@ var Hyperdeck;
                 console.log(e);
             }
             return ctx.write();
-        };
-        Diagram.prototype.draw = function () {
+        }
+        draw() {
             try {
                 this.fn(this.ctx, this.points);
             }
-            catch (e) { }
+            catch (e) {
+                console.log(e);
+            }
             if (this.showPoints) {
                 this.drawPoints();
             }
             if (this.selectionBox) {
                 this.drawSelectionBox();
             }
-        };
-        Diagram.prototype.drawPoints = function () {
-            var _this = this;
-            this.points.forEach(function (p) {
-                _this.ctx.fillStyle = p.selected ? 'orange' : 'green';
-                _this.ctx.beginPath();
-                _this.ctx.arc(p.x, p.y, _this.pointRadius, 0, Math.PI * 2, false);
-                _this.ctx.fill();
-            });
-        };
-        Diagram.prototype.drawSelectionBox = function () {
+        }
+        drawPoints() {
+            this.ctx.save();
+            for (const p of this.points) {
+                this.ctx.fillStyle = p.selected ? 'orange' : 'green';
+                this.ctx.beginPath();
+                this.ctx.arc(p.x, p.y, this.pointRadius, 0, Math.PI * 2, false);
+                this.ctx.fill();
+            }
+            this.ctx.restore();
+        }
+        drawSelectionBox() {
+            this.ctx.save();
             this.ctx.lineWidth = 1;
             this.ctx.strokeStyle = 'rgb(128,128,128)';
             this.ctx.strokeRect(this.selectionBox.left + 0.5, this.selectionBox.top + 0.5, this.selectionBox.width, this.selectionBox.height);
-        };
-        return Diagram;
-    }());
+            this.ctx.restore();
+        }
+    }
     Hyperdeck.Diagram = Diagram;
-    var PathGen = (function () {
-        function PathGen() {
+    class PathGen {
+        constructor() {
             // This implements a subset of the canvas interface, but stores the commands to a path string like "M 0 0 L 10 0"
             this.precision = 0;
             this.fillStyle = null;
@@ -266,32 +297,32 @@ var Hyperdeck;
             this.canvas = { width: 0, height: 0 };
             this.parts = [];
         }
-        PathGen.prototype.fillRect = function () { };
-        PathGen.prototype.stroke = function () { };
-        PathGen.prototype.fill = function () { };
-        PathGen.prototype.write = function () {
+        fillRect() { }
+        stroke() { }
+        fill() { }
+        write() {
             return this.parts.join(' ');
-        };
-        PathGen.prototype.beginPath = function () {
-        };
-        PathGen.prototype.moveTo = function (x, y) {
+        }
+        beginPath() {
+        }
+        moveTo(x, y) {
             this.parts.push('M');
             this.parts.push(x.toFixed(this.precision));
             this.parts.push(y.toFixed(this.precision));
-        };
-        PathGen.prototype.lineTo = function (x, y) {
+        }
+        lineTo(x, y) {
             this.parts.push('L');
             this.parts.push(x.toFixed(this.precision));
             this.parts.push(y.toFixed(this.precision));
-        };
-        PathGen.prototype.quadraticCurveTo = function (x1, y1, x2, y2) {
+        }
+        quadraticCurveTo(x1, y1, x2, y2) {
             this.parts.push('Q');
             this.parts.push(x1.toFixed(this.precision));
             this.parts.push(y1.toFixed(this.precision));
             this.parts.push(x2.toFixed(this.precision));
             this.parts.push(y2.toFixed(this.precision));
-        };
-        PathGen.prototype.bezierCurveTo = function (x1, y1, x2, y2, x3, y3) {
+        }
+        bezierCurveTo(x1, y1, x2, y2, x3, y3) {
             this.parts.push('C');
             this.parts.push(x1.toFixed(this.precision));
             this.parts.push(y1.toFixed(this.precision));
@@ -299,8 +330,8 @@ var Hyperdeck;
             this.parts.push(y2.toFixed(this.precision));
             this.parts.push(x3.toFixed(this.precision));
             this.parts.push(y3.toFixed(this.precision));
-        };
-        PathGen.prototype.arc = function (cx, cy, r, startAngle, endAngle, bAntiClockwise) {
+        }
+        arc(cx, cy, r, startAngle, endAngle, bAntiClockwise) {
             // there are two possible ellipses for the path to travel around and two different possible paths on both ellipses, giving four possible paths. The first argument is the large-arc-flag. It simply determines if the arc should be greater than or less than 180 degrees; in the end, this flag determines which direction the arc will travel around a given circle. The second argument is the sweep-flag. It determines if the arc should begin moving at negative angles or positive ones, which essentially picks which of the two circles you will travel around.
             // rX,rY rotation, arc, sweep, eX,eY
             var large = ((endAngle - startAngle) > Math.PI) ? '1' : '0';
@@ -319,11 +350,10 @@ var Hyperdeck;
             this.parts.push(sweepFlag);
             this.parts.push(x.toFixed(this.precision));
             this.parts.push(y.toFixed(this.precision));
-        };
-        PathGen.prototype.closePath = function () {
+        }
+        closePath() {
             this.parts.push('Z');
-        };
-        return PathGen;
-    }());
+        }
+    }
 })(Hyperdeck || (Hyperdeck = {}));
-// Alt+2 or 3,2
+// Alt+3
