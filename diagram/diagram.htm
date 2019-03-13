@@ -1,21 +1,12 @@
 
 <html>
 <head>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.0.0/codemirror.min.css" />
 <style>
-.CodeMirror { border: 1px solid gray; cursor: text; height: 550px; }
 #container { display: grid; grid-template-columns: 1fr 1fr; }
 </style>
-
 <script>var exports = {};</script>
-
-<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.0.0/codemirror.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.0.0/mode/javascript/javascript.min.js"></script>
-
 <script src="diagram.js"></script>
-<script src="diagram-helpers.js"></script>
-
+<!-- <script src="diagram-helpers.js"></script> -->
 </head>
 <body>
 
@@ -23,13 +14,17 @@
 <input type="file" multiple onchange="LoadAssets(this.files, OnLoad)">
 <!-- <button onclick="SwitchTabs()">Switch Tabs</button> -->
 
-<input id="width" type="text" value="1000" size="5">
+<input id="width" type="text" value="1300" size="5">
 <input id="height" type="text" value="500" size="5">
 
 <button onclick="Download(diagram.exportPath())">Export Path</button>
- 
-<div id="codemirror" tabIndex="1" style="margin: 1em; display: none;"></div>
-<div id="diagramContainer" style="margin: 1em;"><canvas id="diagram" tabIndex="2" style="border: 1px solid gray;"></canvas></div>
+
+<div id="codemirror" tabIndex="1" style="margin: 1em; display: none;">
+    <textarea id="code" style="width: 1300px; height: 500px;"></textarea>
+</div>
+<div id="diagramContainer" style="margin: 1em;">
+    <canvas id="diagram" tabIndex="2" style="border: 1px solid gray;"></canvas>
+</div>
 
 <script>
 
@@ -40,8 +35,9 @@ ctx.canvas.height = document.getElementById('height').value;
 ctx.fillStyle = 'white';
 ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
-const a = { x: 10, y: 10 };
-ctx.strokeRect(a.x + 0.5, a.y + 0.5, 100, 100);
+const a = { x: 100, y: 100 }, b = { x: 200, y: 200 };
+ctx.strokeRect(a.x + 0.5, a.y + 0.5, 50, 50);
+ctx.strokeRect(b.x + 0.5, b.y + 0.5, 50, 50);
 `;
 
 let assets = null;
@@ -146,56 +142,17 @@ function Download(path) {
 	fileReader.readAsDataURL(blob);
 }
 
-function InitCodemirror(div) {
-	
-	var textarea = document.createElement('textarea');
-	div.appendChild(textarea);
-	
-	var options = {
-		//smartIndent: true,
-		lineNumbers: true,
-		lineWrapping: true,
-		//foldGutter: true,
-		//tabSize: 2,
-		//indentUnit: 2,
-		//indentWithTabs: true,
-		//gutters: ['CodeMirror-linenumbers','CodeMirror-foldgutter'],
-		//extraKeys: {'Ctrl-Q': function(cm) { cm.foldCode(cm.getCursor()); }},
-		mode: 'javascript'
-	};
-	
-	var cm = CodeMirror.fromTextArea(textarea, options);
-	
-	cm.on('change', function() {
-		
-	});
-	
-	cm.on('focus', function() {
-		
-	});
-	
-	cm.on('blur', function() {
-		//doc.setGutterMarker(line: integer|LineHandle, gutterID: string, value: Element)
-		diagram.receiveText(cm.getValue(), cm.getCursor().line);
-	});
-	
-	cm.getDoc().setValue(code);
-	
-	return cm;
-}
-
 document.getElementById('showpoints').onchange = function() {
 	diagram.showPoints = this.checked;
 	diagram.draw();
 };
 
-
-function SetCodemirrorText(code) { codemirror.getDoc().setValue(code); }
+document.getElementById('code').onblur = function() { diagram.receiveText(this.value); };
+function SetCodemirrorText(code) { document.getElementById('code').value = code; }
 const ctx = document.getElementById('diagram').getContext('2d');
-const codemirror = InitCodemirror(document.getElementById('codemirror'));
 const diagram = new Hyperdeck.Diagram(ctx, SetCodemirrorText);
 diagram.receiveText(initialCode);
-
+document.getElementById('code').value = initialCode;
 
 let canvasActive = true;
 function SwitchTabs() {
@@ -204,8 +161,7 @@ function SwitchTabs() {
 	{
 		document.getElementById('codemirror').style.display = 'block';
 		document.getElementById('diagramContainer').style.display = 'none';
-		codemirror.refresh();
-		codemirror.focus();
+		document.getElementById('code').focus();
 		canvasActive = false;
 	}
 	else
