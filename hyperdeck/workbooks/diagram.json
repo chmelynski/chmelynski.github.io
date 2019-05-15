@@ -1,1 +1,26 @@
-{"metadata":{"version":1,"view":"all"},"components":[{"type":"diagram","name":"diagram1","visible":true,"text":"ctx.fillStyle = 'black';\n\np.add(94, 93);\np.add(268, 189);\np.add(98, 186);\np.add(268, 84);\n\nvar a = p.get();\nvar b = p.get();\nvar c = p.get();\nvar d = p.get();\n\nvar e = Intersection(a, b, c, d);\n\nLine(ctx, a, b);\nLine(ctx, c, d);\nDot(ctx, e);\n","showPoints":true,"width":500,"height":500}]}
+{
+  "metadata": {
+    "version": 1,
+    "view": "all"
+  },
+  "components": [
+    {
+      "type": "html",
+      "name": "html1",
+      "visible": false,
+      "text": "<p>Click and drag the green points to move them, and the line with them.</p>\n<p>You can also draw a selection box that selects multiple points, and then click and drag the box.</p>\n<p>The <code>{ x: 100, y: 100 }</code> object literals in the code will change after the points are dragged.</p>\n<p>The diagram engine will detect any object literals that look like <code>{ x: 100, y: 100 }</code> (with integer values), and will draw a draggable point for each one.</p>\n",
+      "display": "codemirror",
+      "runOnBlur": true,
+      "runOnLoad": true
+    },
+    {
+      "type": "diagram",
+      "name": "diagram1",
+      "visible": true,
+      "text": "\nconst p = { x: 100, y: 100 };\nconst q = { x: 200, y: 200 };\n\nctx.beginPath();\nctx.moveTo(p.x, p.y);\nctx.lineTo(q.x, q.y);\nctx.stroke();\n",
+      "showPoints": true,
+      "width": 500,
+      "height": 300
+    }
+  ]
+}
