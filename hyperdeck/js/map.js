@@ -79,14 +79,14 @@ MapComp.prototype.refreshControls = function() {
 		comp.exec(comp);
 	});
 	
-	$('<input type="text" placeholder="OnShiftClick(x, y, lng, lat) cell" size="20">').attr('value', comp.onShiftClickCell).appendTo(comp.controlDiv).on('change', function() {
+	$('<input type="text" title="name of a code cell that defines the body of a function(x, y, lng, lat) that is called on Shift+Click" placeholder="OnShiftClick(x, y, lng, lat) cell" size="20">').attr('value', comp.onShiftClickCell).appendTo(comp.controlDiv).on('change', function() {
 		comp.onShiftClickCell = this.value;
 		comp.onShiftClickFn = new Function('x, y, lng, lat', Hyperdeck.Get(this.value));
 	});
 	
 	$('<br>').appendTo(comp.controlDiv);
 	
-	comp.paramsInput = $('<input type="text" size="80" style="margin:3px">').attr('value', Stringify(comp.params)).appendTo(comp.controlDiv).on('change', function() {
+	comp.paramsInput = $('<input type="text" title="this object is available as `params` in the body code, and is updated as you pan/zoom/rotate the map" size="80" style="margin:3px">').attr('value', Stringify(comp.params)).appendTo(comp.controlDiv).on('change', function() {
 		comp.params = JSON.parse(this.value);
 		comp.exec(comp);
 	});
