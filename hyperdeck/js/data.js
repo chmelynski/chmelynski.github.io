@@ -627,7 +627,7 @@ function DisplayAsPre(comp) {
 	}
 	else
 	{
-		l = [JSON.stringify(comp.data)];
+		l = [JSON.stringify(comp.data, null, '\t')];
 	}
 	
 	return '<pre>' + l.join('\n') + '</pre>';
@@ -1084,7 +1084,7 @@ function WriteJson() {
 	}
 	else
 	{
-		return JSON.stringify(comp.data);
+		return JSON.stringify(comp.data, null, '\t');
 	}
 }
 function WriteYaml() {
