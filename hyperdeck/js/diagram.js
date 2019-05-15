@@ -106,8 +106,8 @@ Diag.prototype.exec = function(thisArg) {
 	
 	var comp = this;
 	
-	// this could be hidden with a new Diagram function - the key is to send the ctx as thisArg
-	comp.diagram.fn.call(thisArg, thisArg, comp.diagram.points); // thisArg is also sent as the 'ctx' arg
+	// this breaks encapsulation
+	comp.diagram.fn.call(thisArg, comp.diagram.ctx, comp.diagram.points);
 };
 Diag.prototype.write = function() {
 	
