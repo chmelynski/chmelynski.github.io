@@ -18,4 +18,6 @@ Hyperdeck is a serverless notebook programming environment for doing light analy
 * [Assets and libraries](https://chmelynski.github.io/hyperdeck/hyperdeck.htm?workbook=assets-and-libraries)
 * [Bar chart](https://chmelynski.github.io/hyperdeck/hyperdeck.htm?workbook=bar-chart)
 * [Line chart](https://chmelynski.github.io/hyperdeck/hyperdeck.htm?workbook=line-chart)
-
+* [Map](https://chmelynski.github.io/hyperdeck/hyperdeck.htm?workbook=map)
+* [Diagram](https://chmelynski.github.io/hyperdeck/hyperdeck.htm?workbook=diagram)
+* [Editable data grid](https://chmelynski.github.io/hyperdeck/hyperdeck.htm?workbook=bar-chart-and-grid)
