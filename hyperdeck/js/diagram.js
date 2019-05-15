@@ -103,11 +103,8 @@ Diag.prototype.afterAllLoaded = function() {
 	comp.diagram.receiveText(comp.text, comp.codemirror.lastLine());
 };
 Diag.prototype.exec = function(thisArg) {
-	
 	var comp = this;
-	
-	// this breaks encapsulation
-	comp.diagram.fn.call(thisArg, comp.diagram.ctx, comp.diagram.points);
+	comp.diagram.draw(thisArg);
 };
 Diag.prototype.write = function() {
 	
