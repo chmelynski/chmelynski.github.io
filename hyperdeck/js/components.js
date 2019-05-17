@@ -85,6 +85,7 @@ var NewComponent = function(json, type, name) {
 	comp.div.css('background-color', 'rgb(230,230,230)');
 	comp.add();
 	if (comp.afterLoad) { comp.afterLoad(AfterLoadCallback); } else { loaded++; }
+	return comp;
 };
 
 /*
@@ -116,9 +117,10 @@ var AfterAllLoaded = function() {
 
 var AddComponent = function(type, useLocalCreateComponentDiv) {
 	if (useLocalCreateComponentDiv) { createComponentDivToUse = LocalCreateComponentDiv; }
-	NewComponent(null, type, UniqueName(type, 1));
+	var comp = NewComponent(null, type, UniqueName(type, 1));
 	if (!dirty) { MarkDirty(); }
 	MakeSortable();
+	if (comp.afterAllLoaded) { comp.afterAllLoaded(); }
 };
 var RenameComponent = function(comp, newname) {
 	
