@@ -9,7 +9,7 @@ var Diag = function(json, type, name) {
 		json.type = type;
 		json.name = name;
 		json.visible = true;
-		json.text = '';
+		json.text = '\nconst p = { x: 100, y: 100 };\nconst q = { x: 200, y: 200 };\n\nctx.beginPath();\nctx.moveTo(p.x, p.y);\nctx.lineTo(q.x, q.y);\nctx.stroke();\n';
 		json.showPoints = true;
 		json.width = 500;
 		json.height = 300;
