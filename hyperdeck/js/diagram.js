@@ -9,7 +9,7 @@ var Diag = function(json, type, name) {
 		json.type = type;
 		json.name = name;
 		json.visible = true;
-		json.text = '\nconst p = { x: 100, y: 100 };\nconst q = { x: 200, y: 200 };\n\nctx.beginPath();\nctx.moveTo(p.x, p.y);\nctx.lineTo(q.x, q.y);\nctx.stroke();\n';
+		json.text = '\n// Click and drag the green points in the diagram\n// After the drag, the object literals below will update with the new coordinates.\n// You can also draw a selection box and then drag the selection box.\n// A draggable point will be drawn for each object literal of the form { x: <int>, y: <int> }.\nconst p = { x: 100, y: 100 };\nconst q = { x: 200, y: 200 };\n\nctx.beginPath();\nctx.moveTo(p.x, p.y);\nctx.lineTo(q.x, q.y);\nctx.stroke();\n';
 		json.showPoints = true;
 		json.width = 500;
 		json.height = 300;
