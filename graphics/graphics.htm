@@ -6,7 +6,8 @@
 // node defines an implicit 'exports' var, but browser does not
 var exports = {};
 </script>
-<script src="graphics.js"></script>
+<script type="module" src="graphics.js"></script>
+<script src="bethel-park.js"></script>
 </head>
 <body>
 
@@ -15,14 +16,66 @@ var exports = {};
 <!-- <td><button onclick="Draw();">Draw</button></td> -->
 <td><button onclick="SaveImage();">SaveImage</button></td>
 <td><button onclick="SaveDuf();">SaveDuf</button></td>
-<td><button onclick="UploadImageFor3dPixelPlot();">UploadImageFor3dPixelPlot</button></td>
+<!-- <td><button onclick="UploadImageFor3dPixelPlot();">UploadImageFor3dPixelPlot</button></td> -->
 <td><input type="file" id="fileChooser1" onchange="Load(this.files, 'geometry')" /></td>
+<td>Camera pos:</td>
+<td><input type="text" id="cameraX" size="3" value="10" style="text-align: center"></td>
+<td><input type="text" id="cameraY" size="3" value="10" style="text-align: center"></td>
+<td><input type="text" id="cameraZ" size="3" value="10" style="text-align: center"></td>
+<td><input type="text" id="cameraTargetX" size="3" value="0" style="text-align: center"></td>
+<td><input type="text" id="cameraTargetY" size="3" value="0" style="text-align: center"></td>
+<td><input type="text" id="cameraTargetZ" size="3" value="0" style="text-align: center"></td>
+<td><input type="text" id="cameraAzimuth"  size="3" style="text-align: center"></td>
+<td><input type="text" id="cameraAltitude" size="3" style="text-align: center"></td>
+<td><input type="text" id="cameraStandoff" size="3" style="text-align: center"></td>
+<td>
+  <select id="cameraPos">
+    <option>+X</option>
+    <option>-X</option>
+    <option>+Y</option>
+    <option>-Y</option>
+    <option>+Z</option>
+    <option>-Z</option>
+  </select>
+</td>
+
+<!--
+<CameraTarget> default (0,0,0)
+<Azimuth> [0,360), depicted as circle
+<Altitude> (-90,90), depicted as sideview arc - note exclusive ends because camera normal is assumed to be +Y, which breaks if angle is zenith/nadir
+<Standoff> (0,)
+
+<CameraTarget> default (0,0,0)
+<CameraPosition>
+<CameraNormal> default (0,1,0)
+-->
+
 </tr>
 </table>
 
 <canvas style="position:absolute; left:50px; top:60px; border:1px solid gray" width="1200" height="500"></canvas>
 
-<script>
+<script type="module">
+
+import { Scene, Geometry } from './graphics.js';
+
+document.getElementById('cameraPos').onchange = function(e) {
+    
+    const n = 10;
+    if (this.value === '+X') { SetCameraPos(+n,  0,  0); }
+    if (this.value === '-X') { SetCameraPos(-n,  0,  0); }
+    if (this.value === '+Y') { SetCameraPos( 0, +n,  0); }
+    if (this.value === '-Y') { SetCameraPos( 0, -n,  0); }
+    if (this.value === '+Z') { SetCameraPos( 0,  0, +n); }
+    if (this.value === '-Z') { SetCameraPos( 0,  0, -n); }
+    Draw();
+};
+
+function SetCameraPos(x, y, z) {
+    document.getElementById('cameraX').value = x;
+    document.getElementById('cameraY').value = y;
+    document.getElementById('cameraZ').value = z;
+}
 
 // list of file uploaders - can use the raw input - just like in components, we have names and such
 
@@ -30,372 +83,303 @@ var assets = {};
 var ctx = document.getElementsByTagName('canvas')[0].getContext('2d');
 
 function Load(files, id) {
-	
-	var fileReader = new FileReader();
-	
-	fileReader.onload = function(event) {
-		
-		//var arrayBuffer = event.target.result;
-		//assets[id] = new Uint8Array(arrayBuffer);
-		
-		// if text
-		assets[id] = event.target.result;
-		handcuffs = Daz.ReadObjFile(assets.geometry.split('\n').map(x => x.trim()));
-		DrawUvMap(g, handcuffs);
-		
-		// this if-else is incomplete.  we need to parse as json iff it is a .duf file.  the code below fails on .obj files
-		//if (id == 'geometry' || id == 'uvmap')
-		//{
-		//	assets[id] = JSON.parse(event.target.result);
-		//}
-		//else
-		//{
-		//	var arrayBuffer = event.target.result;
-		//	assets[id] = new Uint8Array(arrayBuffer);
-		//}
-	};
-	
-	if (files.length > 0)
-	{
-		if (id == 'geometry' || id == 'uvmap')
-		{
-			fileReader.readAsText(files[0]);
-		}
-		else
-		{
-			fileReader.readAsArrayBuffer(files[0]);
-		}
-	}
+    
+    var fileReader = new FileReader();
+    
+    fileReader.onload = function(event) {
+        
+        //var arrayBuffer = event.target.result;
+        //assets[id] = new Uint8Array(arrayBuffer);
+        
+        // if text
+        assets[id] = event.target.result;
+        obj = Daz.ReadObjFile(assets.geometry.split('\n').map(x => x.trim()));
+        DrawUvMap(g, obj);
+        
+        // this if-else is incomplete.  we need to parse as json iff it is a .duf file.  the code below fails on .obj files
+        //if (id == 'geometry' || id == 'uvmap')
+        //{
+        //  assets[id] = JSON.parse(event.target.result);
+        //}
+        //else
+        //{
+        //  var arrayBuffer = event.target.result;
+        //  assets[id] = new Uint8Array(arrayBuffer);
+        //}
+    };
+    
+    if (files.length > 0)
+    {
+        if (id == 'geometry' || id == 'uvmap')
+        {
+            fileReader.readAsText(files[0]);
+        }
+        else
+        {
+            fileReader.readAsArrayBuffer(files[0]);
+        }
+    }
 }
 
-function Draw() { (new Function('assets', document.getElementById('draw').value))(assets); }
 function SaveDuf() { Download('data:text/plain,' + JSON.stringify(dufscene.Export()), 'download.duf'); }
 function Download(text, filename) {
-	var downloadLink = document.createElement('a');
-	var url = window.URL;
-	downloadLink.href = text;
-	downloadLink.download = filename;
-	document.body.appendChild(downloadLink);
-	downloadLink.click();
-	document.body.removeChild(downloadLink);
+    var downloadLink = document.createElement('a');
+    var url = window.URL;
+    downloadLink.href = text;
+    downloadLink.download = filename;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
 }
 function UploadDuf() {
-	
-	var fileChooser = document.createElement('input');
-	fileChooser.type = 'file';
-	
-	fileChooser.onchange = function() {
-		var fileReader = new FileReader();
-		fileReader.onload = function(event) {
-			var json = JSON.parse(event.target.result);
-			duf = Graphics.Duf.ReadDaz(json);
-		};
-		fileReader.readAsText(fileChooser.files[0]);
-	};
-	
-	fileChooser.click();
+    
+    var fileChooser = document.createElement('input');
+    fileChooser.type = 'file';
+    
+    fileChooser.onchange = function() {
+        var fileReader = new FileReader();
+        fileReader.onload = function(event) {
+            var json = JSON.parse(event.target.result);
+            duf = Graphics.Duf.ReadDaz(json);
+        };
+        fileReader.readAsText(fileChooser.files[0]);
+    };
+    
+    fileChooser.click();
 }
 
 function UploadImageFor3dPixelPlot() {
-	
-	var fileChooser = document.createElement('input');
-	fileChooser.type = 'file';
-	
-	fileChooser.onchange = function() {
-		var fileReader = new FileReader();
-		fileReader.onload = function(event) {
-			var dataUrl = event.target.result;
-			var img = document.createElement('img');
-			img.onload = function() { ImagePixelsTo3dPoints(img); };
-			img.src = dataUrl;
-		};
-		fileReader.readAsDataURL(fileChooser.files[0]);
-	};
-	
-	fileChooser.click();
+    
+    var fileChooser = document.createElement('input');
+    fileChooser.type = 'file';
+    
+    fileChooser.onchange = function() {
+        var fileReader = new FileReader();
+        fileReader.onload = function(event) {
+            var dataUrl = event.target.result;
+            var img = document.createElement('img');
+            img.onload = function() { ImagePixelsTo3dPoints(img); };
+            img.src = dataUrl;
+        };
+        fileReader.readAsDataURL(fileChooser.files[0]);
+    };
+    
+    fileChooser.click();
 }
 function ImagePixelsTo3dPoints(img) {
-	
-	var pixelCtx = document.createElement('canvas').getContext('2d');
-	pixelCtx.canvas.width = img.width;
-	pixelCtx.canvas.height = img.height;
-	
-	pixelCtx.drawImage(img, 0, 0);
-	
-	var imageData = pixelCtx.getImageData(0, 0, pixelCtx.canvas.width, pixelCtx.canvas.height);
-	
-	var geometry = new Geometry();
-	
-	var sampleFactor = 0.01;
-	
-	for (var y = 0; y < imageData.height; y++)
-	{
-		for (var x = 0; x < imageData.width; x++)
-		{
-			//if (!pixelCtx.isPointInPath(path, x, y)) { continue; }
-			if (Math.random() > sampleFactor) { continue; }
-			
-			var index = (y * imageData.width + x) * 4;
-			
-			var r = imageData.data[index + 0];
-			var g = imageData.data[index + 1];
-			var b = imageData.data[index + 2];
-			
-			var vertex = new Vertex(r * 2, g * 2, b * 2);
-			vertex.color = new Color4(r, g, b);
-		
-			geometry.vertices.push(vertex);
-		}
-	}
-	
-	var bone = new Bone();
-	bone.geometry = geometry;
-	
-	var scene = new Scene();
-	scene.nodes.push(bone);
+    
+    var pixelCtx = document.createElement('canvas').getContext('2d');
+    pixelCtx.canvas.width = img.width;
+    pixelCtx.canvas.height = img.height;
+    
+    pixelCtx.drawImage(img, 0, 0);
+    
+    var imageData = pixelCtx.getImageData(0, 0, pixelCtx.canvas.width, pixelCtx.canvas.height);
+    
+    var geometry = new Geometry();
+    
+    var sampleFactor = 0.01;
+    
+    for (var y = 0; y < imageData.height; y++)
+    {
+        for (var x = 0; x < imageData.width; x++)
+        {
+            //if (!pixelCtx.isPointInPath(path, x, y)) { continue; }
+            if (Math.random() > sampleFactor) { continue; }
+            
+            var index = (y * imageData.width + x) * 4;
+            
+            var r = imageData.data[index + 0];
+            var g = imageData.data[index + 1];
+            var b = imageData.data[index + 2];
+            
+            var vertex = new Vertex(r * 2, g * 2, b * 2);
+            vertex.color = new Color4(r, g, b);
+        
+            geometry.vertices.push(vertex);
+        }
+    }
+    
+    var bone = new Bone();
+    bone.geometry = geometry;
+    
+    var scene = new Scene();
+    scene.nodes.push(bone);
 
-	var device = new Device(ctx);
-	device.renderMode = 'point';
-	device.scene = scene;
-	device.camera = new Camera();
-	device.camera.position = new Vector3(1024, 1024, 1024);
-	device.Render();
-	device.OrbitControls();
+    var device = new Device(ctx);
+    device.renderMode = 'point';
+    device.scene = scene;
+    device.camera = new Camera();
+    device.camera.position = new Vector3(1024, 1024, 1024);
+    device.Render();
+    device.OrbitControls();
 }
 
+function PlotBasic() {
+    
+    const scene = new Scene({ ctx, onorbitend: PullCamera });
+    scene.root.addChild(Geometry.Cube(1, 1, 1));
+    PushCameraRect();
+    
+    document.getElementById('cameraX').onchange = () => { PushCameraRect(); };
+    document.getElementById('cameraY').onchange = () => { PushCameraRect(); };
+    document.getElementById('cameraZ').onchange = () => { PushCameraRect(); };
+    document.getElementById('cameraAzimuth').onchange =  () => { PushCameraPolar(); };
+    document.getElementById('cameraAltitude').onchange = () => { PushCameraPolar(); };
+    document.getElementById('cameraStandoff').onchange = () => { PushCameraPolar(); };
+    
+    function PushCameraRect() {
+        scene.camera.setPosition(
+            parseFloat(document.getElementById('cameraX').value),
+            parseFloat(document.getElementById('cameraY').value),
+            parseFloat(document.getElementById('cameraZ').value),
+        );
+        scene.render();
+    }
+    function PushCameraPolar() {
+        scene.camera.setPolar(
+            parseFloat(document.getElementById('cameraAzimuth').value),
+            parseFloat(document.getElementById('cameraAltitude').value),
+            parseFloat(document.getElementById('cameraStandoff').value),
+        );
+        scene.render();
+    }
+    function PullCamera() {
+        document.getElementById('cameraX').value = Math.round(scene.camera.target.x).toString();
+        document.getElementById('cameraY').value = Math.round(scene.camera.target.y).toString();
+        document.getElementById('cameraZ').value = Math.round(scene.camera.target.z).toString();
+        document.getElementById('cameraTargetX').value = Math.round(scene.camera.target.x).toString();
+        document.getElementById('cameraTargetY').value = Math.round(scene.camera.target.y).toString();
+        document.getElementById('cameraTargetZ').value = Math.round(scene.camera.target.z).toString();
+        document.getElementById('cameraAzimuth').value = Math.round(scene.camera.azimuth / Math.PI * 180).toString();
+        document.getElementById('cameraAltitude').value = Math.round(scene.camera.altitude / Math.PI * 180).toString();
+        document.getElementById('cameraStandoff').value = Math.round(scene.camera.standoff).toString();
+    }
+}
 function Plot3DSurface() {
-	
-	var geometry = new Geometry();
-	
-	var imin = -10;
-	var imax = +10;
-	var jmin = -10;
-	var jmax = +10;
-	
-	var grid = [];
-	for (var i = imin; i <= imax; i++)
-	{
-		var row = [];
-		for (var j = jmin; j <= jmax; j++)
-		{
-			var x = i / 5;
-			var y = j / 5;
-			var z = (1-(x*x+y*y))*Math.exp(-(x*x+y*y));
-			
-			var vertex = new Vertex(x, y, z);
-			geometry.vertices.push(vertex);
-			row.push(vertex);
-		}
-		grid.push(row);
-	}
-	
-	var irange = imax - imin + 1;
-	var jrange = jmax - jmin + 1;
-	
-	for (var i = 1; i < irange; i++)
-	{
-		for (var j = 1; j < jrange; j++)
-		{
-			var polygon = new Polygon();
-			polygon.vertices.push(grid[i-1][j-1]);
-			polygon.vertices.push(grid[i][j-1]);
-			polygon.vertices.push(grid[i][j]);
-			polygon.vertices.push(grid[i-1][j]);
-			geometry.polygons.push(polygon);
-		}
-	}
-	
-	var bone = new Bone();
-	bone.geometry = geometry;
-	
-	var scene = new Scene();
-	scene.nodes.push(bone);
-
-	var device = new Device(ctx);
-	device.renderMode = 'line';
-	device.scene = scene;
-	device.camera = new Camera();
-	device.camera.position = new Vector3(4, -20, 4);
-	device.Render();
-	device.OrbitControls();
+    
+    const ixfn = (i) => i / 5;
+    const jzfn = (j) => j / 5;
+    const fn = (i, j, x, z) => (1-(x*x+z*z))*Math.exp(-(x*x+z*z));
+    const imin = -10;
+    const imax = +10;
+    const jmin = -10;
+    const jmax = +10;
+    
+    const scene = new Scene({ ctx });
+    scene.root.addChild(Geometry.Surface({ imin, imax, jmin, jmax, ixfn, jzfn, fn }));
+    scene.camera.setPosition(0, 5, -5);
+    scene.render();
 }
 function Plot3DPoints() {
-	
-	var geometry = new Geometry();
-	
-	for (var i = 0; i < 100; i++)
-	{
-		var x = Math.random() * 10 - 5;
-		var y = Math.random() * 10 - 5;
-		var z = Math.random() * 10 - 5;
-		
-		var r = Math.floor(Math.random() * 256);
-		var g = Math.floor(Math.random() * 256);
-		var b = Math.floor(Math.random() * 256);
-		
-		var vertex = new Vertex(x, y, z);
-		vertex.color = new Color4(r, g, b);
-		
-		geometry.vertices.push(vertex);
-	}
-	
-	var bone = new Bone();
-	bone.geometry = geometry;
-	
-	var scene = new Scene();
-	scene.nodes.push(bone);
-
-	var device = new Device(ctx);
-	device.renderMode = 'point';
-	device.scene = scene;
-	device.camera = new Camera();
-	device.camera.position = new Vector3(4, -40, 4);
-	device.Render();
-	device.OrbitControls();
+    
+    var geometry = new Geometry();
+    
+    for (var i = 0; i < 100; i++)
+    {
+        var x = Math.random() * 10 - 5;
+        var y = Math.random() * 10 - 5;
+        var z = Math.random() * 10 - 5;
+        
+        var r = Math.floor(Math.random() * 256);
+        var g = Math.floor(Math.random() * 256);
+        var b = Math.floor(Math.random() * 256);
+        
+        var vertex = new Vertex(x, y, z);
+        vertex.color = new Color4(r, g, b);
+        
+        geometry.vertices.push(vertex);
+    }
+    
+    var bone = new Bone();
+    bone.geometry = geometry;
+    
+    var scene = new Scene();
+    scene.nodes.push(bone);
+    
+    var device = new Device(ctx);
+    device.renderMode = 'point';
+    device.scene = scene;
+    device.camera = new Camera();
+    device.camera.position = new Vector3(4, -40, 4);
+    device.Render();
+    device.OrbitControls();
 }
 function PlotElevation() {
-	
-	var wd = elevation[0];
-	var hg = elevation[1];
-	var c = 0;
-	
-	var domainMin = 0;
-	var domainMax = 300;
-	var rangeMin = 0;
-	var rangeMax = 10;
-	
-	var geometry = new Geometry();
-	
-	var imin = 0;
-	var imax = hg - 1;
-	var jmin = 0;
-	var jmax = wd - 1;
-	
-	var grid = [];
-	for (var i = imin; i <= imax; i++)
-	{
-		var row = [];
-		for (var j = jmin; j <= jmax; j++)
-		{
-			var x = i / 5;
-			var y = j / 5;
-			var z = (elevation[c++] - domainMin) / (domainMax - domainMin) * (rangeMax - rangeMin) + rangeMin;
-			
-			var vertex = new Vertex(x, y, z);
-			geometry.vertices.push(vertex);
-			row.push(vertex);
-		}
-		grid.push(row);
-	}
-	
-	var irange = imax - imin + 1;
-	var jrange = jmax - jmin + 1;
-	
-	for (var i = 1; i < irange; i++)
-	{
-		for (var j = 1; j < jrange; j++)
-		{
-			var polygon = new Polygon();
-			polygon.vertices.push(grid[i-1][j-1]);
-			polygon.vertices.push(grid[i][j-1]);
-			polygon.vertices.push(grid[i][j]);
-			polygon.vertices.push(grid[i-1][j]);
-			geometry.polygons.push(polygon);
-		}
-	}
-	
-	var bone = new Bone();
-	bone.geometry = geometry;
-	
-	var scene = new Scene();
-	scene.nodes.push(bone);
-
-	var device = new Device(ctx);
-	device.renderMode = 'line';
-	device.scene = scene;
-	device.camera = new Camera();
-	device.camera.position = new Vector3(4, -20, 4);
-	device.Render();
-	device.OrbitControls();
+    
+    var wd = elevation[0];
+    var hg = elevation[1];
+    
+    var domainMin = 300;
+    var domainMax = 400;
+    var rangeMin = 0;
+    var rangeMax = 10;
+    
+    const ixfn = (i) => i - wd / 2;
+    const jzfn = (j) => j - hg / 2;
+    const fn = (i, j, x, z) => (elevation[j * wd + i + 2] - domainMin) / (domainMax - domainMin) * (rangeMax - rangeMin) + rangeMin;
+    const imin = 0;
+    const imax = wd - 1;
+    const jmin = 0;
+    const jmax = hg - 1;
+    
+    const scene = new Scene({ ctx });
+    scene.root.addChild(Geometry.Surface({ imin, imax, jmin, jmax, ixfn, jzfn, fn }));
+    scene.camera.setPosition(0, 20, -20);
+    scene.render();
 }
 
 function LineDriver() {
-	
-	var p = new Vector3(0, 0, 0);
-	var q = new Vector3(1, 1, 1);
-	
-	var geometry = Shapes.Line(p, q);
-	
-	var bone = new Bone();
-	bone.geometry = geometry;
-	
-	var scene = new Scene();
-	scene.nodes.push(bone);
+    
+    var p = new Vector3(0, 0, 0);
+    var q = new Vector3(1, 1, 1);
+    
+    var geometry = Shapes.Line(p, q);
+    
+    var bone = new Bone();
+    bone.geometry = geometry;
+    
+    var scene = new Scene();
+    scene.nodes.push(bone);
 
-	var device = new Device(ctx);
-	device.renderMode = 'line';
-	device.scene = scene;
-	device.camera = new Camera();
-	device.camera.position = new Vector3(4, -20, 4);
-	device.Render();
-	device.OrbitControls();
-}
-
-function Axes() {
-	
-	var geometry = new Geometry();
-	geometry.vertices.push(new Vertex(0, 0, 0));
-	geometry.vertices.push(new Vertex(1, 0, 0));
-	geometry.vertices.push(new Vertex(0, 2, 0));
-	geometry.vertices.push(new Vertex(0, 0, 3));
-	geometry.polygons.push(Polygon.Make(geometry.vertices, 0, 0, 0, 1));
-	geometry.polygons.push(Polygon.Make(geometry.vertices, 0, 0, 0, 2));
-	geometry.polygons.push(Polygon.Make(geometry.vertices, 0, 0, 0, 3));
-	
-	var bone = new Bone();
-	bone.geometry = geometry;
-	
-	var scene = new Scene();
-	scene.nodes.push(bone);
-
-	var device = new Device(ctx);
-	device.renderMode = 'line';
-	device.scene = scene;
-	device.camera = new Camera();
-	device.camera.position = new Vector3(4, -20, 4);
-	device.Render();
-	device.OrbitControls();
+    var device = new Device(ctx);
+    device.renderMode = 'line';
+    device.scene = scene;
+    device.camera = new Camera();
+    device.camera.position = new Vector3(4, -20, 4);
+    device.Render();
+    device.OrbitControls();
 }
 
 function DrawJson() {
-	
-	var json = {
-		ctx: ctx,
-		top: 300,
-		left: 300,
-		width: 200,
-		height: 200,
-		renderMode: "line",
-		camera: {
-			position: [4, -20, 4],
-			target: [0, 0, 0]
-		},
-		root: {
-			geometry: {
-				shape: "Cube",
-				args: [1, 1, 1]
-			},
-			transform: null,
-			children: []
-		}
-	};
-	
-	var device = Device.Read(json);
-	device.Render();
-	device.OrbitControls();
+    
+    var json = {
+        ctx: ctx,
+        top: 300,
+        left: 300,
+        width: 200,
+        height: 200,
+        renderMode: "line",
+        camera: {
+            position: [4, -20, 4],
+            target: [0, 0, 0]
+        },
+        root: {
+            geometry: {
+                shape: "Cube",
+                args: [1, 1, 1]
+            },
+            transform: null,
+            children: []
+        }
+    };
+    
+    var device = Device.Read(json);
+    device.Render();
+    device.OrbitControls();
 }
 
-Plot3DSurface();
+PlotElevation();
 
 </script>
 </body>
