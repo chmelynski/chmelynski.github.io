@@ -1,57 +1,46 @@
 {
-  "metadata": {
-    "version": 1,
-    "view": "all"
-  },
-  "components": [
-    {
-      "type": "html",
-      "name": "html1",
-      "visible": false,
-      "text": "<pre>\nMap controls\n------------\nClick+drag to drag\nCtrl+drag to rotate around map center\nShift+click to call a cell that implements function(x, y, lng, lat)\n  Here, the cell named \"onShiftClickCell\" implements that function,\n  simply printing its arguments.\n</pre>",
-      "display": "codemirror",
-      "runOnBlur": true,
-      "runOnLoad": true
-    },
-    {
-      "type": "assets",
-      "name": "assets1",
-      "visible": true,
-      "assets": [
-        {
-          "url": "https://s3.amazonaws.com/chmelynski/mapping/topojson/lowres.topojson",
-          "type": "json"
-        },
-        {
-          "url": "https://s3.amazonaws.com/chmelynski/mapping/topojson/lowres-states.topojson",
-          "type": "json"
-        }
-      ]
-    },
-    {
-      "type": "map",
-      "name": "map1",
-      "visible": true,
-      "text": "\nctx.canvas.width = params.width;\nctx.canvas.height = params.height;\n\nctx.fillStyle = 'white';\nctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);\n\nassets.forEach(function(file, key) {\n\t\n\tif (key.endsWith('.topojson') || key.endsWith('.arcpack'))\n\t{\n\t\tconst [coordPack, pixelPack, topo] = file;\n\t\tMapper.ProjectPackToPack(projection, coordPack, pixelPack);\n\n\t\tif (key == 'https://s3.amazonaws.com/chmelynski/mapping/topojson/lowres-states.topojson')\n\t\t{\n\t\t\tctx.lineWidth = 3;\n\t\t}\n\t\telse if (key == 'https://s3.amazonaws.com/chmelynski/mapping/topojson/lowres.topojson')\n\t\t{\n\t\t\tctx.lineWidth = 1;\n\t\t}\n\t\t\n\t\tctx.strokeStyle = 'black';\n\t\t\n\t\tctx.lineJoin = 'center';\n\t\tctx.beginPath();\n\t\tMapper.DrawMeshPack(ctx, pixelPack);\n\t\tctx.stroke();\n\t}\n});\n",
-      "assetCell": "assets1",
-      "onShiftClickCell": "onShiftClickCell",
-      "params": {
-        "width": 500,
-        "height": 300,
-        "lat": 40.4,
-        "lng": -80.0,
-        "metersPerPixel": 2500,
-        "rotation": 0
-      }
-    },
-    {
-      "type": "js",
-      "name": "onShiftClickCell",
-      "visible": true,
-      "text": "document.getElementById('onShiftClickCell').innerText = x + ' , ' + y + ' , ' + lng + ' , ' + lat;",
-      "display": "codemirror",
-      "runOnBlur": false,
-      "runOnLoad": false
-    }
-  ]
+	"metadata": {
+		"version": 1,
+		"view": "all"
+	},
+	"components": [
+		{
+			"type": "html",
+			"name": "html1",
+			"visible": false,
+			"text": "<pre>\nMap controls\n------------\nClick+Drag to pan\nMousewheel to zoom\nCtrl+Click+Drag to rotate around map center\nShift+Click to call this.onshiftclick with args (x, y, lng, lat)\n</pre>",
+			"display": "codemirror",
+			"runOnBlur": true,
+			"runOnLoad": true
+		},
+		{
+			"type": "assets",
+			"name": "assets1",
+			"visible": true,
+			"assets": [
+				{
+					"url": "https://s3.amazonaws.com/chmelynski/mapping/topojson/lowres.topojson",
+					"type": "json"
+				},
+				{
+					"url": "https://s3.amazonaws.com/chmelynski/mapping/topojson/lowres-states.topojson",
+					"type": "json"
+				}
+			]
+		},
+		{
+			"type": "map",
+			"name": "map1",
+			"visible": true,
+			"text": "\nconst assets = Hyperdeck.Get('assets1');\n\nconst lowres = this.topojson(assets.get('https://s3.amazonaws.com/chmelynski/mapping/topojson/lowres.topojson'));\nconst states = this.topojson(assets.get('https://s3.amazonaws.com/chmelynski/mapping/topojson/lowres-states.topojson'));\n\nctx.lineJoin = 'center';\nctx.strokeStyle = 'black';\n\nctx.lineWidth = 1;\nthis.stroke(lowres);\n\nctx.lineWidth = 3;\nthis.stroke(states);\n\nthis.onshiftclick = function(x, y, lng, lat) { alert(x+','+y+','+lng+','+lat); };\n",
+			"params": {
+				"width": 600,
+				"height": 400,
+				"lat": 40,
+				"lng": -100,
+				"metersPerPixel": 10000,
+				"rotation": 0
+			}
+		}
+	]
 }
