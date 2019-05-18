@@ -8,7 +8,12 @@ var Graphics = function(json, type, name) {
 			type: type,
 			name: name,
 			visible: true,
-			text: '',
+			text: `
+const scene = new Graphics.Scene({ ctx });
+scene.root.addChild(Graphics.Geometry.Cube(1, 1, 1));
+scene.camera.setPosition(4, 3, -5);
+scene.render();
+`,
 			params: {
 				width: 500,
 				height: 300
@@ -47,17 +52,32 @@ Graphics.prototype.refreshControls = function() {
 	var comp = this;
 	
 	comp.controlDiv.html('');
+	
+	$('<span> width:</span><input type="text" size="5"></input>').appendTo(comp.controlDiv).eq(1).attr('value', comp.params.width).on('change', function() {
+		comp.params.width = parseInt(this.value);
+		comp.ctx.canvas.width = comp.params.width;
+		comp.exec(comp);
+	});
+	
+	$('<span> height:</span><input type="text" size="5"></input>').appendTo(comp.controlDiv).eq(1).attr('value', comp.params.height).on('change', function() {
+		comp.params.height = parseInt(this.value);
+		comp.ctx.canvas.height = comp.params.height;
+		comp.exec(comp);
+	});
 };
 Graphics.prototype.addOutputElements = function() {
 	
 	var comp = this;
 	
-	var ctx = new THREE.WebGLRenderer();
-	ctx.setSize(comp.params.width, comp.params.height);
-	ctx.setClearColor(0xffffff);
-	ctx.domElement.style.border = '1px solid gray';
-	comp.ctx = ctx;
-	$('<div>').attr('id', comp.name).append(ctx.domElement).appendTo('#output');
+	var canvas = document.createElement('canvas');
+	canvas.width = comp.params.width;
+	canvas.height = comp.params.height;
+	canvas.style.border = '1px solid gray';
+	canvas.tabIndex = 1;
+	
+	comp.ctx = canvas.getContext('2d');
+	
+	$('<div>').attr('id', comp.name).append(canvas).appendTo('#output');
 };
 Graphics.prototype.onblur = function() {
 	var comp = this;
@@ -65,33 +85,34 @@ Graphics.prototype.onblur = function() {
 };
 Graphics.prototype.afterLoad = function(callback) {
 	var comp = this;
-	
-	if (!THREE)
-	{
-		var script = document.createElement('script');
-		document.body.appendChild(script);
-		script.onload = function() {
-			
-			var toload = ['CanvasRenderer.js','Projector.js','OrbitControls.js'];
-			var loaded = 0;
-				      
-			for (var i = 0; i < toload.length; i++)
-			{
-				var script2 = document.createElement('script');
-				document.body.appendChild(script2);
-				script2.onload = function() {
-					loaded++;
-					if (loaded == toload.length) { comp.addOutputElements(); callback(comp); }
-				};
-				script2.src = '../graphics/threejs/' + toload[i];
-			}
-		};
-		script.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/93/three.min.js';
-	}
-	else
-	{
-		callback(comp);
-	}
+	comp.addOutputElements();
+	callback(comp);
+	//if (!THREE)
+	//{
+	//	var script = document.createElement('script');
+	//	document.body.appendChild(script);
+	//	script.onload = function() {
+	//		
+	//		var toload = ['CanvasRenderer.js','Projector.js','OrbitControls.js'];
+	//		var loaded = 0;
+	//			      
+	//		for (var i = 0; i < toload.length; i++)
+	//		{
+	//			var script2 = document.createElement('script');
+	//			document.body.appendChild(script2);
+	//			script2.onload = function() {
+	//				loaded++;
+	//				if (loaded == toload.length) { comp.addOutputElements(); callback(comp); }
+	//			};
+	//			script2.src = '../graphics/threejs/' + toload[i];
+	//		}
+	//	};
+	//	script.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/93/three.min.js';
+	//}
+	//else
+	//{
+	//	callback(comp);
+	//}
 	
 };
 Graphics.prototype.afterAllLoaded = function() {
