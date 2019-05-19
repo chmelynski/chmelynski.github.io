@@ -1515,12 +1515,12 @@ export class Grid {
 		var grid = this;
 		var canvas = grid.ctx.canvas;
 		
-		canvas.onmousewheel = function(wheelEvent: MouseWheelEvent) {
+		canvas.onwheel = function(wheelEvent: WheelEvent) {
 			
 			wheelEvent.preventDefault();
 			wheelEvent.stopPropagation();
 			
-			var clicks = wheelEvent.wheelDelta / 120;
+			var clicks = ((wheelEvent.deltaY > 0) ? +1 : -1);
 			var cubitsPerRow = 1; // 20
 			// Shift+Scroll = 1 cell, Scroll = 10 cells, Ctrl+Scroll = 100 cells, Ctrl+Shift+Scroll = 1000 cells
 			// Shift+ above = Scroll horizontal?
