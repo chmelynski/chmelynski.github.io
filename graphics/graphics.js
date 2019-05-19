@@ -1,3 +1,5 @@
+// graphics-es5.htm loads graphics.js
+// graphics.htm loads graphics.mjs
 // there is a whole lot of convention involved here, including:
 // 1. object-oriented vertices/polygons or arrays of floats/integers?
 // 2. how do we represent the scene graph and transformations - i use Bones, but Daz works differently
@@ -1080,8 +1082,8 @@ var Graphics;
                 }
             };
         };
-        elt.onmousewheel = function (wheelEvent) {
-            var newStandoff = camera.standoff * (1 - (wheelEvent.wheelDelta / 120) / 10);
+        elt.onwheel = function (wheelEvent) {
+            var newStandoff = camera.standoff * (1 + (wheelEvent.deltaY / 120) / 10);
             camera.setPolar(camera.azimuth, camera.altitude, newStandoff);
             if (onchange) {
                 onchange();
@@ -1785,5 +1787,5 @@ var Graphics;
         //
         //return geometry;
     }
-})(Graphics || (Graphics = {}));
+})(Graphics || (Graphics = {})); // keep this when compiling to a normal .js, remove when compiling to a module
 // Alt+2,1
