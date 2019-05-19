@@ -13,7 +13,7 @@ var MapComp = function(json, type, name) {
 			visible: true,
 			text: `
 // Click+Drag       - pan
-// Mousewheel       - zoom
+// Wheel            - zoom
 // Ctrl+Click+Drag  - rotate map around center
 // Shift+Click      - handled by this.onshiftclick = function(x, y, lng, lat)
 // the projection is the equirectangular with standard parallel determined by the map center

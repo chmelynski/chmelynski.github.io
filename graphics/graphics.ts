@@ -1,10 +1,15 @@
 
+// graphics-es5.htm loads graphics.js
+// graphics.htm loads graphics.mjs
+
 // there is a whole lot of convention involved here, including:
 // 1. object-oriented vertices/polygons or arrays of floats/integers?
 // 2. how do we represent the scene graph and transformations - i use Bones, but Daz works differently
 // 3. the device can be a Uint8Array bitmap, a CanvasRenderingContext2D, a Canvas, a native SVG, etc. etc.
 
 //var exports = {}; // when compiled with tsc --target es5 --module none graphics.ts - this creates exports.Foo = Foo lines, which works in node, but fails in browser because exports is not defined.  so we need to add a var exports = {} line for it to work in the browser, but that line breaks it for node
+
+namespace Graphics { // keep this when compiling to a normal .js (tsc --target es5 --module none graphics.ts), remove when compiling to a module (tsc --target es6)
 
 interface ScanLineData {
     normala?: Vector3;
@@ -1146,8 +1151,8 @@ function OrbitControls(elt: HTMLElement, camera: Camera, onchange?: () => void, 
         };
     };
     
-    elt.onmousewheel = function(wheelEvent) {
-        const newStandoff = camera.standoff * (1 - (wheelEvent.wheelDelta / 120) / 10);
+    elt.onwheel = function(wheelEvent) {
+        const newStandoff = camera.standoff * ((wheelEvent.deltaY > 0) ? 1.1 : 0.9);
         camera.setPolar(camera.azimuth, camera.altitude, newStandoff);
         if (onchange) { onchange(); }
     };
@@ -2249,6 +2254,8 @@ function WriteGeometryToThreeJS(): any {
     //
     //return geometry;
 }
+
+} // keep this when compiling to a normal .js, remove when compiling to a module
 
 // Alt+2,1
 

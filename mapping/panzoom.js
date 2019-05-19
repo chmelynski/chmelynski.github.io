@@ -64,9 +64,9 @@ function Panzoom(ctx, params, inverseProjection, onChange, onFinishChange, onShi
 			onFinishChange();
 		};
 	};
-	canvas.onmousewheel = function(mouseWheelEvent) {
+	canvas.onwheel = function(wheelEvent) {
 		
-		var clicks = -mouseWheelEvent.wheelDelta / 120;
+		var clicks = ((wheelEvent.deltaY > 0) ? +1 : -1);
 		
 		var log = Math.log10(params.metersPerPixel);
 		log += clicks * (shift ? 0.01 : 0.1);
