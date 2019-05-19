@@ -1083,7 +1083,7 @@ var Graphics;
             };
         };
         elt.onwheel = function (wheelEvent) {
-            var newStandoff = camera.standoff * (1 + (wheelEvent.deltaY / 120) / 10);
+            var newStandoff = camera.standoff * ((wheelEvent.deltaY > 0) ? 1.1 : 0.9);
             camera.setPolar(camera.azimuth, camera.altitude, newStandoff);
             if (onchange) {
                 onchange();

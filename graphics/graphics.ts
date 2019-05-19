@@ -1152,7 +1152,7 @@ function OrbitControls(elt: HTMLElement, camera: Camera, onchange?: () => void, 
     };
     
     elt.onwheel = function(wheelEvent) {
-        const newStandoff = camera.standoff * (1 + (wheelEvent.deltaY / 120) / 10);
+        const newStandoff = camera.standoff * ((wheelEvent.deltaY > 0) ? 1.1 : 0.9);
         camera.setPolar(camera.azimuth, camera.altitude, newStandoff);
         if (onchange) { onchange(); }
     };
