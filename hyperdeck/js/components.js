@@ -231,7 +231,7 @@ var SaveToText = function(bEncrypt) {
 	metadata.version = 1;
 	var components = comps.map(function(comp) {return comp.write();});
 	var workbook = {metadata:metadata,components:components};
-	var text = JSON.stringify(workbook);
+	var text = JSON.stringify(workbook, null, 2);
 	if (bEncrypt && password != null) { text = sjcl.encrypt(password, text); }
 	return text;
 };
